@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { PAGE_SIZE_OPTIONS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 interface PaginationProps {
   currentPage: number;
@@ -39,12 +40,11 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between px-2 py-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>총 {totalItems}건</span>
         <Select
           value={String(pageSize)}
           onValueChange={(v) => onPageSizeChange(Number(v))}
         >
-          <SelectTrigger className="h-8 w-[80px]">
+          <SelectTrigger className="h-10 w-[120px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -57,11 +57,11 @@ export function Pagination({
         </Select>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="size-9 rounded-lg"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
         >
@@ -70,7 +70,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="size-9 rounded-lg"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
         >
@@ -82,7 +82,10 @@ export function Pagination({
             key={num}
             variant={num === currentPage ? 'default' : 'outline'}
             size="icon"
-            className="h-8 w-8"
+            className={cn(
+              'size-9 rounded-lg text-sm',
+              num === currentPage && 'bg-primary text-white'
+            )}
             onClick={() => onPageChange(num)}
           >
             {num}
@@ -92,7 +95,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="size-9 rounded-lg"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
@@ -101,7 +104,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="size-9 rounded-lg"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
         >

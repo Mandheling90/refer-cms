@@ -106,7 +106,7 @@ export function DataTable<TData>({
 
   return (
     <div className="space-y-2">
-      <div className="rounded-md border">
+      <div className="rounded-lg overflow-hidden border border-gray-500">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -115,7 +115,6 @@ export function DataTable<TData>({
                   <TableHead
                     key={header.id}
                     style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                    className="bg-muted/50 text-center text-xs font-semibold"
                   >
                     {header.isPlaceholder
                       ? null
@@ -146,11 +145,11 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  className={onRowClick ? 'cursor-pointer' : ''}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="text-sm py-2">
+                    <TableCell key={cell.id} className="text-sm">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

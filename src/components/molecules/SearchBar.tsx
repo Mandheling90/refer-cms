@@ -2,6 +2,13 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Search } from 'lucide-react';
 import { type FormEvent } from 'react';
 
@@ -29,37 +36,39 @@ export function SearchBar({ fields, onSearch, className }: SearchBarProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className={`flex items-end gap-3 p-4 bg-muted/50 rounded-lg ${className ?? ''}`}
+      className={`grid grid-cols-4 gap-6 items-end ${className ?? ''}`}
     >
       {fields.map((field) => (
-        <div key={field.name} className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-muted-foreground">{field.label}</label>
+        <div key={field.name} className="flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-foreground">{field.label}</label>
           {field.type === 'select' ? (
-            <select
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {field.options?.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
             <Input
               value={field.value}
               onChange={(e) => field.onChange(e.target.value)}
               placeholder={field.label}
-              className="w-[200px]"
             />
           )}
         </div>
       ))}
-      <Button type="submit" variant="outline" size="sm">
-        <Search className="h-4 w-4 mr-1" />
-        조회
-      </Button>
+      <div className="flex justify-end">
+        <Button type="submit" size="md">
+          <Search className="h-4 w-4" />
+          조회
+        </Button>
+      </div>
     </form>
   );
 }

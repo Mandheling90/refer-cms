@@ -1,0 +1,520 @@
+
+
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="고려대학교 진료협력센터 CMS"/>
+  <meta name="keywords" content="고려대학교 진료협력센터 CMS"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="고려대학교 진료협력센터 CMS" />
+  <meta property="og:description" content="고려대학교 진료협력센터 CMS" />
+
+  <title>고려대학교 진료협력센터 CMS</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
+  
+
+  <link rel="stylesheet" href="../../assets/scss/index.css" />
+
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://unpkg.com/swiper@11/swiper-bundle.min.js"></script>
+
+  <script src="../../assets/js/theme.js" defer></script>
+  <script src="../../assets/js/aside.js" defer></script>
+  <script src="../../assets/js/dropdown.js" defer></script>
+  <script src="../../assets/js/modal.js" defer></script>
+  <script src="../../assets/js/tabs.js" defer></script>
+  <script src="../../assets/js/tableCheckbox.js" defer></script>
+  <script src="../../assets/js/datepicker.js" defer></script>
+  
+  
+  <script src="../../assets/js/ui-init.js" defer></script>
+</head>
+<body>
+  <script>
+    // 1) 저장된 테마 or 시스템 선호도
+    (function() {
+      try {
+        const KEY = 'theme';
+        const stored = localStorage.getItem(KEY);
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        // 서버사이드에서 light로 박아놨다면 덮어쓰기
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  
+  <div id="wrapper">
+    
+<aside id="aside">
+  <div class="aside-inner">
+    <h1>
+      <a href="/project/refer_kumc/code-cms/index.jsp"></a>
+    </h1>
+    <nav class="aside-nav">
+      <ul>
+        <li class="">
+          <a class="depth1" href="">
+            <img src="../../assets/images/icon/icon-lnb11.svg">
+            Guide
+          </a>
+          <ul class="depth2">
+            <li class="depth2-item ">
+              <a href="/project/refer_kumc/code-cms/page/guide/guide.jsp">가이드페이지(atom)</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/template.jsp">가이드페이지(template)</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/templateWrite.jsp">가이드페이지(작성)</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/period.jsp">기간조회(차트)</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/modal.jsp">Modal</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page1.jsp">페이지 샘플1</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page2.jsp">페이지 샘플2</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page3.jsp">페이지 샘플3</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page4.jsp">페이지 샘플4</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page5.jsp">페이지 샘플5</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page6.jsp">페이지 샘플6</a>
+            </li>
+            <li class="depth2-item">
+              <a href="/project/refer_kumc/code-cms/page/guide/page7.jsp">페이지 샘플7</a>
+            </li>
+          </ul>
+        </li>
+        <li class="">
+          <a class="depth1" href="">
+            <img src="../../assets/images/icon/icon-lnb1.svg">
+            메인페이지
+          </a>
+          <ul class="depth2">
+            <li class="depth2-item ">
+              <a href="/project/refer_kumc/code-cms/page/dashboard/index.jsp">대시보드</a>
+            </li>
+          </ul>
+        </li>
+        
+        
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/menuList/menuList.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            메뉴 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/memberList/memberList.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            회원 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/memberList/memberApplyMgn.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            회원가입 신청 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/banner/mainbanner.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            메인 배너 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/banner/banner.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            미니 배너 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/banner/popup.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            팝업 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/doctor/doctor.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            의료진
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            협력병의원 신청 관리
+          </a>
+          <ul class="depth2">
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/cooperation/cooperationApproval.jsp">
+                협력병원 신청 관리
+              </a>
+            </li>
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/cooperation/cooperationApproval2.jsp">
+                협력의원 신청 관리
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="">
+          <a class="depth1" href="">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            협력병의원 수정 관리
+          </a>
+          <ul class="depth2">
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/cooperation/cooperationFix.jsp">
+                협력병원 수정 관리
+              </a>
+            </li>
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/cooperation/cooperationFix2.jsp">
+                협력의원 수정 관리
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/mngImg/mngImg.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            검사이미지 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/board/setting-board.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            게시판 설정
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/board/mng-board.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            게시판 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/contents/setting-contents.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            콘텐츠 설정
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/contents/mng-contents.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            콘텐츠 관리
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/e-consult/e-consult.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            e-Consult
+          </a>
+        </li>
+        <li class="">
+          <a class="depth1" href="">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            시스템 관리
+          </a>
+          <ul class="depth2">
+            <li class="depth2-item ">
+              <a class="" href="/project/refer_kumc/code-cms/page/system/manager.jsp">관리자 관리</a>
+            </li>
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/system/menuCms.jsp">CMS 메뉴</a>
+            </li>
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/system/authority.jsp">권한 관리</a>
+            </li>
+            <li class="depth2-item">
+              <a class="" href="/project/refer_kumc/code-cms/page/system/fixhistory.jsp">권한그룹 수정 이력</a>
+            </li>
+          </ul>
+        </li>
+        <li class="">
+          <a class="depth1" href="/project/refer_kumc/code-cms/page/logHistory/logHistory.jsp">
+            <img src="../../assets/images/icon/icon-lnb2.svg">
+            로그내역
+          </a>
+        </li>
+      </ul>
+    </nav>
+    </div>
+</aside>
+    
+<header id="header">
+  <div class="container">
+    <div class="gnb">
+      <button type="button" id="asideToggleBtn" class="btn btn-primary btn-icon-only">
+        <i class="icon icon-menu" aria-label="true"></i>
+      </button>
+      <div class="theme-switch-wrapper">
+        <label class="theme-switch" for="theme-toggle">
+          <input type="checkbox" id="theme-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="user">
+        <em class="icon"></em>
+        <p>홍길동님</p>
+      </div>
+      <button type="button" class="btn-logout">로그아웃</button>
+    </div>
+  </div>
+</header>
+<script>
+(function () {
+  'use strict';
+
+  const btn = document.getElementById('asideToggleBtn');
+  const wrapper = document.getElementById('wrapper');
+
+  if (!btn || !wrapper) return;
+
+  btn.addEventListener('click', function () {
+    wrapper.classList.toggle('aside_hide');
+  });
+})();
+</script>
+    <main id="contents">
+      <div class="container">
+<section class="section">
+  <div class="section-header">
+    <div class="title-wrap">
+      <h3 class="section-title">교통비 사용 내역 조회</h3>
+    </div>
+    <div class="box-wrap">
+      <div class="box">
+        <p class="field-title">거래기간</p>
+        <div class="flex align-center col-">
+          <div class="date-field">
+            <input type="text" id="startDate" class="text-field date-text" value="2025-01-10">
+          </div>
+          <span>~</span>
+          <div class="date-field">
+            <input type="text" id="endDate" class="text-field date-text" value="2025-01-10">
+          </div>
+        </div>
+      </div>
+      <div class="box">
+        <p class="field-title">회원아이디</p>
+        <input type="text" class="text-field" value="아이디입니다.">
+      </div>
+      <div class="box">
+        <p class="field-title">회원명</p>
+        <input type="text" class="text-field" value="아이디입니다.">
+      </div>
+    </div>
+    <div class="box-wrap">
+      <div class="box">
+        <p class="field-title">서비스명</p>
+        <input type="text" class="text-field" value="아이디입니다.">
+      </div>
+      <div class="box">
+        <p class="field-title">교통수단</p>
+        <div class="dropdown" data-name="traf">
+          <button type="button"
+            class="dropdown_button"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-label="교통수단 드롭다운">
+            <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
+          </button>
+    
+          <ul class="dropdown_list" role="listbox" tabindex="-1">
+            <li role="option" class="dropdown_option" data-value="bus">버스</li>
+            <li role="option" class="dropdown_option" data-value="taxi">택시</li>
+            <li role="option" class="dropdown_option" data-value="car">차</li>
+          </ul>
+    
+          <input type="hidden" name="traf" value="">
+        </div>
+      </div>
+      <div class="box">
+        <p class="field-title">승객 수</p>
+        <div class="dropdown" data-name="people">
+          <button type="button"
+            class="dropdown_button"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-label="승객 수 드롭다운">
+            <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
+          </button>
+    
+          <ul class="dropdown_list" role="listbox" tabindex="-1">
+            <li role="option" class="dropdown_option" data-value="bus">1명</li>
+            <li role="option" class="dropdown_option" data-value="taxi">2명</li>
+            <li role="option" class="dropdown_option" data-value="car">3명</li>
+          </ul>
+    
+          <input type="hidden" name="people" value="">
+        </div>
+      </div>
+      <div class="box">
+        <p class="field-title">그룹명</p>
+        <input type="text" class="text-field" value="그룹명입니다.">
+      </div>
+    </div>
+    <div class="box-wrap">
+      <div class="box col2">
+        <p class="field-title">변경 카드번호</p>
+        <div class="flex align-center col-">
+          <div class="flex align-center col-">
+            <input type="text" class="text-field" placeholder="" />
+            <span>-</span>
+            <input type="text" class="text-field" placeholder="" />
+            <span>-</span>
+            <input type="text" class="text-field" placeholder="" />
+            <span>-</span>
+            <input type="text" class="text-field" placeholder="" />
+          </div>
+          <button type="button" class="btn btn-primary">유효성 체크</button>
+        </div>
+      </div>
+    </div>
+    <div class="btn-wrap">
+      <button type="button" class="btn btn-secondary btn-icon-left">
+        다운로드
+        <i class="icon icon-save"></i>
+      </button>
+      <button type="button" class="btn btn-primary btn-icon-left">
+        검색
+        <i class="icon icon-search"></i>
+      </button>
+    </div>
+    <div class="btn-wrap">
+      <button type="button" class="btn btn-dark-line">업로드</button>
+      <button type="button" class="btn btn-blue">행추가</button>
+      <button type="button" class="btn btn-red">행삭제</button>
+    </div>
+  </div>
+
+  <div class="section-content">
+    <!-- <div class="title-wrap">
+      <h3 class="section-title">제목 없으면 지워도 됩니다</h3>
+    </div> -->
+    <div class="table-wrap">
+      <table class="table table-vertical">
+        <caption class="blind">사업 상세 정보</caption>
+        <colgroup>
+          <!-- 필요한 부분에 width 지정 -->
+          <col style="width: 160px;">
+          <col>
+        </colgroup>
+        <tbody>
+          <tr>
+            <th scope="row">신청일자</th>
+            <td>
+              <div class="date-field" style="width: 150px;">
+                <input type="text" id="startDate1" class="text-field date-text" value="2025-01-10">
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">카테고리</th>
+            <td>
+              <input type="text" class="text-field" placeholder="텍스트 필드입니다." />
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">사업명</th>
+            <td>
+              <input type="text" class="text-field" placeholder="텍스트 필드입니다." />
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">부서명</th>
+            <td><input type="text" class="text-field" placeholder="텍스트 필드입니다." /></td>
+          </tr>
+          <tr>
+            <th scope="row">사업시작일</th>
+            <td>
+              <input type="text" class="text-field" placeholder="텍스트 필드입니다." />
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">사업종료일</th>
+            <td>
+              <input type="text" class="text-field" placeholder="텍스트 필드입니다." />
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">카드번호</th>
+            <td>
+              <div class="flex align-center col-" style="width:500px;">
+                <input type="text" class="text-field" placeholder="" />
+                <span>-</span>
+                <input type="text" class="text-field" placeholder="" />
+                <span>-</span>
+                <input type="text" class="text-field" placeholder="" />
+                <span>-</span>
+                <input type="text" class="text-field" placeholder="" />
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">처리상태</th>
+            <td>
+              <div style="width:240px">
+                <div class="dropdown" data-name="state">
+                  <button type="button"
+                    class="dropdown_button"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                    aria-label="처리상태 드롭다운">
+                    <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
+                  </button>
+            
+                  <ul class="dropdown_list" role="listbox" tabindex="-1">
+                    <li role="option" class="dropdown_option" data-value="yes">처리</li>
+                    <li role="option" class="dropdown_option" data-value="no">미처리</li>
+                  </ul>
+            
+                  <input type="hidden" name="state" value="">
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex justify-end col- mt48">
+      <button type="button" class="btn btn-dark-line">신규</button>
+      <button type="button" class="btn btn-blue">저장</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  $(function() {
+    $("#startDate, #startDate1").datepicker({
+      dateFormat: "yy-mm-dd", // JSP 서버와 맞춤
+      changeMonth: true,
+      changeYear: true
+    });
+  });
+</script>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

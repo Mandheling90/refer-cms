@@ -1,7 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "WebSearch",
+      "Bash(claude mcp add:*)",
+      "mcp__figma__get_screenshot",
+      "mcp__figma__get_design_context",
+      "Bash(npm install:*)",
+      "Bash(npx playwright:*)",
+      "WebFetch(domain:revehit.com)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next build:*)",
+      "Bash(npx tsx:*)",
+      "mcp__figma__get_metadata"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "figma"
+  ]
 }

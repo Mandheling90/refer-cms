@@ -29,20 +29,20 @@ export function ActionButtons({
   return (
     <div className="flex items-center gap-2">
       {showDelete && onDelete && (
-        <Button variant="outline" size="sm" onClick={onDelete}>
-          <Trash2 className="h-4 w-4 mr-1" />
+        <Button variant="outline-red" size="sm" onClick={onDelete}>
+          <Trash2 className="h-4 w-4" />
           {deleteLabel}
         </Button>
       )}
       {showAdd && onAdd && (
         <Button variant="outline" size="sm" onClick={onAdd}>
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4" />
           {addLabel}
         </Button>
       )}
       {showSave && onSave && (
-        <Button size="sm" onClick={onSave}>
-          <Save className="h-4 w-4 mr-1" />
+        <Button variant="blue" size="sm" onClick={onSave}>
+          <Save className="h-4 w-4" />
           {saveLabel}
         </Button>
       )}
