@@ -35,11 +35,29 @@ export interface Member extends AuditFields {
   LOGIN_ID?: string;
 }
 
+/** 회원 가입신청 추가 필드 */
+export interface MemberApply extends Member {
+  APPLY_STATUS?: string;
+  APPLY_DTTM?: string;
+  APPROVE_DTTM?: string;
+  REJECT_REASON?: string;
+  ADDR?: string;
+  ADDR_DETAIL?: string;
+}
+
 /** 회원상태 옵션 */
 export const MEMBER_STATUS_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'ACTIVE', label: '정상' },
   { value: 'WITHDRAWN', label: '탈퇴' },
+] as const;
+
+/** 가입신청 상태 옵션 */
+export const APPLY_STATUS_OPTIONS = [
+  { value: '', label: '전체' },
+  { value: 'PENDING', label: '대기' },
+  { value: 'APPROVED', label: '승인' },
+  { value: 'REJECTED', label: '반려' },
 ] as const;
 
 /** 회원구분 옵션 */
