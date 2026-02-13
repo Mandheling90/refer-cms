@@ -17,6 +17,9 @@ export interface ServiceResult<T = unknown> {
 
 export interface ApiResponse<T = unknown> {
   ServiceResult: ServiceResult<T>;
+  /** 페이지에서 편의 접근용 */
+  list?: T[];
+  TOTAL_ENTITY?: number;
 }
 
 export type ListResponse<T = unknown> = ApiResponse<T>;
