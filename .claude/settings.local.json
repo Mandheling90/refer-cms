@@ -22,7 +22,12 @@
       "Bash(node -e:*)",
       "Bash(npm run dev:*)",
       "Bash(taskkill:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(del \"C:\\\\Users\\\\USER\\\\Desktop\\\\alba\\\\refer-cms\\\\.next\\\\dev\\\\lock\")",
+      "mcp__figma__get_figma_data"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,209 +1,743 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { type ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '@/components/organisms/DataTable';
-import { CrudForm } from '@/components/organisms/CrudForm';
-import { SearchBar } from '@/components/molecules/SearchBar';
-import { ActionButtons } from '@/components/molecules/ActionButtons';
-import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
-import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { menuApi } from '@/lib/api/menu';
 import type { Menu } from '@/types/menu';
+import type { Board } from '@/types/board';
+import type { Contents } from '@/lib/api/contents';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 
-const columns: ColumnDef<Menu, unknown>[] = [
-  { accessorKey: 'MENU_CODE', header: '메뉴 코드', size: 200 },
-  { accessorKey: 'MENU_NAME', header: '메뉴 이름', size: 200 },
-  { accessorKey: 'MENU_TYPE', header: '메뉴 유형', size: 120, meta: { align: 'center' } },
-  { accessorKey: 'INSERT_USER', header: '생성자', size: 100, meta: { align: 'center' } },
-  { accessorKey: 'INSERT_DTTM', header: '생성일시', size: 140, meta: { align: 'center' } },
-  { accessorKey: 'UPDATE_USER', header: '수정자', size: 100, meta: { align: 'center' } },
-  { accessorKey: 'UPDATE_DTTM', header: '수정일시', size: 140, meta: { align: 'center' } },
-];
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-export default function MenuPage() {
-  const [data, setData] = useState<Menu[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [selectedRows, setSelectedRows] = useState<Menu[]>([]);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+type MenuType = 'BOARD' | 'LINK' | 'CONTENTS';
 
-  // Search fields
-  const [searchMenuCode, setSearchMenuCode] = useState('');
-  const [searchMenuName, setSearchMenuName] = useState('');
-  const [searchMenuType, setSearchMenuType] = useState('');
+interface AddMenuFormData {
+  LANG_SET: string;
+  MENU_NAME: string;
+  MENU_TYPE: MenuType;
+  BOARD_ID: string;
+  LINK_URL: string;
+  CONTENT_ID: string;
+  GNB_YN: string;
+  USE_YN: string;
+}
 
-  // Form fields
-  const [formData, setFormData] = useState<Partial<Menu>>({});
+const INITIAL_FORM: AddMenuFormData = {
+  LANG_SET: 'kr',
+  MENU_NAME: '',
+  MENU_TYPE: 'BOARD',
+  BOARD_ID: '',
+  LINK_URL: '',
+  CONTENT_ID: '',
+  GNB_YN: 'Y',
+  USE_YN: 'Y',
+};
 
-  const retrieveList = useCallback(async (page = currentPage, size = pageSize) => {
-    setLoading(true);
-    try {
-      const params: Record<string, unknown> = {
-        CURRENT_PAGE: page,
-        SHOWN_ENTITY: size,
-      };
-      if (searchMenuCode) params.MENU_CODE = searchMenuCode;
-      if (searchMenuName) params.MENU_NAME = searchMenuName;
-      if (searchMenuType) params.MENU_TYPE = searchMenuType;
+// ---------------------------------------------------------------------------
+// SortableMenuRow
+// ---------------------------------------------------------------------------
 
-      const res = await menuApi.list(params);
-      setData(res.list || []);
-      setTotalItems(res.TOTAL_ENTITY || 0);
-    } catch {
-      toast.error('목록 조회에 실패했습니다.');
-    } finally {
-      setLoading(false);
+function SortableMenuRow({
+  item,
+  isSelected,
+  onClick,
+}: {
+  item: Menu;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: item.MENU_ID });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const isUsed = item.USE_YN !== 'N';
+  const isGnb = item.GNB_YN === 'Y';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex items-center gap-2 px-3 py-2.5 border-b border-gray-200 cursor-pointer select-none',
+        isSelected
+          ? 'bg-[#23B7E5] text-white'
+          : isUsed
+            ? 'bg-white hover:bg-gray-50'
+            : 'bg-gray-100 text-gray-400 hover:bg-gray-150',
+      )}
+      onClick={onClick}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className={cn(
+          'cursor-grab p-0.5 shrink-0',
+          isSelected ? 'text-white/70' : 'text-gray-400',
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      <span className="flex-1 text-sm truncate">{item.MENU_NAME}</span>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {isGnb && (
+          <Badge
+            className={cn(
+              'text-[10px] px-1.5 py-0',
+              isSelected
+                ? 'bg-white/20 text-white border-white/30'
+                : 'bg-blue-100 text-blue-700 border-blue-200',
+            )}
+            variant="outline"
+          >
+            GNB
+          </Badge>
+        )}
+        {!isUsed && (
+          <Badge
+            className="text-[10px] px-1.5 py-0 bg-gray-200 text-gray-500 border-gray-300"
+            variant="outline"
+          >
+            미사용
+          </Badge>
+        )}
+        {(item.CHILD_COUNT ?? 0) > 0 && (
+          <span
+            className={cn(
+              'text-xs',
+              isSelected ? 'text-white/70' : 'text-gray-400',
+            )}
+          >
+            ({item.CHILD_COUNT})
+          </span>
+        )}
+      </div>
+
+      <ChevronRight
+        className={cn(
+          'h-4 w-4 shrink-0',
+          isSelected ? 'text-white/70' : 'text-gray-300',
+        )}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MenuColumn
+// ---------------------------------------------------------------------------
+
+function MenuColumn({
+  title,
+  items,
+  selectedId,
+  onSelect,
+  onReorder,
+  onSaveOrders,
+  onAddNew,
+}: {
+  title: string;
+  items: Menu[];
+  selectedId: string | null;
+  onSelect: (item: Menu) => void;
+  onReorder: (items: Menu[]) => void;
+  onSaveOrders: () => void;
+  onAddNew: () => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((i) => i.MENU_ID === active.id);
+      const newIndex = items.findIndex((i) => i.MENU_ID === over.id);
+      const newItems = [...items];
+      const [removed] = newItems.splice(oldIndex, 1);
+      newItems.splice(newIndex, 0, removed);
+      onReorder(newItems);
     }
-  }, [currentPage, pageSize, searchMenuCode, searchMenuName, searchMenuType]);
+  };
+
+  return (
+    <div className="flex flex-col border border-gray-300 rounded-lg bg-white min-w-[260px] flex-1">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300 bg-gray-50 rounded-t-lg">
+        <span className="text-sm font-semibold text-gray-700">
+          {title}
+          <span className="ml-1 text-gray-400 font-normal">
+            ({items.length})
+          </span>
+        </span>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto min-h-[300px] max-h-[calc(100vh-360px)]">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={items.map((i) => i.MENU_ID)}
+            strategy={verticalListSortingStrategy}
+          >
+            {items.map((item) => (
+              <SortableMenuRow
+                key={item.MENU_ID}
+                item={item}
+                isSelected={selectedId === item.MENU_ID}
+                onClick={() => onSelect(item)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+        {items.length === 0 && (
+          <div className="p-8 text-center text-gray-400 text-sm">
+            메뉴가 없습니다.
+          </div>
+        )}
+      </div>
+
+      {/* Footer buttons */}
+      <div className="flex gap-2 px-3 py-3 border-t border-gray-300">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={onSaveOrders}
+        >
+          순서 저장
+        </Button>
+        <Button
+          variant="dark"
+          size="sm"
+          className="flex-1"
+          onClick={onAddNew}
+        >
+          신규 추가
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ToggleSwitch (inline)
+// ---------------------------------------------------------------------------
+
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      className={cn(
+        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+        checked ? 'bg-[#23B7E5]' : 'bg-gray-300',
+        disabled && 'opacity-50 cursor-not-allowed',
+      )}
+      onClick={() => !disabled && onChange(!checked)}
+    >
+      <span
+        className={cn(
+          'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform',
+          checked ? 'translate-x-5' : 'translate-x-0',
+        )}
+      />
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AddMenuDialog
+// ---------------------------------------------------------------------------
+
+function AddMenuDialog({
+  open,
+  onOpenChange,
+  depth,
+  parentMenuId,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  depth: number;
+  parentMenuId?: string;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<AddMenuFormData>(INITIAL_FORM);
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [contents, setContents] = useState<Contents[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [nameError, setNameError] = useState('');
+
+  // Load board/contents lists when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    setForm(INITIAL_FORM);
+    setNameError('');
+
+    menuApi.boardList({ SHOWN_ENTITY: 9999 }).then((res) => {
+      setBoards(res.list || []);
+    }).catch(() => { /* ignore */ });
+
+    menuApi.contentsList({ SHOWN_ENTITY: 9999 }).then((res) => {
+      setContents(res.list || []);
+    }).catch(() => { /* ignore */ });
+  }, [open]);
+
+  const depthLabel = depth === 1 ? '최상위 메뉴' : '하위 메뉴';
+
+  const updateField = <K extends keyof AddMenuFormData>(
+    key: K,
+    value: AddMenuFormData[K],
+  ) => {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      // USE_YN OFF → force GNB_YN OFF
+      if (key === 'USE_YN' && value === 'N') {
+        next.GNB_YN = 'N';
+      }
+      return next;
+    });
+    if (key === 'MENU_NAME') setNameError('');
+  };
+
+  const validate = (): boolean => {
+    if (!form.MENU_NAME.trim()) {
+      setNameError('메뉴명을 입력해주세요.');
+      return false;
+    }
+    if (form.MENU_NAME.length > 20) {
+      setNameError('메뉴명은 최대 20자까지 입력 가능합니다.');
+      return false;
+    }
+    return true;
+  };
 
   const handleSave = async () => {
-    if (!formData.MENU_CODE?.trim()) {
-      toast.error('메뉴 코드는 필수 입력입니다.');
-      return;
-    }
-    if (!formData.MENU_NAME?.trim()) {
-      toast.error('메뉴 이름은 필수 입력입니다.');
-      return;
-    }
+    if (!validate()) return;
+    setSaving(true);
     try {
-      const res = await menuApi.save(formData);
+      const payload: Partial<Menu> = {
+        MENU_NAME: form.MENU_NAME,
+        MENU_TYPE: form.MENU_TYPE,
+        LANG_SET: form.LANG_SET,
+        GNB_YN: form.GNB_YN,
+        USE_YN: form.USE_YN,
+      };
+      if (parentMenuId) {
+        payload.PARENT_MENU_ID = parentMenuId;
+      }
+      if (form.MENU_TYPE === 'BOARD') {
+        payload.BOARD_ID = form.BOARD_ID;
+      } else if (form.MENU_TYPE === 'LINK') {
+        payload.LINK_URL = form.LINK_URL;
+      } else if (form.MENU_TYPE === 'CONTENTS') {
+        payload.CONTENT_ID = form.CONTENT_ID;
+      }
+
+      const res = await menuApi.cmsSave(payload);
       if (res.ServiceResult.IS_SUCCESS) {
         toast.success(res.ServiceResult.MESSAGE_TEXT || '저장되었습니다.');
-        setFormData({});
-        retrieveList();
+        onOpenChange(false);
+        onSaved();
       } else {
         toast.error(res.ServiceResult.MESSAGE_TEXT || '저장에 실패했습니다.');
       }
     } catch {
       toast.error('저장에 실패했습니다.');
+    } finally {
+      setSaving(false);
     }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const res = await menuApi.remove(selectedRows);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success(res.ServiceResult.MESSAGE_TEXT || '삭제되었습니다.');
-        setSelectedRows([]);
-        retrieveList();
-      } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '삭제에 실패했습니다.');
-      }
-    } catch {
-      toast.error('삭제에 실패했습니다.');
-    }
-    setConfirmOpen(false);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    retrieveList(page, pageSize);
-  };
-
-  const handlePageSizeChange = (size: number) => {
-    setPageSize(size);
-    setCurrentPage(1);
-    retrieveList(1, size);
   };
 
   return (
-    <>
-      <ListPageTemplate
-        title="메뉴 관리"
-        searchSection={
-          <SearchBar
-            fields={[
-              { name: 'MENU_CODE', label: '메뉴 코드', value: searchMenuCode, onChange: setSearchMenuCode },
-              { name: 'MENU_NAME', label: '메뉴 이름', value: searchMenuName, onChange: setSearchMenuName },
-              { name: 'MENU_TYPE', label: '메뉴 유형', value: searchMenuType, onChange: setSearchMenuType },
-            ]}
-            onSearch={() => { setCurrentPage(1); retrieveList(1, pageSize); }}
-          />
-        }
-        listHeaderActions={
-          <ActionButtons
-            onDelete={() => {
-              if (!selectedRows.length) {
-                toast.error('삭제할 메뉴를 선택하세요.');
-                return;
-              }
-              setConfirmOpen(true);
-            }}
-            showAdd={false}
-            showSave={false}
-          />
-        }
-        listContent={
-          <DataTable
-            columns={columns}
-            data={data}
-            loading={loading}
-            totalItems={totalItems}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            totalPages={Math.ceil(totalItems / pageSize) || 1}
-            enableSelection
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            onRowClick={(row) => setFormData(row)}
-            onSelectionChange={setSelectedRows}
-          />
-        }
-        formSection={
-          <CrudForm
-            title="메뉴 정보 추가/수정"
-            onAdd={() => setFormData({})}
-            onSave={handleSave}
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>메뉴 ID</Label>
-                <Input value={formData.MENU_ID || ''} readOnly />
-              </div>
-              <div className="space-y-1.5">
-                <Label>메뉴 유형</Label>
-                <Input
-                  value={formData.MENU_TYPE || ''}
-                  onChange={(e) => setFormData({ ...formData, MENU_TYPE: e.target.value })}
-                  placeholder="메뉴 유형"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>메뉴 코드 <span className="text-destructive">*</span></Label>
-                <Input
-                  value={formData.MENU_CODE || ''}
-                  onChange={(e) => setFormData({ ...formData, MENU_CODE: e.target.value })}
-                  placeholder="메뉴 코드"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>메뉴 이름 <span className="text-destructive">*</span></Label>
-                <Input
-                  value={formData.MENU_NAME || ''}
-                  onChange={(e) => setFormData({ ...formData, MENU_NAME: e.target.value })}
-                  placeholder="메뉴 이름"
-                />
-              </div>
-            </div>
-          </CrudForm>
-        }
-      />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>{depthLabel} 추가</DialogTitle>
+        </DialogHeader>
+        <DialogBody className="space-y-4">
+          {/* 언어셋 */}
+          <div className="space-y-1.5">
+            <Label>언어셋</Label>
+            <Input value="kr" disabled />
+          </div>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="메뉴 삭제"
-        description="선택된 메뉴를 삭제하시겠습니까?"
-        onConfirm={handleDelete}
-        destructive
+          {/* 메뉴명 */}
+          <div className="space-y-1.5">
+            <Label>
+              메뉴명 <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              value={form.MENU_NAME}
+              onChange={(e) => updateField('MENU_NAME', e.target.value)}
+              placeholder="메뉴명을 입력해주세요"
+              maxLength={20}
+              aria-invalid={!!nameError}
+            />
+            {nameError && (
+              <p className="text-destructive text-xs">{nameError}</p>
+            )}
+          </div>
+
+          {/* 메뉴 타입 */}
+          <div className="space-y-1.5">
+            <Label>메뉴 타입</Label>
+            <div className="flex gap-4">
+              {([
+                ['BOARD', '게시판(목록)'],
+                ['LINK', '링크'],
+                ['CONTENTS', '콘텐츠'],
+              ] as [MenuType, string][]).map(([value, label]) => (
+                <label key={value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                  <input
+                    type="radio"
+                    name="menuType"
+                    value={value}
+                    checked={form.MENU_TYPE === value}
+                    onChange={() => updateField('MENU_TYPE', value)}
+                    className="accent-[#23B7E5]"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* 조건부 필드 */}
+          {form.MENU_TYPE === 'BOARD' && (
+            <div className="space-y-1.5">
+              <Label>연결할 게시판</Label>
+              <Select
+                value={form.BOARD_ID}
+                onValueChange={(v) => updateField('BOARD_ID', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="게시판을 선택해주세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  {boards.map((b) => (
+                    <SelectItem key={b.BOARD_ID} value={b.BOARD_ID}>
+                      {b.BOARD_NAME}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {form.MENU_TYPE === 'LINK' && (
+            <div className="space-y-1.5">
+              <Label>연결할 링크 주소</Label>
+              <Input
+                value={form.LINK_URL}
+                onChange={(e) => updateField('LINK_URL', e.target.value)}
+                placeholder="https://"
+              />
+            </div>
+          )}
+
+          {form.MENU_TYPE === 'CONTENTS' && (
+            <div className="space-y-1.5">
+              <Label>연결할 콘텐츠</Label>
+              <Select
+                value={form.CONTENT_ID}
+                onValueChange={(v) => updateField('CONTENT_ID', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="콘텐츠를 선택해주세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contents.map((c) => (
+                    <SelectItem key={c.CONTENTS_ID} value={c.CONTENTS_ID}>
+                      {c.CONTENTS_NAME}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* GNB 노출여부 */}
+          <div className="flex items-center justify-between">
+            <Label>GNB 노출여부</Label>
+            <ToggleSwitch
+              checked={form.GNB_YN === 'Y'}
+              onChange={(v) => updateField('GNB_YN', v ? 'Y' : 'N')}
+              disabled={form.USE_YN === 'N'}
+            />
+          </div>
+
+          {/* 사용여부 */}
+          <div className="flex items-center justify-between">
+            <Label>메뉴 사용여부</Label>
+            <ToggleSwitch
+              checked={form.USE_YN === 'Y'}
+              onChange={(v) => updateField('USE_YN', v ? 'Y' : 'N')}
+            />
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            취소
+          </Button>
+          <Button variant="dark" onClick={handleSave} disabled={saving}>
+            저장
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mock data (TODO: API 연동 완료 후 제거)
+// ---------------------------------------------------------------------------
+
+const MOCK_1DEPTH: Menu[] = [
+  { MENU_ID: 'M001', MENU_CODE: 'HOME', MENU_NAME: '홈', MENU_TYPE: 'LINK', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 3 },
+  { MENU_ID: 'M002', MENU_CODE: 'ABOUT', MENU_NAME: '학교소개', MENU_TYPE: 'CONTENTS', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 5 },
+  { MENU_ID: 'M003', MENU_CODE: 'ADMISSION', MENU_NAME: '입학안내', MENU_TYPE: 'BOARD', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 4 },
+  { MENU_ID: 'M004', MENU_CODE: 'ACADEMICS', MENU_NAME: '학사정보', MENU_TYPE: 'BOARD', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 6 },
+  { MENU_ID: 'M005', MENU_CODE: 'COMMUNITY', MENU_NAME: '커뮤니티', MENU_TYPE: 'BOARD', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 3 },
+  { MENU_ID: 'M006', MENU_CODE: 'ARCHIVE', MENU_NAME: '자료실', MENU_TYPE: 'BOARD', GNB_YN: 'N', USE_YN: 'N', CHILD_COUNT: 0 },
+];
+
+const MOCK_2DEPTH: Record<string, Menu[]> = {
+  M001: [
+    { MENU_ID: 'M101', MENU_CODE: 'MAIN_BANNER', MENU_NAME: '메인 배너 관리', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M001', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M102', MENU_CODE: 'POPUP', MENU_NAME: '팝업 관리', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M001', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M103', MENU_CODE: 'QUICK_MENU', MENU_NAME: '퀵메뉴', MENU_TYPE: 'LINK', PARENT_MENU_ID: 'M001', GNB_YN: 'N', USE_YN: 'Y', CHILD_COUNT: 0 },
+  ],
+  M002: [
+    { MENU_ID: 'M201', MENU_CODE: 'GREETING', MENU_NAME: '인사말', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M202', MENU_CODE: 'HISTORY', MENU_NAME: '연혁', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M203', MENU_CODE: 'ORGANIZATION', MENU_NAME: '조직도', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M204', MENU_CODE: 'LOCATION', MENU_NAME: '오시는 길', MENU_TYPE: 'LINK', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M205', MENU_CODE: 'CI', MENU_NAME: 'CI 소개', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'N', USE_YN: 'N', CHILD_COUNT: 0 },
+  ],
+  M003: [
+    { MENU_ID: 'M301', MENU_CODE: 'GUIDE', MENU_NAME: '모집요강', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M003', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M302', MENU_CODE: 'SCHEDULE', MENU_NAME: '입학일정', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M003', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M303', MENU_CODE: 'FAQ', MENU_NAME: '자주 묻는 질문', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M003', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M304', MENU_CODE: 'CONSULT', MENU_NAME: '입학상담', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M003', GNB_YN: 'N', USE_YN: 'Y', CHILD_COUNT: 0 },
+  ],
+  M004: [
+    { MENU_ID: 'M401', MENU_CODE: 'CURRICULUM', MENU_NAME: '교육과정', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M402', MENU_CODE: 'CALENDAR', MENU_NAME: '학사일정', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M403', MENU_CODE: 'PROFESSOR', MENU_NAME: '교수진 소개', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M404', MENU_CODE: 'SCHOLARSHIP', MENU_NAME: '장학제도', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M405', MENU_CODE: 'REGULATION', MENU_NAME: '학칙/규정', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M004', GNB_YN: 'N', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M406', MENU_CODE: 'FORM_DOWNLOAD', MENU_NAME: '서식 다운로드', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M004', GNB_YN: 'N', USE_YN: 'N', CHILD_COUNT: 0 },
+  ],
+  M005: [
+    { MENU_ID: 'M501', MENU_CODE: 'NOTICE', MENU_NAME: '공지사항', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M005', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M502', MENU_CODE: 'NEWS', MENU_NAME: '학교 소식', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M005', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    { MENU_ID: 'M503', MENU_CODE: 'GALLERY', MENU_NAME: '갤러리', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M005', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// MenuPage (main)
+// ---------------------------------------------------------------------------
+
+export default function MenuPage() {
+  const [items1, setItems1] = useState<Menu[]>([]);
+  const [items2, setItems2] = useState<Menu[]>([]);
+
+  const [selected1, setSelected1] = useState<Menu | null>(null);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogDepth, setDialogDepth] = useState(1);
+  const [dialogParentId, setDialogParentId] = useState<string | undefined>();
+
+  // Load 1depth on mount
+  const load1depth = useCallback(async () => {
+    try {
+      const res = await menuApi.list1depth({ SHOWN_ENTITY: 9999 });
+      if (res.list && res.list.length > 0) {
+        setItems1(res.list);
+      } else {
+        setItems1(MOCK_1DEPTH);
+      }
+    } catch {
+      setItems1(MOCK_1DEPTH);
+    }
+  }, []);
+
+  useEffect(() => {
+    load1depth();
+  }, [load1depth]);
+
+  // Load 2depth when 1depth selected
+  const load2depth = useCallback(async (parentId: string) => {
+    try {
+      const res = await menuApi.list2depth({
+        PARENT_MENU_ID: parentId,
+        SHOWN_ENTITY: 9999,
+      });
+      if (res.list && res.list.length > 0) {
+        setItems2(res.list);
+      } else {
+        setItems2(MOCK_2DEPTH[parentId] || []);
+      }
+    } catch {
+      setItems2(MOCK_2DEPTH[parentId] || []);
+    }
+  }, []);
+
+  const handleSelect1 = (item: Menu) => {
+    setSelected1(item);
+    load2depth(item.MENU_ID);
+  };
+
+  // Save orders
+  const handleSaveOrders = async (items: Menu[]) => {
+    const list = items.map((m, idx) => ({
+      MENU_ID: m.MENU_ID,
+      SORT_ORDER: idx + 1,
+    }));
+    try {
+      const res = await menuApi.saveOrders(list);
+      if (res.ServiceResult.IS_SUCCESS) {
+        toast.success('순서가 저장되었습니다.');
+      } else {
+        toast.error(res.ServiceResult.MESSAGE_TEXT || '순서 저장에 실패했습니다.');
+      }
+    } catch {
+      toast.error('순서 저장에 실패했습니다.');
+    }
+  };
+
+  // Open add dialog for specific depth
+  const openAddDialog = (depth: number) => {
+    if (depth === 2 && !selected1) {
+      toast.error('최상위 메뉴를 먼저 선택해주세요.');
+      return;
+    }
+    setDialogDepth(depth);
+    setDialogParentId(depth === 1 ? undefined : selected1?.MENU_ID);
+    setDialogOpen(true);
+  };
+
+  // Refresh after save
+  const handleDialogSaved = () => {
+    if (dialogDepth === 1) {
+      load1depth();
+    } else if (dialogDepth === 2 && selected1) {
+      load2depth(selected1.MENU_ID);
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      {/* Page header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">메뉴 관리</h1>
+        <p className="text-sm text-gray-500 mt-1">국문</p>
+      </div>
+
+      {/* Guide text */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+        <p className="text-sm text-blue-700">
+          각 항목의 아이콘을 드래그 &amp; 드롭 하시면 순서를 변경할 수 있습니다.
+        </p>
+      </div>
+
+      {/* 2-column layout */}
+      <div className="flex gap-4">
+        {/* 최상위 메뉴 */}
+        <MenuColumn
+          title="최상위 메뉴"
+          items={items1}
+          selectedId={selected1?.MENU_ID ?? null}
+          onSelect={handleSelect1}
+          onReorder={setItems1}
+          onSaveOrders={() => handleSaveOrders(items1)}
+          onAddNew={() => openAddDialog(1)}
+        />
+
+        {/* 하위 메뉴 */}
+        <MenuColumn
+          title="하위 메뉴"
+          items={items2}
+          selectedId={null}
+          onSelect={() => {}}
+          onReorder={setItems2}
+          onSaveOrders={() => handleSaveOrders(items2)}
+          onAddNew={() => openAddDialog(2)}
+        />
+      </div>
+
+      {/* Add menu dialog */}
+      <AddMenuDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        depth={dialogDepth}
+        parentMenuId={dialogParentId}
+        onSaved={handleDialogSaved}
       />
-    </>
+    </div>
   );
 }

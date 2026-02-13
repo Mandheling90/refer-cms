@@ -1,6 +1,8 @@
 import apiClient from './client';
 import type { Menu } from '@/types/menu';
+import type { Board } from '@/types/board';
 import type { ApiResponse, PaginationParams } from '@/types/api';
+import type { Contents } from './contents';
 
 export const menuApi = {
   list: (params?: PaginationParams & Partial<Menu>) =>
@@ -29,4 +31,13 @@ export const menuApi = {
     apiClient.post<ApiResponse>('/cms/menu/saveOrders.ajax', {
       LIST: JSON.stringify(list),
     }),
+
+  cmsSave: (data: Partial<Menu>) =>
+    apiClient.post<ApiResponse>('/cms/menu/save.ajax', data),
+
+  boardList: (params?: PaginationParams & { BOARD_NAME?: string }) =>
+    apiClient.get<ApiResponse<Board>>('/board/configList.ajax', params),
+
+  contentsList: (params?: PaginationParams & { CONTENTS_NAME?: string }) =>
+    apiClient.get<ApiResponse<Contents>>('/contents/list.ajax', params),
 };

@@ -9,6 +9,16 @@ export interface Menu extends AuditFields {
   PROG_PATH?: string;
   SORT_ORDER?: number;
   PERMISSION_LEVEL?: string;
+  PARENT_MENU_ID?: string;
+  LANG_SET?: string;
+  LINK_URL?: string;
+  BOARD_ID?: string;
+  BOARD_NAME?: string;
+  CONTENT_ID?: string;
+  CONTENT_NAME?: string;
+  GNB_YN?: string;
+  USE_YN?: string;
+  CHILD_COUNT?: number;
 }
 
 export interface MenuTreeItem {
