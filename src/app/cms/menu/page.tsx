@@ -17,7 +17,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ChevronRight } from 'lucide-react';
+import { GripVertical, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -30,13 +30,15 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from '@/components/ui/command';
 import { menuApi } from '@/lib/api/menu';
 import type { Menu } from '@/types/menu';
 import type { Board } from '@/types/board';
@@ -85,8 +87,9 @@ function SortableMenuRow({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: item.MENU_ID });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: item.MENU_ID,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -106,17 +109,14 @@ function SortableMenuRow({
           ? 'bg-[#23B7E5] text-white'
           : isUsed
             ? 'bg-white hover:bg-gray-50'
-            : 'bg-gray-100 text-gray-400 hover:bg-gray-150',
+            : 'bg-gray-100 text-gray-400 hover:bg-gray-150'
       )}
       onClick={onClick}
     >
       <button
         {...attributes}
         {...listeners}
-        className={cn(
-          'cursor-grab p-0.5 shrink-0',
-          isSelected ? 'text-white/70' : 'text-gray-400',
-        )}
+        className={cn('cursor-grab p-0.5 shrink-0', isSelected ? 'text-white/70' : 'text-gray-400')}
         onClick={(e) => e.stopPropagation()}
       >
         <GripVertical className="h-4 w-4" />
@@ -131,7 +131,7 @@ function SortableMenuRow({
               'text-[10px] px-1.5 py-0',
               isSelected
                 ? 'bg-white/20 text-white border-white/30'
-                : 'bg-blue-100 text-blue-700 border-blue-200',
+                : 'bg-blue-100 text-blue-700 border-blue-200'
             )}
             variant="outline"
           >
@@ -147,22 +147,14 @@ function SortableMenuRow({
           </Badge>
         )}
         {(item.CHILD_COUNT ?? 0) > 0 && (
-          <span
-            className={cn(
-              'text-xs',
-              isSelected ? 'text-white/70' : 'text-gray-400',
-            )}
-          >
+          <span className={cn('text-xs', isSelected ? 'text-white/70' : 'text-gray-400')}>
             ({item.CHILD_COUNT})
           </span>
         )}
       </div>
 
       <ChevronRight
-        className={cn(
-          'h-4 w-4 shrink-0',
-          isSelected ? 'text-white/70' : 'text-gray-300',
-        )}
+        className={cn('h-4 w-4 shrink-0', isSelected ? 'text-white/70' : 'text-gray-300')}
       />
     </div>
   );
@@ -193,7 +185,7 @@ function MenuColumn({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -214,19 +206,13 @@ function MenuColumn({
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300 bg-gray-50 rounded-t-lg">
         <span className="text-sm font-semibold text-gray-700">
           {title}
-          <span className="ml-1 text-gray-400 font-normal">
-            ({items.length})
-          </span>
+          <span className="ml-1 text-gray-400 font-normal">({items.length})</span>
         </span>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto min-h-[300px] max-h-[calc(100vh-360px)]">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
             items={items.map((i) => i.MENU_ID)}
             strategy={verticalListSortingStrategy}
@@ -242,28 +228,16 @@ function MenuColumn({
           </SortableContext>
         </DndContext>
         {items.length === 0 && (
-          <div className="p-8 text-center text-gray-400 text-sm">
-            메뉴가 없습니다.
-          </div>
+          <div className="p-8 text-center text-gray-400 text-sm">메뉴가 없습니다.</div>
         )}
       </div>
 
       {/* Footer buttons */}
       <div className="flex gap-2 px-3 py-3 border-t border-gray-300">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={onSaveOrders}
-        >
+        <Button variant="outline" size="sm" className="flex-1" onClick={onSaveOrders}>
           순서 저장
         </Button>
-        <Button
-          variant="dark"
-          size="sm"
-          className="flex-1"
-          onClick={onAddNew}
-        >
+        <Button variant="dark" size="sm" className="flex-1" onClick={onAddNew}>
           신규 추가
         </Button>
       </div>
@@ -293,17 +267,87 @@ function ToggleSwitch({
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
         checked ? 'bg-[#23B7E5]' : 'bg-gray-300',
-        disabled && 'opacity-50 cursor-not-allowed',
+        disabled && 'opacity-50 cursor-not-allowed'
       )}
       onClick={() => !disabled && onChange(!checked)}
     >
       <span
         className={cn(
           'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform',
-          checked ? 'translate-x-5' : 'translate-x-0',
+          checked ? 'translate-x-5' : 'translate-x-0'
         )}
       />
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SearchableSelect (Figma: 검색 가능한 드롭다운)
+// ---------------------------------------------------------------------------
+
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedLabel = options.find((o) => o.value === value)?.label;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            'flex w-full items-center justify-between rounded-md border border-[#ccc] bg-white px-[15px] py-2 text-sm h-9 outline-none transition-colors',
+            selectedLabel ? 'text-black' : 'text-[#6F6F6F]'
+          )}
+        >
+          <span className="truncate">{selectedLabel || placeholder}</span>
+          {open ? (
+            <ChevronUp className="size-3.5 shrink-0 text-black" />
+          ) : (
+            <ChevronDown className="size-3.5 shrink-0 text-black" />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0 rounded-md border border-[#ccc] shadow-[5px_5px_9px_0px_rgba(0,0,0,0.35)]"
+        align="start"
+        sideOffset={-1}
+      >
+        <Command>
+          <CommandInput placeholder={placeholder} />
+          <CommandList>
+            <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+            <CommandGroup>
+              {options.map((opt) => (
+                <CommandItem
+                  key={opt.value}
+                  value={opt.label}
+                  onSelect={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    'px-[15px] py-2 text-sm cursor-pointer rounded-none',
+                    value === opt.value && 'bg-accent'
+                  )}
+                >
+                  {opt.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -336,21 +380,28 @@ function AddMenuDialog({
     setForm(INITIAL_FORM);
     setNameError('');
 
-    menuApi.boardList({ SHOWN_ENTITY: 9999 }).then((res) => {
-      setBoards(res.list || []);
-    }).catch(() => { /* ignore */ });
+    menuApi
+      .boardList({ SHOWN_ENTITY: 9999 })
+      .then((res) => {
+        setBoards(res.list && res.list.length > 0 ? res.list : MOCK_BOARDS);
+      })
+      .catch(() => {
+        setBoards(MOCK_BOARDS);
+      });
 
-    menuApi.contentsList({ SHOWN_ENTITY: 9999 }).then((res) => {
-      setContents(res.list || []);
-    }).catch(() => { /* ignore */ });
+    menuApi
+      .contentsList({ SHOWN_ENTITY: 9999 })
+      .then((res) => {
+        setContents(res.list && res.list.length > 0 ? res.list : MOCK_CONTENTS);
+      })
+      .catch(() => {
+        setContents(MOCK_CONTENTS);
+      });
   }, [open]);
 
   const depthLabel = depth === 1 ? '최상위 메뉴' : '하위 메뉴';
 
-  const updateField = <K extends keyof AddMenuFormData>(
-    key: K,
-    value: AddMenuFormData[K],
-  ) => {
+  const updateField = <K extends keyof AddMenuFormData>(key: K, value: AddMenuFormData[K]) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       // USE_YN OFF → force GNB_YN OFF
@@ -436,29 +487,35 @@ function AddMenuDialog({
               maxLength={20}
               aria-invalid={!!nameError}
             />
-            {nameError && (
-              <p className="text-destructive text-xs">{nameError}</p>
-            )}
+            {nameError && <p className="text-destructive text-xs">{nameError}</p>}
           </div>
 
           {/* 메뉴 타입 */}
           <div className="space-y-1.5">
             <Label>메뉴 타입</Label>
             <div className="flex gap-4">
-              {([
-                ['BOARD', '게시판(목록)'],
-                ['LINK', '링크'],
-                ['CONTENTS', '콘텐츠'],
-              ] as [MenuType, string][]).map(([value, label]) => (
-                <label key={value} className="flex items-center gap-1.5 cursor-pointer text-sm">
-                  <input
-                    type="radio"
-                    name="menuType"
-                    value={value}
-                    checked={form.MENU_TYPE === value}
-                    onChange={() => updateField('MENU_TYPE', value)}
-                    className="accent-[#23B7E5]"
-                  />
+              {(
+                [
+                  ['BOARD', '게시판(목록)'],
+                  ['LINK', '링크'],
+                  ['CONTENTS', '콘텐츠'],
+                ] as [MenuType, string][]
+              ).map(([value, label]) => (
+                <label
+                  key={value}
+                  className="flex items-center gap-1.5 cursor-pointer text-sm"
+                  onClick={() => updateField('MENU_TYPE', value)}
+                >
+                  <span
+                    className={cn(
+                      'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
+                      form.MENU_TYPE === value ? 'border-primary' : 'border-gray-400'
+                    )}
+                  >
+                    {form.MENU_TYPE === value && (
+                      <span className="size-2 rounded-full bg-primary" />
+                    )}
+                  </span>
                   {label}
                 </label>
               ))}
@@ -468,22 +525,18 @@ function AddMenuDialog({
           {/* 조건부 필드 */}
           {form.MENU_TYPE === 'BOARD' && (
             <div className="space-y-1.5">
-              <Label>연결할 게시판</Label>
-              <Select
+              <Label>
+                연결할 게시판 <span className="text-destructive">*</span>
+              </Label>
+              <SearchableSelect
                 value={form.BOARD_ID}
-                onValueChange={(v) => updateField('BOARD_ID', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="게시판을 선택해주세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {boards.map((b) => (
-                    <SelectItem key={b.BOARD_ID} value={b.BOARD_ID}>
-                      {b.BOARD_NAME}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(v) => updateField('BOARD_ID', v)}
+                options={boards.map((b) => ({
+                  value: b.BOARD_ID,
+                  label: b.BOARD_NAME,
+                }))}
+                placeholder="게시판 이름을 검색하세요."
+              />
             </div>
           )}
 
@@ -500,22 +553,18 @@ function AddMenuDialog({
 
           {form.MENU_TYPE === 'CONTENTS' && (
             <div className="space-y-1.5">
-              <Label>연결할 콘텐츠</Label>
-              <Select
+              <Label>
+                연결할 콘텐츠 <span className="text-destructive">*</span>
+              </Label>
+              <SearchableSelect
                 value={form.CONTENT_ID}
-                onValueChange={(v) => updateField('CONTENT_ID', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="콘텐츠를 선택해주세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contents.map((c) => (
-                    <SelectItem key={c.CONTENTS_ID} value={c.CONTENTS_ID}>
-                      {c.CONTENTS_NAME}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(v) => updateField('CONTENT_ID', v)}
+                options={contents.map((c) => ({
+                  value: c.CONTENTS_ID,
+                  label: c.CONTENTS_NAME,
+                }))}
+                placeholder="콘텐츠 이름을 검색하세요."
+              />
             </div>
           )}
 
@@ -556,47 +605,301 @@ function AddMenuDialog({
 // ---------------------------------------------------------------------------
 
 const MOCK_1DEPTH: Menu[] = [
-  { MENU_ID: 'M001', MENU_CODE: 'HOME', MENU_NAME: '홈', MENU_TYPE: 'LINK', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 3 },
-  { MENU_ID: 'M002', MENU_CODE: 'ABOUT', MENU_NAME: '학교소개', MENU_TYPE: 'CONTENTS', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 5 },
-  { MENU_ID: 'M003', MENU_CODE: 'ADMISSION', MENU_NAME: '입학안내', MENU_TYPE: 'BOARD', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 4 },
-  { MENU_ID: 'M004', MENU_CODE: 'ACADEMICS', MENU_NAME: '학사정보', MENU_TYPE: 'BOARD', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 6 },
-  { MENU_ID: 'M005', MENU_CODE: 'COMMUNITY', MENU_NAME: '커뮤니티', MENU_TYPE: 'BOARD', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 3 },
-  { MENU_ID: 'M006', MENU_CODE: 'ARCHIVE', MENU_NAME: '자료실', MENU_TYPE: 'BOARD', GNB_YN: 'N', USE_YN: 'N', CHILD_COUNT: 0 },
+  {
+    MENU_ID: 'M001',
+    MENU_CODE: 'HOME',
+    MENU_NAME: '홈',
+    MENU_TYPE: 'LINK',
+    GNB_YN: 'Y',
+    USE_YN: 'Y',
+    CHILD_COUNT: 3,
+  },
+  {
+    MENU_ID: 'M002',
+    MENU_CODE: 'ABOUT',
+    MENU_NAME: '학교소개',
+    MENU_TYPE: 'CONTENTS',
+    GNB_YN: 'Y',
+    USE_YN: 'Y',
+    CHILD_COUNT: 5,
+  },
+  {
+    MENU_ID: 'M003',
+    MENU_CODE: 'ADMISSION',
+    MENU_NAME: '입학안내',
+    MENU_TYPE: 'BOARD',
+    GNB_YN: 'Y',
+    USE_YN: 'Y',
+    CHILD_COUNT: 4,
+  },
+  {
+    MENU_ID: 'M004',
+    MENU_CODE: 'ACADEMICS',
+    MENU_NAME: '학사정보',
+    MENU_TYPE: 'BOARD',
+    GNB_YN: 'Y',
+    USE_YN: 'Y',
+    CHILD_COUNT: 6,
+  },
+  {
+    MENU_ID: 'M005',
+    MENU_CODE: 'COMMUNITY',
+    MENU_NAME: '커뮤니티',
+    MENU_TYPE: 'BOARD',
+    GNB_YN: 'Y',
+    USE_YN: 'Y',
+    CHILD_COUNT: 3,
+  },
+  {
+    MENU_ID: 'M006',
+    MENU_CODE: 'ARCHIVE',
+    MENU_NAME: '자료실',
+    MENU_TYPE: 'BOARD',
+    GNB_YN: 'N',
+    USE_YN: 'N',
+    CHILD_COUNT: 0,
+  },
 ];
 
 const MOCK_2DEPTH: Record<string, Menu[]> = {
   M001: [
-    { MENU_ID: 'M101', MENU_CODE: 'MAIN_BANNER', MENU_NAME: '메인 배너 관리', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M001', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M102', MENU_CODE: 'POPUP', MENU_NAME: '팝업 관리', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M001', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M103', MENU_CODE: 'QUICK_MENU', MENU_NAME: '퀵메뉴', MENU_TYPE: 'LINK', PARENT_MENU_ID: 'M001', GNB_YN: 'N', USE_YN: 'Y', CHILD_COUNT: 0 },
+    {
+      MENU_ID: 'M101',
+      MENU_CODE: 'MAIN_BANNER',
+      MENU_NAME: '메인 배너 관리',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M001',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M102',
+      MENU_CODE: 'POPUP',
+      MENU_NAME: '팝업 관리',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M001',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M103',
+      MENU_CODE: 'QUICK_MENU',
+      MENU_NAME: '퀵메뉴',
+      MENU_TYPE: 'LINK',
+      PARENT_MENU_ID: 'M001',
+      GNB_YN: 'N',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
   ],
   M002: [
-    { MENU_ID: 'M201', MENU_CODE: 'GREETING', MENU_NAME: '인사말', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M202', MENU_CODE: 'HISTORY', MENU_NAME: '연혁', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M203', MENU_CODE: 'ORGANIZATION', MENU_NAME: '조직도', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M204', MENU_CODE: 'LOCATION', MENU_NAME: '오시는 길', MENU_TYPE: 'LINK', PARENT_MENU_ID: 'M002', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M205', MENU_CODE: 'CI', MENU_NAME: 'CI 소개', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M002', GNB_YN: 'N', USE_YN: 'N', CHILD_COUNT: 0 },
+    {
+      MENU_ID: 'M201',
+      MENU_CODE: 'GREETING',
+      MENU_NAME: '인사말',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M002',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M202',
+      MENU_CODE: 'HISTORY',
+      MENU_NAME: '연혁',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M002',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M203',
+      MENU_CODE: 'ORGANIZATION',
+      MENU_NAME: '조직도',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M002',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M204',
+      MENU_CODE: 'LOCATION',
+      MENU_NAME: '오시는 길',
+      MENU_TYPE: 'LINK',
+      PARENT_MENU_ID: 'M002',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M205',
+      MENU_CODE: 'CI',
+      MENU_NAME: 'CI 소개',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M002',
+      GNB_YN: 'N',
+      USE_YN: 'N',
+      CHILD_COUNT: 0,
+    },
   ],
   M003: [
-    { MENU_ID: 'M301', MENU_CODE: 'GUIDE', MENU_NAME: '모집요강', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M003', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M302', MENU_CODE: 'SCHEDULE', MENU_NAME: '입학일정', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M003', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M303', MENU_CODE: 'FAQ', MENU_NAME: '자주 묻는 질문', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M003', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M304', MENU_CODE: 'CONSULT', MENU_NAME: '입학상담', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M003', GNB_YN: 'N', USE_YN: 'Y', CHILD_COUNT: 0 },
+    {
+      MENU_ID: 'M301',
+      MENU_CODE: 'GUIDE',
+      MENU_NAME: '모집요강',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M003',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M302',
+      MENU_CODE: 'SCHEDULE',
+      MENU_NAME: '입학일정',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M003',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M303',
+      MENU_CODE: 'FAQ',
+      MENU_NAME: '자주 묻는 질문',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M003',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M304',
+      MENU_CODE: 'CONSULT',
+      MENU_NAME: '입학상담',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M003',
+      GNB_YN: 'N',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
   ],
   M004: [
-    { MENU_ID: 'M401', MENU_CODE: 'CURRICULUM', MENU_NAME: '교육과정', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M402', MENU_CODE: 'CALENDAR', MENU_NAME: '학사일정', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M403', MENU_CODE: 'PROFESSOR', MENU_NAME: '교수진 소개', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M404', MENU_CODE: 'SCHOLARSHIP', MENU_NAME: '장학제도', MENU_TYPE: 'CONTENTS', PARENT_MENU_ID: 'M004', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M405', MENU_CODE: 'REGULATION', MENU_NAME: '학칙/규정', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M004', GNB_YN: 'N', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M406', MENU_CODE: 'FORM_DOWNLOAD', MENU_NAME: '서식 다운로드', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M004', GNB_YN: 'N', USE_YN: 'N', CHILD_COUNT: 0 },
+    {
+      MENU_ID: 'M401',
+      MENU_CODE: 'CURRICULUM',
+      MENU_NAME: '교육과정',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M004',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M402',
+      MENU_CODE: 'CALENDAR',
+      MENU_NAME: '학사일정',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M004',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M403',
+      MENU_CODE: 'PROFESSOR',
+      MENU_NAME: '교수진 소개',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M004',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M404',
+      MENU_CODE: 'SCHOLARSHIP',
+      MENU_NAME: '장학제도',
+      MENU_TYPE: 'CONTENTS',
+      PARENT_MENU_ID: 'M004',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M405',
+      MENU_CODE: 'REGULATION',
+      MENU_NAME: '학칙/규정',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M004',
+      GNB_YN: 'N',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M406',
+      MENU_CODE: 'FORM_DOWNLOAD',
+      MENU_NAME: '서식 다운로드',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M004',
+      GNB_YN: 'N',
+      USE_YN: 'N',
+      CHILD_COUNT: 0,
+    },
   ],
   M005: [
-    { MENU_ID: 'M501', MENU_CODE: 'NOTICE', MENU_NAME: '공지사항', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M005', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M502', MENU_CODE: 'NEWS', MENU_NAME: '학교 소식', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M005', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
-    { MENU_ID: 'M503', MENU_CODE: 'GALLERY', MENU_NAME: '갤러리', MENU_TYPE: 'BOARD', PARENT_MENU_ID: 'M005', GNB_YN: 'Y', USE_YN: 'Y', CHILD_COUNT: 0 },
+    {
+      MENU_ID: 'M501',
+      MENU_CODE: 'NOTICE',
+      MENU_NAME: '공지사항',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M005',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M502',
+      MENU_CODE: 'NEWS',
+      MENU_NAME: '학교 소식',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M005',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
+    {
+      MENU_ID: 'M503',
+      MENU_CODE: 'GALLERY',
+      MENU_NAME: '갤러리',
+      MENU_TYPE: 'BOARD',
+      PARENT_MENU_ID: 'M005',
+      GNB_YN: 'Y',
+      USE_YN: 'Y',
+      CHILD_COUNT: 0,
+    },
   ],
 };
+
+const MOCK_BOARDS: Board[] = [
+  { BOARD_ID: 'B001', BOARD_NAME: '공지사항' },
+  { BOARD_ID: 'B002', BOARD_NAME: '교육/행사' },
+  { BOARD_ID: 'B003', BOARD_NAME: '병원뉴스' },
+  { BOARD_ID: 'B004', BOARD_NAME: '건강정보' },
+  { BOARD_ID: 'B005', BOARD_NAME: '채용공고' },
+  { BOARD_ID: 'B006', BOARD_NAME: '자료실' },
+];
+
+const MOCK_CONTENTS: Contents[] = [
+  { CONTENTS_ID: 'C001', CONTENTS_GRP_ID: 'G01', CONTENTS_NAME: '인사말' },
+  { CONTENTS_ID: 'C002', CONTENTS_GRP_ID: 'G01', CONTENTS_NAME: '병원소개' },
+  { CONTENTS_ID: 'C003', CONTENTS_GRP_ID: 'G01', CONTENTS_NAME: '연혁' },
+  { CONTENTS_ID: 'C004', CONTENTS_GRP_ID: 'G02', CONTENTS_NAME: '진료안내' },
+  { CONTENTS_ID: 'C005', CONTENTS_GRP_ID: 'G02', CONTENTS_NAME: '오시는 길' },
+];
 
 // ---------------------------------------------------------------------------
 // MenuPage (main)
