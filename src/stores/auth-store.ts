@@ -6,28 +6,42 @@ import type { SessionUser } from '@/types/user';
 
 interface AuthState {
   user: SessionUser | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  login: (user: SessionUser) => void;
+  login: (tokens: { accessToken: string; refreshToken: string }, user?: SessionUser) => void;
   logout: () => void;
   setUser: (user: SessionUser) => void;
+  setTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
-      login: (user: SessionUser) =>
+      login: (tokens, user) =>
         set({
-          user,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          user: user ?? null,
           isAuthenticated: true,
         }),
       logout: () =>
         set({
           user: null,
+          accessToken: null,
+          refreshToken: null,
           isAuthenticated: false,
         }),
       setUser: (user: SessionUser) => set({ user }),
+      setTokens: (tokens) =>
+        set({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        }),
     }),
     {
       name: 'ehr-auth',

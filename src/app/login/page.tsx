@@ -2,7 +2,10 @@
 
 import { useState, type FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@apollo/client/react';
 import { useAuthStore } from '@/stores/auth-store';
+import { LOGIN } from '@/lib/graphql/queries/auth';
+import type { LoginResponse } from '@/lib/graphql/types';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -11,8 +14,9 @@ export default function LoginPage() {
   const [institution, setInstitution] = useState('');
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ institution?: string; userId?: string; password?: string }>({});
+
+  const [loginMutation, { loading }] = useMutation<LoginResponse>(LOGIN);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -33,32 +37,24 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validate()) return;
 
-    setLoading(true);
     try {
-      // TODO: 백엔드 완료 후 실제 로그인 API로 교체
-      // const response = await fetch('/api/cms/vktmTlwps/login.do', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      //   body: new URLSearchParams({ USER_ID: userId, PASSWORD: password }),
-      //   credentials: 'include',
-      // });
+      const { data } = await loginMutation({
+        variables: {
+          input: { userId, password },
+        },
+      });
 
-      if (userId === 'test' && password === 'test') {
+      if (data?.login) {
         login({
-          USER_ID: userId,
-          USER_NM: '테스트 관리자',
-          IS_SUPER_ADMIN: institution === 'admin',
-          IS_HCM_ADMIN: false,
-          ROLE_TYPE_LIST: [],
+          accessToken: data.login.accessToken,
+          refreshToken: data.login.refreshToken,
         });
+        toast.success('로그인 성공');
         router.push('/cms/home');
-      } else {
-        toast.error('아이디 또는 비밀번호가 일치하지 않습니다.\n다시 확인하신 후 입력해주세요.');
       }
-    } catch {
-      toast.error('서버에 연결할 수 없습니다.');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '서버에 연결할 수 없습니다.';
+      toast.error(message);
     }
   };
 

@@ -17,7 +17,11 @@
       "mcp__figma__get_metadata",
       "Bash(git rm:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm ls:*)",
+      "Bash(node -e:*)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
