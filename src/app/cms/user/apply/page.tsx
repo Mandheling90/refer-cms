@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
@@ -26,102 +27,12 @@ import {
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
-import type { MemberApply } from '@/types/member';
+import { GET_ADMIN_USERS, APPROVE_USER, REJECT_USER } from '@/lib/graphql/queries/member-apply';
+import type { AdminUser, AdminUsersResponse } from '@/types/member';
 import {
   MEMBER_TYPE_OPTIONS,
   APPLY_STATUS_OPTIONS,
-  JOIN_TYPE_OPTIONS,
 } from '@/types/member';
-
-/* ─── 더미 데이터 (백엔드 연동 전) ─── */
-const MOCK_APPLIES: MemberApply[] = [
-  {
-    MEMBER_ID: 'abc1246',
-    MEMBER_NO: 'M031245',
-    MEMBER_NM: '홍길동',
-    MEMBER_TYPE: 'KMD',
-    BIRTH_DATE: '1983-08-16',
-    DOCTOR_LICENSE_NO: '34562',
-    SCHOOL: '가톨릭대학교',
-    DEPARTMENT: '내과',
-    IS_DIRECTOR: 'Y',
-    SPECIALTY: '일반혈액질환, 림프구계혈액암(림프종, 다발골수종)',
-    EMAIL: 'revehit@naver.com',
-    MOBILE_NO: '010-9288-4290',
-    EMAIL_AGREE: 'Y',
-    SMS_AGREE: 'Y',
-    REPLY_AGREE: 'Y',
-    ADDR: '서울특별시 성북구 동소문로 47길 8 (길음동)',
-    ADDR_DETAIL: '404호',
-    HOSPITAL_NM: 'A 병원',
-    HOSPITAL_NO: '0651251254',
-    HOSPITAL_TEL: '02-940-2000',
-    HOSPITAL_ADDR: '서울특별시 성북구 동소문로 47길 8 (길음동)',
-    HOSPITAL_ADDR_DETAIL: '404호',
-    HOSPITAL_URL: 'https://www.seoulchuk.com/main.do',
-    APPLY_STATUS: 'PENDING',
-    APPLY_DTTM: '2025-08-27 13:10:25',
-    APPROVE_DTTM: '-',
-    JOIN_TYPE: 'NORMAL',
-    LOGIN_ID: 'abc1246',
-    INSERT_DTTM: '2025-08-27 13:10:25',
-    UPDATE_DTTM: '2025-08-27 13:10:25',
-  },
-  {
-    MEMBER_ID: 'kim002',
-    MEMBER_NO: 'M031246',
-    MEMBER_NM: '김철수',
-    MEMBER_TYPE: 'DENTIST',
-    BIRTH_DATE: '1990-07-22',
-    DOCTOR_LICENSE_NO: '23456',
-    SCHOOL: '서울대학교',
-    DEPARTMENT: '외과',
-    IS_DIRECTOR: 'N',
-    SPECIALTY: '정형외과',
-    EMAIL: 'kim@example.com',
-    MOBILE_NO: '010-9876-5432',
-    EMAIL_AGREE: 'Y',
-    SMS_AGREE: 'N',
-    REPLY_AGREE: 'Y',
-    HOSPITAL_NM: 'B 병원',
-    HOSPITAL_NO: '0651251255',
-    HOSPITAL_TEL: '02-123-4567',
-    APPLY_STATUS: 'APPROVED',
-    APPLY_DTTM: '2025-04-11 09:00:00',
-    APPROVE_DTTM: '2025-04-12 11:00:00',
-    JOIN_TYPE: 'NORMAL',
-    LOGIN_ID: 'kim002',
-    INSERT_DTTM: '2025-04-11 09:00:00',
-    UPDATE_DTTM: '2025-04-12 11:00:00',
-  },
-  {
-    MEMBER_ID: 'lee003',
-    MEMBER_NO: 'M031247',
-    MEMBER_NM: '이영희',
-    MEMBER_TYPE: 'DOCTOR',
-    BIRTH_DATE: '1988-11-03',
-    DOCTOR_LICENSE_NO: '34567',
-    SCHOOL: '연세대학교',
-    DEPARTMENT: '소아과',
-    IS_DIRECTOR: 'N',
-    SPECIALTY: '소아내과',
-    EMAIL: 'lee@example.com',
-    MOBILE_NO: '010-5555-1234',
-    EMAIL_AGREE: 'N',
-    SMS_AGREE: 'Y',
-    REPLY_AGREE: 'N',
-    HOSPITAL_NM: 'C 의원',
-    HOSPITAL_NO: '0651251256',
-    HOSPITAL_TEL: '02-555-6789',
-    APPLY_STATUS: 'REJECTED',
-    APPLY_DTTM: '2025-04-11 09:00:00',
-    APPROVE_DTTM: '-',
-    JOIN_TYPE: 'SMS',
-    LOGIN_ID: 'lee003',
-    INSERT_DTTM: '2025-04-11 09:00:00',
-    UPDATE_DTTM: '2025-04-11 09:00:00',
-  },
-];
 
 /* ─── 상태 라벨 변환 ─── */
 const applyStatusLabel = (val?: string) => {
@@ -131,11 +42,6 @@ const applyStatusLabel = (val?: string) => {
 
 const memberTypeLabel = (val?: string) => {
   const found = MEMBER_TYPE_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? val ?? '-';
-};
-
-const joinTypeLabel = (val?: string) => {
-  const found = JOIN_TYPE_OPTIONS.find((o) => o.value === val);
   return found?.label ?? val ?? '-';
 };
 
@@ -159,90 +65,121 @@ function FieldGroup({
    회원가입 신청관리 페이지
    ═══════════════════════════════════════ */
 export default function MemberApplyPage() {
-  /* ─── 리스트 상태 ─── */
-  const [data, setData] = useState<MemberApply[]>(MOCK_APPLIES);
-  const [loading] = useState(false);
-  const [totalItems, setTotalItems] = useState(MOCK_APPLIES.length);
+  /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
-  /* ─── 검색 조건 ─── */
-  const [searchDoctorLicenseNo, setSearchDoctorLicenseNo] = useState('');
-  const [searchMemberId, setSearchMemberId] = useState('');
-  const [searchBirthDate, setSearchBirthDate] = useState('');
-  const [searchMobileNo, setSearchMobileNo] = useState('');
-  const [searchMemberNm, setSearchMemberNm] = useState('');
+  /* ─── 검색 조건 (입력 중) ─── */
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [searchApplyStatus, setSearchApplyStatus] = useState('');
-  const [searchJoinType, setSearchJoinType] = useState('');
+
+  /* ─── 실제 적용된 필터 (검색 버튼 클릭 시 반영) ─── */
+  const [appliedFilter, setAppliedFilter] = useState<{
+    status?: string;
+    search?: string;
+  }>({});
+
+  /* ─── GraphQL 조회 ─── */
+  const { data, loading, refetch } = useQuery<AdminUsersResponse>(GET_ADMIN_USERS, {
+    variables: {
+      filter: {
+        ...(appliedFilter.status ? { status: appliedFilter.status } : {}),
+        ...(appliedFilter.search ? { search: appliedFilter.search } : {}),
+      },
+      pagination: {
+        page: currentPage,
+        limit: pageSize,
+      },
+    },
+    fetchPolicy: 'network-only',
+  });
+
+  const items = data?.adminUsers?.items ?? [];
+  const totalItems = data?.adminUsers?.totalCount ?? 0;
 
   /* ─── 상세 다이얼로그 ─── */
   const [detailOpen, setDetailOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<MemberApply>>({});
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+
+  /* ─── Mutations ─── */
+  const [approveUser] = useMutation(APPROVE_USER);
+  const [rejectUser] = useMutation(REJECT_USER);
 
   /* ─── 확인 다이얼로그 ─── */
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
-  /* ─── 검색 ─── */
+  /* ─── 재검색: 현재 입력된 검색 조건을 적용하여 조회 ─── */
   const handleSearch = useCallback(() => {
-    let filtered = [...MOCK_APPLIES];
-    if (searchDoctorLicenseNo)
-      filtered = filtered.filter((m) => m.DOCTOR_LICENSE_NO?.includes(searchDoctorLicenseNo));
-    if (searchMemberId)
-      filtered = filtered.filter((m) => m.LOGIN_ID?.includes(searchMemberId));
-    if (searchBirthDate)
-      filtered = filtered.filter((m) => m.BIRTH_DATE?.includes(searchBirthDate));
-    if (searchMobileNo)
-      filtered = filtered.filter((m) => m.MOBILE_NO?.includes(searchMobileNo));
-    if (searchMemberNm)
-      filtered = filtered.filter((m) => m.MEMBER_NM?.includes(searchMemberNm));
-    if (searchApplyStatus)
-      filtered = filtered.filter((m) => m.APPLY_STATUS === searchApplyStatus);
-    if (searchJoinType)
-      filtered = filtered.filter((m) => m.JOIN_TYPE === searchJoinType);
-    setData(filtered);
-    setTotalItems(filtered.length);
+    const newFilter = {
+      status: searchApplyStatus === '__all' ? undefined : searchApplyStatus || undefined,
+      search: searchKeyword.trim() || undefined,
+    };
+    setAppliedFilter(newFilter);
     setCurrentPage(1);
-  }, [searchDoctorLicenseNo, searchMemberId, searchBirthDate, searchMobileNo, searchMemberNm, searchApplyStatus, searchJoinType]);
+    refetch({
+      filter: {
+        ...(newFilter.status ? { status: newFilter.status } : {}),
+        ...(newFilter.search ? { search: newFilter.search } : {}),
+      },
+      pagination: { page: 1, limit: pageSize },
+    });
+  }, [searchApplyStatus, searchKeyword, refetch, pageSize]);
 
-  /* ─── 초기화 ─── */
+  /* ─── 검색초기화: 모든 검색 조건을 초기값으로 되돌리고 재조회 ─── */
   const handleReset = () => {
-    setSearchDoctorLicenseNo('');
-    setSearchMemberId('');
-    setSearchBirthDate('');
-    setSearchMobileNo('');
-    setSearchMemberNm('');
+    setSearchKeyword('');
     setSearchApplyStatus('');
-    setSearchJoinType('');
-    setData(MOCK_APPLIES);
-    setTotalItems(MOCK_APPLIES.length);
+    setAppliedFilter({});
     setCurrentPage(1);
+    refetch({
+      filter: {},
+      pagination: { page: 1, limit: pageSize },
+    });
   };
 
   /* ─── 행 클릭 → 상세 팝업 ─── */
-  const handleRowClick = (row: MemberApply) => {
-    setFormData({ ...row });
+  const handleRowClick = (row: AdminUser) => {
+    setSelectedUser(row);
     setRejectReason('');
     setDetailOpen(true);
   };
 
-  /* ─── 가입승인 (TODO: API 연동) ─── */
-  const handleApprove = () => {
-    toast.success('가입이 승인되었습니다.');
-    setApproveOpen(false);
-    setDetailOpen(false);
+  /* ─── 가입승인 ─── */
+  const handleApprove = async () => {
+    if (!selectedUser) return;
+    try {
+      await approveUser({ variables: { id: selectedUser.id } });
+      toast.success('가입이 승인되었습니다.');
+      setApproveOpen(false);
+      setDetailOpen(false);
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '승인 처리 중 오류가 발생했습니다.';
+      toast.error(message);
+      setApproveOpen(false);
+    }
   };
 
-  /* ─── 반려 (TODO: API 연동) ─── */
-  const handleReject = () => {
+  /* ─── 반려 ─── */
+  const handleReject = async () => {
+    if (!selectedUser) return;
     if (!rejectReason.trim()) {
       toast.error('반려 사유를 입력해주세요.');
       return;
     }
-    toast.success('가입이 반려되었습니다.');
-    setRejectOpen(false);
-    setDetailOpen(false);
+    try {
+      await rejectUser({ variables: { id: selectedUser.id, reason: rejectReason.trim() } });
+      toast.success('가입이 반려되었습니다.');
+      setRejectOpen(false);
+      setDetailOpen(false);
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '반려 처리 중 오류가 발생했습니다.';
+      toast.error(message);
+      setRejectOpen(false);
+    }
   };
 
   /* ─── 페이징 ─── */
@@ -253,25 +190,25 @@ export default function MemberApplyPage() {
   };
 
   /* ─── 테이블 컬럼 ─── */
-  const columns: ColumnDef<MemberApply, unknown>[] = [
+  const columns: ColumnDef<AdminUser, unknown>[] = [
     {
       id: 'rowNum',
       header: 'No',
       size: 60,
-      cell: ({ row }) => row.index + 1,
+      cell: ({ row }) => (currentPage - 1) * pageSize + row.index + 1,
     },
-    { accessorKey: 'LOGIN_ID', header: '회원아이디', size: 120 },
-    { accessorKey: 'MEMBER_NM', header: '회원명', size: 90 },
+    { accessorKey: 'userId', header: '회원아이디', size: 120 },
+    { accessorKey: 'userName', header: '회원명', size: 90 },
     {
-      accessorKey: 'MEMBER_TYPE',
+      accessorKey: 'userType',
       header: '회원구분',
       size: 90,
       cell: ({ getValue }) => memberTypeLabel(getValue() as string),
     },
-    { accessorKey: 'DOCTOR_LICENSE_NO', header: '의사면허번호', size: 110 },
-    { accessorKey: 'BIRTH_DATE', header: '생년월일', size: 110 },
+    { accessorKey: 'email', header: '이메일', size: 180 },
+    { accessorKey: 'hospitalCode', header: '병원코드', size: 120 },
     {
-      accessorKey: 'APPLY_STATUS',
+      accessorKey: 'status',
       header: '회원상태',
       size: 80,
       cell: ({ getValue }) => {
@@ -293,8 +230,6 @@ export default function MemberApplyPage() {
         );
       },
     },
-    { accessorKey: 'APPROVE_DTTM', header: '가입승인일시', size: 160 },
-    { accessorKey: 'APPLY_DTTM', header: '신청일시', size: 160 },
   ];
 
   return (
@@ -306,39 +241,11 @@ export default function MemberApplyPage() {
         onReset={handleReset}
         searchSection={
           <div className="grid grid-cols-4 gap-x-6 gap-y-4">
-            <FieldGroup label="의사면허번호">
+            <FieldGroup label="검색">
               <Input
-                value={searchDoctorLicenseNo}
-                onChange={(e) => setSearchDoctorLicenseNo(e.target.value)}
-                placeholder="의사면허번호"
-              />
-            </FieldGroup>
-            <FieldGroup label="회원아이디">
-              <Input
-                value={searchMemberId}
-                onChange={(e) => setSearchMemberId(e.target.value)}
-                placeholder="회원아이디"
-              />
-            </FieldGroup>
-            <FieldGroup label="생년월일">
-              <Input
-                value={searchBirthDate}
-                onChange={(e) => setSearchBirthDate(e.target.value)}
-                placeholder="YYYY-MM-DD"
-              />
-            </FieldGroup>
-            <FieldGroup label="휴대전화번호">
-              <Input
-                value={searchMobileNo}
-                onChange={(e) => setSearchMobileNo(e.target.value)}
-                placeholder="휴대전화번호"
-              />
-            </FieldGroup>
-            <FieldGroup label="회원명">
-              <Input
-                value={searchMemberNm}
-                onChange={(e) => setSearchMemberNm(e.target.value)}
-                placeholder="회원명"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="아이디, 이름, 이메일 검색"
               />
             </FieldGroup>
             <FieldGroup label="회원상태">
@@ -355,26 +262,12 @@ export default function MemberApplyPage() {
                 </SelectContent>
               </Select>
             </FieldGroup>
-            <FieldGroup label="가입유형">
-              <Select value={searchJoinType} onValueChange={setSearchJoinType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  {JOIN_TYPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FieldGroup>
           </div>
         }
         listContent={
           <DataTable
             columns={columns}
-            data={data}
+            data={items}
             loading={loading}
             totalItems={totalItems}
             currentPage={currentPage}
@@ -398,268 +291,60 @@ export default function MemberApplyPage() {
           </DialogHeader>
 
           <DialogBody className="space-y-5 overflow-y-auto">
-            {/* ─── Row 1: 회원ID, 회원번호, 회원명 ─── */}
+            {/* ─── Row 1: 회원ID, 회원명, 이메일 ─── */}
             <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="회원ID">
-                <Input value={formData.MEMBER_ID || ''} disabled />
-              </FieldGroup>
-              <FieldGroup label="회원번호">
-                <Input value={formData.MEMBER_NO || ''} disabled />
+              <FieldGroup label="회원아이디">
+                <Input value={selectedUser?.userId || ''} disabled />
               </FieldGroup>
               <FieldGroup label="회원명">
-                <Input value={formData.MEMBER_NM || ''} disabled />
+                <Input value={selectedUser?.userName || ''} disabled />
+              </FieldGroup>
+              <FieldGroup label="이메일">
+                <Input value={selectedUser?.email || ''} disabled />
               </FieldGroup>
             </div>
 
-            {/* ─── Row 2: 회원구분, 생년월일, 의사면허번호 ─── */}
+            {/* ─── Row 2: 회원구분, 병원코드 ─── */}
             <div className="grid grid-cols-3 gap-4">
               <FieldGroup label="회원구분">
-                <Input value={memberTypeLabel(formData.MEMBER_TYPE)} disabled />
+                <Input value={memberTypeLabel(selectedUser?.userType)} disabled />
               </FieldGroup>
-              <FieldGroup label="생년월일">
-                <Input value={formData.BIRTH_DATE || ''} disabled />
+              <FieldGroup label="병원코드">
+                <Input value={selectedUser?.hospitalCode || ''} disabled />
               </FieldGroup>
-              <FieldGroup label="의사면허번호">
-                <Input value={formData.DOCTOR_LICENSE_NO || ''} disabled />
-              </FieldGroup>
-            </div>
-
-            {/* ─── Row 3: 출신학교, 진료과, 원장여부 ─── */}
-            <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="출신학교">
-                <Input value={formData.SCHOOL || ''} disabled />
-              </FieldGroup>
-              <FieldGroup label="진료과">
-                <Input value={formData.DEPARTMENT || ''} disabled />
-              </FieldGroup>
-              <FieldGroup label="원장여부">
-                <div className="flex items-center h-10 gap-4">
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applyIsDirector"
-                      className="accent-primary"
-                      checked={formData.IS_DIRECTOR === 'Y'}
-                      disabled
-                    />
-                    원장
-                  </label>
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applyIsDirector"
-                      className="accent-primary"
-                      checked={formData.IS_DIRECTOR !== 'Y'}
-                      disabled
-                    />
-                    비원장
-                  </label>
-                </div>
-              </FieldGroup>
-            </div>
-
-            {/* ─── 세부전공 (full width) ─── */}
-            <FieldGroup label="세부전공">
-              <Input value={formData.SPECIALTY || ''} disabled />
-            </FieldGroup>
-
-            {/* ─── 주소 (full width) ─── */}
-            <FieldGroup label="주소">
-              <div className="flex gap-2">
-                <Input
-                  value={formData.ADDR || ''}
-                  disabled
-                  className="flex-1"
-                />
-                <Input
-                  value={formData.ADDR_DETAIL || ''}
-                  disabled
-                  className="flex-1"
-                />
-              </div>
-            </FieldGroup>
-
-            {/* ─── 이메일, 휴대전화번호 (2 col) ─── */}
-            <div className="grid grid-cols-2 gap-4">
-              <FieldGroup label="이메일">
-                <Input value={formData.EMAIL || ''} disabled />
-              </FieldGroup>
-              <FieldGroup label="휴대전화번호">
-                <Input value={formData.MOBILE_NO || ''} disabled />
-              </FieldGroup>
-            </div>
-
-            {/* ─── 수신 동의 여부 (3 col radios) ─── */}
-            <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="이메일 수신 동의 여부">
-                <div className="flex items-center h-10 gap-4">
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applyEmailAgree"
-                      className="accent-primary"
-                      checked={formData.EMAIL_AGREE === 'Y'}
-                      disabled
-                    />
-                    동의
-                  </label>
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applyEmailAgree"
-                      className="accent-primary"
-                      checked={formData.EMAIL_AGREE !== 'Y'}
-                      disabled
-                    />
-                    미동의
-                  </label>
-                </div>
-              </FieldGroup>
-              <FieldGroup label="SMS 수신 동의 여부">
-                <div className="flex items-center h-10 gap-4">
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applySmsAgree"
-                      className="accent-primary"
-                      checked={formData.SMS_AGREE === 'Y'}
-                      disabled
-                    />
-                    동의
-                  </label>
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applySmsAgree"
-                      className="accent-primary"
-                      checked={formData.SMS_AGREE !== 'Y'}
-                      disabled
-                    />
-                    미동의
-                  </label>
-                </div>
-              </FieldGroup>
-              <FieldGroup label="회신서 동의 여부">
-                <div className="flex items-center h-10 gap-4">
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applyReplyAgree"
-                      className="accent-primary"
-                      checked={formData.REPLY_AGREE === 'Y'}
-                      disabled
-                    />
-                    동의
-                  </label>
-                  <label className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="radio"
-                      name="applyReplyAgree"
-                      className="accent-primary"
-                      checked={formData.REPLY_AGREE !== 'Y'}
-                      disabled
-                    />
-                    미동의
-                  </label>
-                </div>
-              </FieldGroup>
-            </div>
-
-            {/* ─── 병원정보 섹션 ─── */}
-            <div className="border-t border-gray-500 pt-5">
-              <h3 className="text-base font-semibold mb-4">병원정보</h3>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <FieldGroup label="병원명">
-                    <Input value={formData.HOSPITAL_NM || ''} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="요양기관번호">
-                    <Input value={formData.HOSPITAL_NO || ''} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="대표전화">
-                    <Input value={formData.HOSPITAL_TEL || ''} disabled />
-                  </FieldGroup>
-                </div>
-
-                <FieldGroup label="병원주소">
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.HOSPITAL_ADDR || ''}
-                      disabled
-                      className="flex-1"
-                    />
-                    <Input
-                      value={formData.HOSPITAL_ADDR_DETAIL || ''}
-                      disabled
-                      className="flex-1"
-                    />
-                  </div>
-                </FieldGroup>
-
-                <FieldGroup label="병원 홈페이지 주소">
-                  <Input value={formData.HOSPITAL_URL || ''} disabled />
-                </FieldGroup>
-              </div>
             </div>
 
             {/* ─── 상태 정보 테이블 ─── */}
             <div className="overflow-hidden rounded-lg border border-gray-500">
               <table className="w-full text-sm">
                 <tbody>
-                  <tr className="border-b border-gray-500">
+                  <tr>
                     <th className="bg-gray-300 px-4 py-2.5 text-left font-semibold whitespace-nowrap">
                       신청상태
                     </th>
                     <td className="px-4 py-2.5">
                       <span
                         className={
-                          formData.APPLY_STATUS === 'APPROVED'
+                          selectedUser?.status === 'APPROVED'
                             ? 'text-src-point font-medium'
-                            : formData.APPLY_STATUS === 'REJECTED'
+                            : selectedUser?.status === 'REJECTED'
                               ? 'text-src-red font-medium'
-                              : formData.APPLY_STATUS === 'PENDING'
+                              : selectedUser?.status === 'PENDING'
                                 ? 'text-src-blue font-medium'
                                 : ''
                         }
                       >
-                        {applyStatusLabel(formData.APPLY_STATUS)}
+                        {applyStatusLabel(selectedUser?.status)}
                       </span>
-                    </td>
-                    <th className="bg-gray-300 px-4 py-2.5 text-left font-semibold whitespace-nowrap">
-                      신청일시
-                    </th>
-                    <td className="px-4 py-2.5">{formData.APPLY_DTTM || '-'}</td>
-                    <th className="bg-gray-300 px-4 py-2.5 text-left font-semibold whitespace-nowrap">
-                      가입승인일시
-                    </th>
-                    <td className="px-4 py-2.5">{formData.APPROVE_DTTM || '-'}</td>
-                  </tr>
-                  <tr>
-                    <th className="bg-gray-300 px-4 py-2.5 text-left font-semibold whitespace-nowrap">
-                      가입유형
-                    </th>
-                    <td className="px-4 py-2.5" colSpan={5}>
-                      {joinTypeLabel(formData.JOIN_TYPE)}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-
-            {/* ─── 비고 ─── */}
-            <FieldGroup label="비고">
-              <Textarea
-                value={formData.MEMO || ''}
-                disabled
-                placeholder=""
-                rows={3}
-              />
-            </FieldGroup>
           </DialogBody>
 
           <DialogFooter className="justify-between">
-            {formData.APPLY_STATUS === 'PENDING' ? (
+            {selectedUser?.status === 'PENDING' ? (
               <div className="flex gap-2">
                 <Button variant="blue" onClick={() => setApproveOpen(true)}>
                   가입승인

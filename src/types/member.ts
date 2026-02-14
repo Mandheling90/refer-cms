@@ -1,5 +1,64 @@
 import type { AuditFields } from './api';
 
+/** adminUsers API 응답 아이템 */
+export interface AdminUser {
+  id: string;
+  userId: string;
+  userName: string;
+  email: string;
+  phone?: string;
+  userType: string;
+  status: string;
+  hospitalCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** adminUsers API 응답 */
+export interface AdminUsersResponse {
+  adminUsers: {
+    items: AdminUser[];
+    totalCount: number;
+    hasNextPage: boolean;
+  };
+}
+
+/** UserProfile (상세 조회용) */
+export interface UserProfile {
+  birthDate?: string;
+  licenseNo?: string;
+  school?: string;
+  department?: string;
+  doctorType?: string;
+  specialty?: string;
+  isDirector: boolean;
+  emailConsent: boolean;
+  smsConsent: boolean;
+  replyConsent: boolean;
+  hospName?: string;
+  hospCode?: string;
+  hospPhone?: string;
+  hospAddress?: string;
+  hospAddressDetail?: string;
+  hospZipCode?: string;
+  hospWebsite?: string;
+  careInstitutionNo?: string;
+  gender?: string;
+  representative?: string;
+}
+
+/** adminUserById 상세 응답 */
+export interface AdminUserDetail extends AdminUser {
+  mustChangePw: boolean;
+  rejectReason?: string;
+  profile?: UserProfile;
+}
+
+/** adminUserById 응답 wrapper */
+export interface AdminUserByIdResponse {
+  adminUserById: AdminUserDetail;
+}
+
 export interface Member extends AuditFields {
   MEMBER_ID: string;
   MEMBER_NO?: string;

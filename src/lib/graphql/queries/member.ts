@@ -1,107 +1,80 @@
 import { gql } from '@apollo/client';
 
-/** 회원 목록 조회 */
-export const GET_MEMBERS = gql`
-  query GetMembers(
-    $page: Int
-    $pageSize: Int
-    $searchKeyword: String
-    $memberType: String
-    $status: String
-    $joinType: String
-  ) {
-    members(
-      page: $page
-      pageSize: $pageSize
-      searchKeyword: $searchKeyword
-      memberType: $memberType
-      status: $status
-      joinType: $joinType
-    ) {
-      list {
-        MEMBER_ID
-        MEMBER_NO
-        MEMBER_NM
-        MEMBER_NM_EN
-        MEMBER_TYPE
-        BIRTH_DATE
-        EMAIL
-        MOBILE_NO
-        HOSPITAL_NM
-        STATUS
-        JOIN_TYPE
-        JOIN_DTTM
-        LAST_LOGIN_DTTM
-        INSERT_DTTM
-        UPDATE_DTTM
+/** 회원 목록 조회 (adminUsers 재사용) */
+export const GET_ADMIN_USERS_MEMBERS = gql`
+  query AdminUsersMembers($filter: AdminUserFilterInput, $pagination: PaginationInput) {
+    adminUsers(filter: $filter, pagination: $pagination) {
+      items {
+        id
+        userId
+        userName
+        email
+        phone
+        userType
+        status
+        hospitalCode
+        createdAt
+        updatedAt
       }
       totalCount
-      page
-      pageSize
+      hasNextPage
     }
   }
 `;
 
 /** 회원 상세 조회 */
-export const GET_MEMBER = gql`
-  query GetMember($memberId: String!) {
-    member(memberId: $memberId) {
-      MEMBER_ID
-      MEMBER_NO
-      MEMBER_NM
-      MEMBER_NM_EN
-      MEMBER_TYPE
-      BIRTH_DATE
-      DOCTOR_LICENSE_NO
-      SCHOOL
-      DEPARTMENT
-      IS_DIRECTOR
-      SPECIALTY
-      EMAIL
-      MOBILE_NO
-      EMAIL_AGREE
-      SMS_AGREE
-      REPLY_AGREE
-      HOSPITAL_NM
-      HOSPITAL_NO
-      HOSPITAL_TEL
-      HOSPITAL_ADDR
-      HOSPITAL_ADDR_DETAIL
-      HOSPITAL_URL
-      STATUS
-      JOIN_TYPE
-      JOIN_DTTM
-      INFO_UPDATE_DTTM
-      WITHDRAW_DTTM
-      LAST_LOGIN_DTTM
-      LAST_LOGIN_IP
-      DORMANT_DTTM
-      MEMO
-      LOGIN_ID
-      INSERT_USER
-      INSERT_DTTM
-      UPDATE_USER
-      UPDATE_DTTM
+export const GET_ADMIN_USER_BY_ID = gql`
+  query AdminUserById($id: String!) {
+    adminUserById(id: $id) {
+      id
+      userId
+      userName
+      email
+      phone
+      userType
+      status
+      hospitalCode
+      mustChangePw
+      rejectReason
+      createdAt
+      updatedAt
+      profile {
+        birthDate
+        licenseNo
+        school
+        department
+        doctorType
+        specialty
+        isDirector
+        emailConsent
+        smsConsent
+        replyConsent
+        hospName
+        hospCode
+        hospPhone
+        hospAddress
+        hospAddressDetail
+        hospZipCode
+        hospWebsite
+        careInstitutionNo
+        gender
+        representative
+      }
     }
   }
 `;
 
-/** 회원 저장 */
-export const SAVE_MEMBER = gql`
-  mutation SaveMember($input: MemberInput!) {
-    saveMember(input: $input) {
-      success
-      message
-    }
-  }
-`;
-
-/** 회원 삭제 */
-export const REMOVE_MEMBERS = gql`
-  mutation RemoveMembers($memberIds: [String!]!) {
-    removeMembers(memberIds: $memberIds) {
-      success
-      message
+/** 회원 정보 수정 */
+export const ADMIN_UPDATE_USER = gql`
+  mutation AdminUpdateUser($id: String!, $input: AdminUpdateUserInput!) {
+    adminUpdateUser(id: $id, input: $input) {
+      id
+      userId
+      userName
+      email
+      phone
+      userType
+      status
     }
   }
 `;
