@@ -1,29 +1,19 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
-import {
-  ChevronDown,
-  LayoutDashboard,
-  Users,
-  UserPlus,
-  Image,
-  Columns3,
-  Megaphone,
-  Stethoscope,
-  Building2,
-  PenLine,
-  FileImage,
-  Settings2,
-  ClipboardList,
-  FileText,
-  Mail,
-  ShieldCheck,
-  History,
-} from 'lucide-react';
 import { Logo } from '@/components/atoms/Logo';
-import { useMenuStore } from '@/stores/menu-store';
 import { cn } from '@/lib/utils';
+import { useMenuStore } from '@/stores/menu-store';
 import type { LucideIcon } from 'lucide-react';
+import {
+  Building2,
+  ChevronDown,
+  Columns3,
+  LayoutDashboard,
+  PenLine,
+  UserPlus,
+  Users
+} from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 
 interface NavChild {
   title: string;
@@ -58,26 +48,31 @@ const NAV_ITEMS: NavItem[] = [
     href: '/cms/user/apply',
     icon: UserPlus,
   },
-  {
-    title: '메인 배너 관리',
-    href: '/cms/banner/main',
-    icon: Image,
-  },
-  {
-    title: '미니 배너 관리',
-    href: '/cms/banner/strip',
-    icon: Megaphone,
-  },
-  {
-    title: '팝업 관리',
-    href: '/cms/banner/popup',
-    icon: Megaphone,
-  },
-  {
-    title: '의료진',
-    href: '/cms/doctor',
-    icon: Stethoscope,
-  },
+  // {
+  //   title: '메인 배너 관리',
+  //   href: '/cms/banner/main',
+  //   icon: Image,
+  // },
+  // {
+  //   title: '미니 배너 관리',
+  //   href: '/cms/banner/strip',
+  //   icon: Megaphone,
+  // },
+  // {
+  //   title: '팝업 관리',
+  //   href: '/cms/banner/popup',
+  //   icon: Megaphone,
+  // },
+  // {
+  //   title: '의료진',
+  //   href: '/cms/doctor',
+  //   icon: Stethoscope,
+  // },
+  // {
+  //   title: '협력병의원 체결관리',
+  //   href: '/cms/cooperation/contract',
+  //   icon: Handshake,
+  // },
   {
     title: '협력병의원 신청 관리',
     icon: Building2,
@@ -94,51 +89,51 @@ const NAV_ITEMS: NavItem[] = [
       { title: '협력의원 수정 관리', href: '/cms/cooperation/clinic-edit' },
     ],
   },
-  {
-    title: '검사이미지 관리',
-    href: '/cms/exam-image',
-    icon: FileImage,
-  },
-  {
-    title: '게시판 설정',
-    href: '/cms/board/config',
-    icon: Settings2,
-  },
-  {
-    title: '게시판 관리',
-    href: '/cms/board',
-    icon: ClipboardList,
-  },
-  {
-    title: '콘텐츠 설정',
-    href: '/cms/contents/config',
-    icon: FileText,
-  },
-  {
-    title: '콘텐츠 관리',
-    href: '/cms/contents',
-    icon: FileText,
-  },
-  {
-    title: 'e-Consult',
-    href: '/cms/e-consult',
-    icon: Mail,
-  },
-  {
-    title: '시스템 관리',
-    icon: ShieldCheck,
-    children: [
-      { title: '관리자 관리', href: '/cms/system/manager' },
-      { title: 'CMS 메뉴', href: '/cms/system/menu' },
-      { title: '권한 관리', href: '/cms/system/authority' },
-      { title: '권한그룹 수정 이력', href: '/cms/system/history' },
-    ],
-  },
-  {
-    title: '로그내역',
-    href: '/cms/log',
-    icon: History,
-  },
+  // {
+  //   title: '검사이미지 관리',
+  //   href: '/cms/exam-image',
+  //   icon: FileImage,
+  // },
+  // {
+  //   title: '게시판 설정',
+  //   href: '/cms/board/config',
+  //   icon: Settings2,
+  // },
+  // {
+  //   title: '게시판 관리',
+  //   href: '/cms/board',
+  //   icon: ClipboardList,
+  // },
+  // {
+  //   title: '콘텐츠 설정',
+  //   href: '/cms/contents/config',
+  //   icon: FileText,
+  // },
+  // {
+  //   title: '콘텐츠 관리',
+  //   href: '/cms/contents',
+  //   icon: FileText,
+  // },
+  // {
+  //   title: 'e-Consult',
+  //   href: '/cms/e-consult',
+  //   icon: Mail,
+  // },
+  // {
+  //   title: '시스템 관리',
+  //   icon: ShieldCheck,
+  //   children: [
+  //     { title: '관리자 관리', href: '/cms/system/manager' },
+  //     { title: 'CMS 메뉴', href: '/cms/system/menu' },
+  //     { title: '권한 관리', href: '/cms/system/authority' },
+  //     { title: '권한그룹 수정 이력', href: '/cms/system/history' },
+  //   ],
+  // },
+  // {
+  //   title: '로그내역',
+  //   href: '/cms/log',
+  //   icon: History,
+  // },
 ];
 
 export function Sidebar() {

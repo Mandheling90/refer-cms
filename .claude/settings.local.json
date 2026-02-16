@@ -28,7 +28,9 @@
       "Bash(tasklist:*)",
       "Bash(del \"C:\\\\Users\\\\USER\\\\Desktop\\\\alba\\\\refer-cms\\\\.next\\\\dev\\\\lock\")",
       "mcp__figma__get_figma_data",
-      "WebFetch(domain:refer-front-test.vercel.app)"
+      "WebFetch(domain:refer-front-test.vercel.app)",
+      "WebFetch(domain:223.130.133.40)",
+      "Bash(python3:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
