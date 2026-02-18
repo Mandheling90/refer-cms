@@ -32,6 +32,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -148,7 +149,7 @@ function LinkTypeToggle({
 }
 
 // ---------------------------------------------------------------------------
-// SortableBannerCard
+// BannerCard
 // ---------------------------------------------------------------------------
 
 function SortableBannerCard({
@@ -375,7 +376,7 @@ function BannerFormDialog({
     setSaving(true);
     try {
       const payload: Partial<Banner> = {
-        BANNER_TYPE: 'POPUP',
+        BANNER_TYPE: 'STRIP',
         USE_YN: form.USE_YN,
         LINK_TYPE: form.LINK_TYPE,
         ALWAYS_YN: form.ALWAYS_YN,
@@ -499,6 +500,7 @@ function BannerFormDialog({
               팝업 이미지 <span className="text-destructive">*</span>
             </Label>
             <div className="flex gap-5">
+              {/* 업로드 영역 (좌) */}
               <div
                 className="flex flex-col items-center justify-center border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:border-primary transition-colors w-[150px] h-[150px] shrink-0"
                 onClick={() => fileInputRef.current?.click()}
@@ -516,6 +518,7 @@ function BannerFormDialog({
                   </>
                 )}
               </div>
+              {/* 안내 텍스트 (우) */}
               <div className="flex flex-col justify-center text-sm text-gray-700 space-y-1">
                 <p>이미지 사이즈: 가로 600px, 세로 600px</p>
                 <p>파일형식: PNG, JPG</p>
@@ -578,9 +581,9 @@ function BannerFormDialog({
 
 const MOCK_BANNERS: Banner[] = [
   {
-    BANNER_ID: 'P001',
-    BANNER_NAME: '팝업 배너 1',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B001',
+    BANNER_NAME: '메인 배너 1',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'Y',
     SORT_ORDER: 1,
     START_DATE: '2025-04-21',
@@ -593,9 +596,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P002',
-    BANNER_NAME: '팝업 배너 2',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B002',
+    BANNER_NAME: '메인 배너 2',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'Y',
     SORT_ORDER: 2,
     START_DATE: '2025-04-21',
@@ -607,9 +610,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P003',
-    BANNER_NAME: '팝업 배너 3',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B003',
+    BANNER_NAME: '메인 배너 3',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'Y',
     SORT_ORDER: 3,
     START_DATE: '2025-03-21',
@@ -621,9 +624,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P004',
-    BANNER_NAME: '상시 팝업',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B004',
+    BANNER_NAME: '상시 배너',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'Y',
     SORT_ORDER: 4,
     ALWAYS_YN: 'Y',
@@ -631,9 +634,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P005',
-    BANNER_NAME: '미사용 팝업 1',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B005',
+    BANNER_NAME: '미사용 배너 1',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'N',
     SORT_ORDER: 5,
     START_DATE: '2025-04-21',
@@ -645,9 +648,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P006',
-    BANNER_NAME: '미사용 팝업 2',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B006',
+    BANNER_NAME: '미사용 배너 2',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'N',
     SORT_ORDER: 6,
     START_DATE: '2025-04-21',
@@ -659,9 +662,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P007',
-    BANNER_NAME: '미사용 팝업 3',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B007',
+    BANNER_NAME: '미사용 배너 3',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'N',
     SORT_ORDER: 7,
     START_DATE: '2025-04-21',
@@ -673,9 +676,9 @@ const MOCK_BANNERS: Banner[] = [
     LANG_SET: 'kr',
   },
   {
-    BANNER_ID: 'P008',
-    BANNER_NAME: '미사용 팝업 4',
-    BANNER_TYPE: 'POPUP',
+    BANNER_ID: 'B008',
+    BANNER_NAME: '미사용 배너 4',
+    BANNER_TYPE: 'STRIP',
     USE_YN: 'N',
     SORT_ORDER: 8,
     START_DATE: '2025-04-21',
@@ -689,10 +692,10 @@ const MOCK_BANNERS: Banner[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// PopupBannerPage
+// MiniBannerPage
 // ---------------------------------------------------------------------------
 
-export default function PopupBannerPage() {
+export default function MiniBannerPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -711,7 +714,7 @@ export default function PopupBannerPage() {
   const loadBanners = useCallback(
     async (page = currentPage) => {
       try {
-        const res = await bannerApi.popupList({
+        const res = await bannerApi.stripList({
           CURRENT_PAGE: page,
           SHOWN_ENTITY: pageSize,
           LANG_SET: 'kr',
@@ -721,6 +724,7 @@ export default function PopupBannerPage() {
           setBanners(res.list);
           setTotalItems(res.TOTAL_ENTITY || 0);
         } else {
+          // Mock fallback
           let filtered = MOCK_BANNERS;
           if (useFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
           else if (useFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
@@ -729,6 +733,7 @@ export default function PopupBannerPage() {
           setBanners(filtered.slice(start, start + pageSize));
         }
       } catch {
+        // Mock fallback
         let filtered = MOCK_BANNERS;
         if (useFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
         else if (useFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
@@ -744,6 +749,7 @@ export default function PopupBannerPage() {
     loadBanners();
   }, [loadBanners]);
 
+  // 핸들러
   const handleOpenAdd = () => {
     setEditBanner(null);
     setFormOpen(true);
@@ -772,7 +778,7 @@ export default function PopupBannerPage() {
 
   const handleDeleteAll = async () => {
     try {
-      const res = await bannerApi.removeAll({ BANNER_TYPE: 'POPUP', LANG_SET: 'kr' });
+      const res = await bannerApi.removeAll({ BANNER_TYPE: 'STRIP', LANG_SET: 'kr' });
       if (res.ServiceResult.IS_SUCCESS) {
         toast.success('전체 삭제되었습니다.');
         loadBanners();
@@ -785,6 +791,7 @@ export default function PopupBannerPage() {
     setDeleteAllOpen(false);
   };
 
+  // DnD 센서 설정 - 약간의 활성화 거리를 두어 클릭과 드래그를 구분
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -802,6 +809,7 @@ export default function PopupBannerPage() {
     const reordered = arrayMove(banners, oldIndex, newIndex);
     setBanners(reordered);
 
+    // 서버에 순서 저장
     try {
       const orderList = reordered.map((b, i) => ({
         BANNER_ID: b.BANNER_ID,
@@ -812,7 +820,7 @@ export default function PopupBannerPage() {
         toast.success('순서가 저장되었습니다.');
       } else {
         toast.error(res.ServiceResult.MESSAGE_TEXT || '순서 저장에 실패했습니다.');
-        loadBanners();
+        loadBanners(); // 실패 시 원래 순서로 복원
       }
     } catch {
       toast.error('순서 저장에 실패했습니다.');
@@ -825,7 +833,7 @@ export default function PopupBannerPage() {
   return (
     <div className="p-6 space-y-5">
       {/* 페이지 헤더 */}
-      <h1 className="text-2xl font-bold text-gray-900">팝업</h1>
+      <h1 className="text-2xl font-bold text-gray-900">미니배너</h1>
 
       {/* 검색 결과 */}
       <div className="flex items-center justify-between border-b border-gray-300 pb-3">
@@ -878,8 +886,10 @@ export default function PopupBannerPage() {
           strategy={rectSortingStrategy}
         >
           <div className="grid grid-cols-4 gap-4">
+            {/* 신규 등록 카드 (드래그 대상 아님) */}
             <AddBannerCard onClick={handleOpenAdd} />
 
+            {/* 배너 카드 목록 */}
             {banners.map((banner) => (
               <SortableBannerCard
                 key={banner.BANNER_ID}
@@ -919,7 +929,7 @@ export default function PopupBannerPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(v) => !v && setDeleteTarget(null)}
-        title="팝업 삭제"
+        title="배너 삭제"
         description="팝업은 삭제 후 복구할 수 없습니다. 정말 삭제하시겠습니까?"
         onConfirm={handleDeleteSingle}
         confirmLabel="삭제"

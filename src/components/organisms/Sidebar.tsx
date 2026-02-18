@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronDown,
   Columns3,
+  Image,
   LayoutDashboard,
   PenLine,
   UserPlus,
@@ -48,21 +49,14 @@ const NAV_ITEMS: NavItem[] = [
     href: '/cms/user/apply',
     icon: UserPlus,
   },
-  // {
-  //   title: '메인 배너 관리',
-  //   href: '/cms/banner/main',
-  //   icon: Image,
-  // },
-  // {
-  //   title: '미니 배너 관리',
-  //   href: '/cms/banner/strip',
-  //   icon: Megaphone,
-  // },
-  // {
-  //   title: '팝업 관리',
-  //   href: '/cms/banner/popup',
-  //   icon: Megaphone,
-  // },
+  {
+    title: '배너관리',
+    icon: Image,
+    children: [
+      { title: '미니배너', href: '/cms/banner/mini-banner' },
+      { title: '팝업', href: '/cms/banner/popup' },
+    ],
+  },
   // {
   //   title: '의료진',
   //   href: '/cms/doctor',
