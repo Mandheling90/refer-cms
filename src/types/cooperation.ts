@@ -106,6 +106,21 @@ export interface PartnerApplicationDetail extends PartnerApplicationModel {
   majorEquipment?: string;
   availableTreatments?: unknown;
   departmentSpecialists?: unknown;
+  /* 협력의원 체크리스트: 병원 세부 정보 */
+  clinicPhysicalTherapyRoom?: boolean;
+  clinicDialysisCount?: number | string;
+  clinicMedicationInjectable?: boolean;
+  clinicDermatologyCount?: number | string;
+  clinicLightTherapy?: boolean;
+  clinicExcimerLaser?: boolean;
+  clinicEntCount?: number | string;
+  clinicEarSurgeryDressing?: boolean;
+  clinicBetadineSoaking?: boolean;
+  clinicOtherCount?: number | string;
+  clinicSurgicalDressing?: boolean;
+  clinicStitchOut?: boolean;
+  clinicWoundCare?: boolean;
+  clinicEmail?: string;
 }
 
 /** 신청 목록 응답 */

@@ -1,9 +1,34 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-  DndContext,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { Contents } from '@/lib/api/contents';
+import { menuApi } from '@/lib/api/menu';
+import { cn } from '@/lib/utils';
+import type { Board } from '@/types/board';
+import type { Menu } from '@/types/menu';
+import {
   closestCenter,
+  DndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -13,37 +38,12 @@ import {
 import {
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
   useSortable,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from '@/components/ui/command';
-import { menuApi } from '@/lib/api/menu';
-import type { Menu } from '@/types/menu';
-import type { Board } from '@/types/board';
-import type { Contents } from '@/lib/api/contents';
-import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronRight, ChevronUp, GripVertical, Save, Plus } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
@@ -99,20 +99,34 @@ function SortableMenuRow({
   const isUsed = item.USE_YN !== 'N';
   const isGnb = item.GNB_YN === 'Y';
 
+  // 배지: GNB(빨강) > 사용(파랑) > 미사용(회색)
+  const badgeLabel = isGnb ? 'GNB' : isUsed ? '사용' : '미사용';
+  const badgeClass = isSelected
+    ? 'bg-white/20 text-white border-transparent'
+    : isGnb
+      ? 'bg-[#DE4841] text-white border-transparent'
+      : isUsed
+        ? 'bg-[#23B7E5] text-white border-transparent'
+        : 'bg-gray-500 text-white border-transparent';
+
+  const childCount = item.CHILD_COUNT ?? 0;
+  const countStr = String(childCount).padStart(2, '0');
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-2 px-3 py-2.5 border-b border-gray-200 cursor-pointer select-none',
+        'flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-300 cursor-pointer select-none',
         isSelected
           ? 'bg-[#23B7E5] text-white'
           : isUsed
-            ? 'bg-white hover:bg-gray-50'
-            : 'bg-gray-100 text-gray-400 hover:bg-gray-150'
+            ? 'bg-white hover:bg-gray-100'
+            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
       )}
       onClick={onClick}
     >
+      {/* 드래그 핸들 */}
       <button
         {...attributes}
         {...listeners}
@@ -122,40 +136,33 @@ function SortableMenuRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
+      {/* 배지 (GNB / 사용 / 미사용) */}
+      <Badge
+        className={cn(
+          'text-[10px] leading-none px-1.5 py-0.5 rounded shrink-0 font-medium border',
+          badgeClass
+        )}
+      >
+        {badgeLabel}
+      </Badge>
+
+      {/* 메뉴명 */}
       <span className="flex-1 text-sm truncate">{item.MENU_NAME}</span>
 
-      <div className="flex items-center gap-1 shrink-0">
-        {isGnb && (
-          <Badge
-            className={cn(
-              'text-[10px] px-1.5 py-0',
-              isSelected
-                ? 'bg-white/20 text-white border-white/30'
-                : 'bg-blue-100 text-blue-700 border-blue-200'
-            )}
-            variant="outline"
-          >
-            GNB
-          </Badge>
-        )}
-        {!isUsed && (
-          <Badge
-            className="text-[10px] px-1.5 py-0 bg-gray-200 text-gray-500 border-gray-300"
-            variant="outline"
-          >
-            미사용
-          </Badge>
-        )}
-        {(item.CHILD_COUNT ?? 0) > 0 && (
-          <span className={cn('text-xs', isSelected ? 'text-white/70' : 'text-gray-400')}>
-            ({item.CHILD_COUNT})
-          </span>
-        )}
-      </div>
-
+      {/* > 화살표 */}
       <ChevronRight
-        className={cn('h-4 w-4 shrink-0', isSelected ? 'text-white/70' : 'text-gray-300')}
+        className={cn('h-4 w-4 shrink-0', isSelected ? 'text-white/70' : 'text-gray-400')}
       />
+
+      {/* 카운트 */}
+      <span
+        className={cn(
+          'text-sm font-medium tabular-nums w-6 text-right shrink-0',
+          isSelected ? 'text-white' : 'text-gray-700'
+        )}
+      >
+        {countStr}
+      </span>
     </div>
   );
 }
@@ -200,14 +207,14 @@ function MenuColumn({
     }
   };
 
+  const countText = `${String(items.length).padStart(2, '0')} 건`;
+
   return (
-    <div className="flex flex-col border border-gray-300 rounded-lg bg-white min-w-[260px] flex-1">
+    <div className="flex flex-col border border-gray-300 rounded-lg bg-white min-w-[280px] flex-1">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300 bg-gray-50 rounded-t-lg">
-        <span className="text-sm font-semibold text-gray-700">
-          {title}
-          <span className="ml-1 text-gray-400 font-normal">({items.length})</span>
-        </span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300 bg-gray-100 rounded-t-lg">
+        <span className="text-sm font-bold text-gray-900">{title}</span>
+        <span className="text-sm font-bold text-gray-900">{countText}</span>
       </div>
 
       {/* List */}
@@ -228,17 +235,19 @@ function MenuColumn({
           </SortableContext>
         </DndContext>
         {items.length === 0 && (
-          <div className="p-8 text-center text-gray-400 text-sm">메뉴가 없습니다.</div>
+          <div className="p-8 text-center text-gray-500 text-sm">메뉴가 없습니다.</div>
         )}
       </div>
 
       {/* Footer buttons */}
-      <div className="flex gap-2 px-3 py-3 border-t border-gray-300">
-        <Button variant="outline" size="sm" className="flex-1" onClick={onSaveOrders}>
+      <div className="flex items-center justify-center gap-2 px-3 py-3 border-t border-gray-300">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={onSaveOrders}>
+          <Save className="h-3.5 w-3.5" />
           순서 저장
         </Button>
-        <Button variant="dark" size="sm" className="flex-1" onClick={onAddNew}>
-          신규 추가
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={onAddNew}>
+          <Plus className="h-3.5 w-3.5" />
+          신규 메뉴 추가
         </Button>
       </div>
     </div>
@@ -265,16 +274,29 @@ function ToggleSwitch({
       aria-checked={checked}
       disabled={disabled}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-        checked ? 'bg-[#23B7E5]' : 'bg-gray-300',
+        'relative inline-flex h-7 w-[60px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
+        checked ? 'bg-gray-300' : 'bg-gray-700',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       onClick={() => !disabled && onChange(!checked)}
     >
+      {/* ON 텍스트 (체크 해제 시 우측에) */}
+      {checked && (
+        <span className="absolute right-2 text-[10px] font-semibold text-gray-700 select-none">
+          ON
+        </span>
+      )}
+      {/* OFF 텍스트 (체크 해제 시 좌측에) */}
+      {!checked && (
+        <span className="absolute left-1.5 text-[10px] font-semibold text-white select-none">
+          OFF
+        </span>
+      )}
+      {/* 토글 원형 */}
       <span
         className={cn(
-          'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform',
-          checked ? 'translate-x-5' : 'translate-x-0'
+          'pointer-events-none inline-block h-5 w-5 rounded-full shadow transition-transform ml-0.5',
+          checked ? 'translate-x-0 bg-white' : 'translate-x-[34px] bg-gray-400'
         )}
       />
     </button>
@@ -399,7 +421,7 @@ function AddMenuDialog({
       });
   }, [open]);
 
-  const depthLabel = depth === 1 ? '최상위 메뉴' : '하위 메뉴';
+  const depthLabel = depth === 1 ? '최상위' : '하위';
 
   const updateField = <K extends keyof AddMenuFormData>(key: K, value: AddMenuFormData[K]) => {
     setForm((prev) => {
@@ -466,7 +488,7 @@ function AddMenuDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>{depthLabel} 추가</DialogTitle>
+          <DialogTitle>신규 메뉴 추가</DialogTitle>
         </DialogHeader>
         <DialogBody className="space-y-4">
           {/* 언어셋 */}
@@ -568,23 +590,27 @@ function AddMenuDialog({
             </div>
           )}
 
-          {/* GNB 노출여부 */}
-          <div className="flex items-center justify-between">
-            <Label>GNB 노출여부</Label>
-            <ToggleSwitch
-              checked={form.GNB_YN === 'Y'}
-              onChange={(v) => updateField('GNB_YN', v ? 'Y' : 'N')}
-              disabled={form.USE_YN === 'N'}
-            />
-          </div>
-
-          {/* 사용여부 */}
-          <div className="flex items-center justify-between">
-            <Label>메뉴 사용여부</Label>
-            <ToggleSwitch
-              checked={form.USE_YN === 'Y'}
-              onChange={(v) => updateField('USE_YN', v ? 'Y' : 'N')}
-            />
+          {/* GNB 노출여부 + 메뉴 사용여부 (한 줄) */}
+          <div className="flex gap-6">
+            <div className="flex-1 space-y-1.5">
+              <Label>
+                GNB 노출여부 <span className="text-destructive">*</span>
+              </Label>
+              <ToggleSwitch
+                checked={form.GNB_YN === 'Y'}
+                onChange={(v) => updateField('GNB_YN', v ? 'Y' : 'N')}
+                disabled={form.USE_YN === 'N'}
+              />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label>
+                메뉴 사용여부 <span className="text-destructive">*</span>
+              </Label>
+              <ToggleSwitch
+                checked={form.USE_YN === 'Y'}
+                onChange={(v) => updateField('USE_YN', v ? 'Y' : 'N')}
+              />
+            </div>
           </div>
         </DialogBody>
         <DialogFooter>
@@ -993,18 +1019,21 @@ export default function MenuPage() {
     }
   };
 
+  const subMenuTitle = selected1
+    ? `${selected1.MENU_NAME} > 하위 메뉴`
+    : '하위 메뉴';
+
   return (
     <div className="p-6 space-y-4">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">메뉴 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">국문</p>
+        <h1 className="text-2xl font-bold text-gray-900">메뉴관리</h1>
       </div>
 
       {/* Guide text */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-        <p className="text-sm text-blue-700">
-          각 항목의 아이콘을 드래그 &amp; 드롭 하시면 순서를 변경할 수 있습니다.
+      <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3">
+        <p className="text-sm text-gray-700">
+          각 항목의 아이콘을 드래그 &amp; 드롭 하시면 순서를 변경하실 수 있습니다.
         </p>
       </div>
 
@@ -1023,7 +1052,7 @@ export default function MenuPage() {
 
         {/* 하위 메뉴 */}
         <MenuColumn
-          title="하위 메뉴"
+          title={subMenuTitle}
           items={items2}
           selectedId={null}
           onSelect={() => {}}

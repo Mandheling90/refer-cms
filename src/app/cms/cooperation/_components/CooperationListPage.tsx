@@ -328,6 +328,18 @@ export function CooperationListPage({ title, partnerType, mode }: CooperationLis
       cell: ({ row }) => row.original.directorName || '-',
     },
     {
+      id: 'directorLicenseNo',
+      header: '면허번호',
+      size: 110,
+      cell: ({ row }) => row.original.directorLicenseNo || '-',
+    },
+    {
+      id: 'institutionType',
+      header: '의료기관 유형',
+      size: 130,
+      cell: ({ row }) => row.original.institutionType || '-',
+    },
+    {
       accessorKey: 'createdAt',
       header: '신청일시',
       size: 160,
@@ -635,7 +647,7 @@ export function CooperationListPage({ title, partnerType, mode }: CooperationLis
                     <FieldGroup label="요양기관번호">
                       <Input value={hospital?.phisCode || hospital?.classificationCode || ''} disabled />
                     </FieldGroup>
-                    <FieldGroup label="병원종별코드 주소">
+                    <FieldGroup label={isHospital ? '병원종별코드 주소' : '병원홈페이지 주소'}>
                       <Input value={hospital?.website || ''} disabled />
                     </FieldGroup>
                   </div>
@@ -643,248 +655,313 @@ export function CooperationListPage({ title, partnerType, mode }: CooperationLis
                     <FieldGroup label="병원 전화번호">
                       <Input value={hospital?.phone || ''} disabled />
                     </FieldGroup>
-                    <FieldGroup label="팩스번호">
+                    <FieldGroup label={isHospital ? '팩스번호' : '병원FAX'}>
                       <Input value={hospital?.faxNumber || ''} disabled />
                     </FieldGroup>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
-                    <FieldGroup label="우편번호">
-                      <Input value={hospital?.zipCode || ''} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="주소">
+                    <FieldGroup label="병원 주소">
                       <Input value={hospital?.address || ''} disabled />
                     </FieldGroup>
-                    <FieldGroup label="상세주소">
-                      <Input value={hospital?.addressDetail || ''} disabled />
+                    <FieldGroup label={isHospital ? '상세주소' : '우편번호'}>
+                      <Input value={isHospital ? (hospital?.addressDetail || '') : (hospital?.zipCode || '')} disabled />
                     </FieldGroup>
+                    {isHospital && (
+                      <FieldGroup label="우편번호">
+                        <Input value={hospital?.zipCode || ''} disabled />
+                      </FieldGroup>
+                    )}
                   </div>
 
-                  {/* 병상 운영 현황 */}
-                  <SectionHeader>병상 운영 현황</SectionHeader>
-                  <div className="grid grid-cols-3 gap-4">
-                    <FieldGroup label="가동병상수">
-                      <Input value={selectedItem.activeBedCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <FieldGroup label="상급병실">
-                      <Input value={selectedItem.premiumRoomCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="다인실">
-                      <Input value={selectedItem.multiRoomCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="격리병실">
-                      <Input value={selectedItem.isolationRoomCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                  </div>
-
-                  {/* 시설 운영 현황 */}
-                  <SectionHeader>시설 운영 현황</SectionHeader>
-                  <div className="grid grid-cols-3 gap-4">
-                    <FieldGroup label="중환자실">
-                      <Input value={selectedItem.icuCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="응급실">
-                      <Input value={selectedItem.erCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-semibold text-foreground">정신과병동</label>
-                      <div className="flex items-center gap-4 h-9">
-                        <CheckItem label="일반병동" checked={selectedItem.hasPsychGeneral} />
-                        <CheckItem label="폐쇄병동" checked={selectedItem.hasPsychClosed} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <RadioField label="인공신장실" value={selectedItem.hasDialysisRoom} />
-                    <RadioField label="수술실" value={selectedItem.hasOperatingRoom} />
-                    <RadioField label="호스피스" value={selectedItem.hasHospice} />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">재활치료</p>
-                  <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    <CheckItem label="물리치료" checked={selectedItem.hasPhysicalTherapy} />
-                    <CheckItem label="작업치료" checked={selectedItem.hasRehabOt} />
-                    <CheckItem label="언어재활" checked={selectedItem.hasRehabSt} />
-                    <CheckItem label="연하재활" checked={selectedItem.hasRehabSwallow} />
-                    <CheckItem label="격리재활" checked={selectedItem.hasRehabIsolation} />
-                  </div>
-
-                  {/* 진료과 운영 현황 */}
-                  <SectionHeader>진료과 운영 현황(전문의 수)</SectionHeader>
-                  {(() => {
-                    const depts = (selectedItem.departmentSpecialists as Record<string, unknown>) || {};
-                    const DEPT_LIST = [
-                      '가정의학과', '내과', '마취통증의학과', '방사선종양학과', '병리과',
-                      '비뇨의학과', '산부인과', '성형외과', '소아청소년과', '신경과',
-                      '신경외과', '신장내과', '안과', '영상의학과', '외과',
-                      '응급의학과', '이비인후과', '재활의학과', '정신건강의학과', '정형외과',
-                      '진단검사의학과', '치과', '피부과', '심장혈관흉부외과', '한의학과', '기타',
-                    ];
-                    return (
+                  {isHospital ? (
+                    <>
+                      {/* ═══ 협력병원: 전체 체크리스트 ═══ */}
+                      {/* 병상 운영 현황 */}
+                      <SectionHeader>병상 운영 현황</SectionHeader>
                       <div className="grid grid-cols-3 gap-4">
-                        {DEPT_LIST.map((dept) => (
-                          <FieldGroup key={dept} label={dept}>
-                            <Input value={String(depts[dept] ?? '')} disabled />
-                          </FieldGroup>
-                        ))}
+                        <FieldGroup label="가동병상수">
+                          <Input value={selectedItem.activeBedCount?.toString() || ''} disabled />
+                        </FieldGroup>
                       </div>
-                    );
-                  })()}
-
-                  {/* 간병시스템 */}
-                  <SectionHeader>간병시스템</SectionHeader>
-                  <div className="grid grid-cols-3 gap-4">
-                    <RadioField label="간호간병통합서비스" value={selectedItem.hasIntegratedNursing} />
-                    <RadioField label="보호자 간병" value={selectedItem.hasGuardianCare} />
-                    <RadioField label="공동 간병" value={selectedItem.hasSharedCare} />
-                  </div>
-
-                  {/* 격리병상 운영 현황 */}
-                  <SectionHeader>
-                    <span className="flex items-center gap-4">
-                      격리병상 운영 현황
-                      <RadioField label="" value={selectedItem.hasRehabIsolation} inline />
-                    </span>
-                  </SectionHeader>
-                  <div className="grid grid-cols-3 gap-4">
-                    <FieldGroup label="격리병상 수(1인실)">
-                      <Input value={selectedItem.isolationSingleCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="격리병상 수(2인실)">
-                      <Input value={selectedItem.isolationDoubleCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="격리병상 수(다인실)">
-                      <Input value={selectedItem.isolationTripleCount?.toString() || ''} disabled />
-                    </FieldGroup>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">격리유형</p>
-                  {(() => {
-                    const types = selectedItem.isolationTypes;
-                    const checkedSet = new Set<string>(
-                      Array.isArray(types) ? types as string[] : typeof types === 'object' && types ? Object.keys(types as Record<string, unknown>) : []
-                    );
-                    const ISOLATION_TYPES = ['VRE', 'CRE', 'CPE', 'TB', '기타'];
-                    return (
-                      <div className="flex flex-wrap gap-x-6 gap-y-2">
-                        {ISOLATION_TYPES.map((t) => (
-                          <CheckItem key={t} label={t} checked={checkedSet.has(t)} />
-                        ))}
+                      <div className="grid grid-cols-3 gap-4">
+                        <FieldGroup label="상급병실">
+                          <Input value={selectedItem.premiumRoomCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                        <FieldGroup label="다인실">
+                          <Input value={selectedItem.multiRoomCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                        <FieldGroup label="격리병실">
+                          <Input value={selectedItem.isolationRoomCount?.toString() || ''} disabled />
+                        </FieldGroup>
                       </div>
-                    );
-                  })()}
-                  <p className="text-sm font-semibold text-foreground">격리 중 간병</p>
-                  {(() => {
-                    const careType = selectedItem.isolationCareType || '';
-                    const CARE_TYPES = ['공동간병', '개인간병', '보호자간병'];
-                    return (
-                      <div className="flex flex-wrap gap-x-6 gap-y-2">
-                        {CARE_TYPES.map((t) => (
-                          <CheckItem key={t} label={t} checked={careType.includes(t)} />
-                        ))}
-                      </div>
-                    );
-                  })()}
-                  <p className="text-sm font-semibold text-foreground">격리 중 재활</p>
-                  {(() => {
-                    const rehabType = selectedItem.isolationRehabType || '';
-                    const REHAB_TYPES = ['No', '침상재활', '격리병동 재활실 운영'];
-                    return (
-                      <div className="flex flex-wrap gap-x-6 gap-y-2">
-                        {REHAB_TYPES.map((t) => (
-                          <CheckItem key={t} label={t} checked={rehabType.includes(t)} />
-                        ))}
-                      </div>
-                    );
-                  })()}
 
-                  {/* 주요 보유 장비 */}
-                  <SectionHeader>주요 보유 장비</SectionHeader>
-                  {(() => {
-                    const equip = selectedItem.majorEquipment || '';
-                    const EQUIPMENT_LIST = [
-                      'X-RAY', 'MRI', 'CT', 'PET', '초음파', '심장초음파',
-                      'EKG', '내시경', 'mammography', 'VFSS', '골밀도 검사기',
-                      'CPM', 'Ventilator', 'Home Ventilator', 'High flow O2',
-                      'Pratable O2/Suction', 'PFT', '혈액투석기', 'CRRT',
-                      '정맥주입기 (Infusion pump)',
-                    ];
-                    return (
-                      <div className="grid grid-cols-5 gap-x-4 gap-y-2">
-                        {EQUIPMENT_LIST.map((e) => (
-                          <CheckItem key={e} label={e} checked={equip.includes(e)} />
-                        ))}
-                      </div>
-                    );
-                  })()}
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">기타장비</p>
-                    <div className="grid grid-cols-3 gap-4">
-                      <Input value="" disabled placeholder="기타장비명" />
-                      <Input value="" disabled placeholder="기타장비명" />
-                      <Input value="" disabled placeholder="기타장비명" />
-                    </div>
-                  </div>
-
-                  {/* 기본 처치 가능 항목 */}
-                  <SectionHeader>기본 처치 가능 항목</SectionHeader>
-                  {(() => {
-                    const treatments = selectedItem.availableTreatments;
-                    const treatStr = typeof treatments === 'string' ? treatments : JSON.stringify(treatments ?? '');
-                    const isChecked = (item: string) => treatStr.includes(item);
-
-                    const TREATMENT_CATEGORIES = [
-                      {
-                        category: '관리',
-                        items: [
-                          'Tracheostomy care', 'E-tube', 'L-tube', 'PEG',
-                          'Foley/Nelaton(CIC)', '배액관(위루관, 장루, 요루 등)',
-                          '중심정맥관 삽입 및 관리', 'Chemo-port 관리',
-                        ],
-                      },
-                      {
-                        category: '처방',
-                        items: [
-                          '수혈(전혈, 적혈구, 혈소판)', 'TPN/PPN',
-                          '항생제(1, 3세대, Vanco 등)',
-                        ],
-                      },
-                      {
-                        category: '드레싱',
-                        items: [
-                          '욕창 예방 및 치료', 'Vaccum 관리',
-                          '단순드레싱 및 복합드레싱',
-                        ],
-                      },
-                      {
-                        category: '처치',
-                        items: [
-                          'Intubation', 'Ventilator care', 'Home Ventilator',
-                          'High flow O2', 'O2 Therapy', 'Suction',
-                          '복수천자', '흉수천자', '흉관 삽입 및 관리',
-                          '혈액투석', '복막투석', 'Enema',
-                        ],
-                      },
-                    ];
-
-                    return TREATMENT_CATEGORIES.map(({ category, items }) => (
-                      <div key={category}>
-                        <p className="text-sm font-semibold text-foreground">{category}</p>
-                        <div className="grid grid-cols-5 gap-x-4 gap-y-2 mt-1">
-                          {items.map((item) => (
-                            <CheckItem key={item} label={item} checked={isChecked(item)} />
-                          ))}
+                      {/* 시설 운영 현황 */}
+                      <SectionHeader>시설 운영 현황</SectionHeader>
+                      <div className="grid grid-cols-3 gap-4">
+                        <FieldGroup label="중환자실">
+                          <Input value={selectedItem.icuCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                        <FieldGroup label="응급실">
+                          <Input value={selectedItem.erCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-sm font-semibold text-foreground">정신과병동</label>
+                          <div className="flex items-center gap-4 h-9">
+                            <CheckItem label="일반병동" checked={selectedItem.hasPsychGeneral} />
+                            <CheckItem label="폐쇄병동" checked={selectedItem.hasPsychClosed} />
+                          </div>
                         </div>
                       </div>
-                    ));
-                  })()}
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">기타항목</p>
-                    <div className="grid grid-cols-3 gap-4">
-                      <Input value="" disabled placeholder="기타항목명" />
-                      <Input value="" disabled placeholder="기타항목명" />
-                      <Input value="" disabled placeholder="기타항목명" />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <RadioField label="인공신장실" value={selectedItem.hasDialysisRoom} />
+                        <RadioField label="수술실" value={selectedItem.hasOperatingRoom} />
+                        <RadioField label="호스피스" value={selectedItem.hasHospice} />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">재활치료</p>
+                      <div className="flex flex-wrap gap-x-6 gap-y-2">
+                        <CheckItem label="물리치료" checked={selectedItem.hasPhysicalTherapy} />
+                        <CheckItem label="작업치료" checked={selectedItem.hasRehabOt} />
+                        <CheckItem label="언어재활" checked={selectedItem.hasRehabSt} />
+                        <CheckItem label="연하재활" checked={selectedItem.hasRehabSwallow} />
+                        <CheckItem label="격리재활" checked={selectedItem.hasRehabIsolation} />
+                      </div>
+
+                      {/* 진료과 운영 현황 */}
+                      <SectionHeader>진료과 운영 현황(전문의 수)</SectionHeader>
+                      {(() => {
+                        const depts = (selectedItem.departmentSpecialists as Record<string, unknown>) || {};
+                        const DEPT_LIST = [
+                          '가정의학과', '내과', '마취통증의학과', '방사선종양학과', '병리과',
+                          '비뇨의학과', '산부인과', '성형외과', '소아청소년과', '신경과',
+                          '신경외과', '신장내과', '안과', '영상의학과', '외과',
+                          '응급의학과', '이비인후과', '재활의학과', '정신건강의학과', '정형외과',
+                          '진단검사의학과', '치과', '피부과', '심장혈관흉부외과', '한의학과', '기타',
+                        ];
+                        return (
+                          <div className="grid grid-cols-3 gap-4">
+                            {DEPT_LIST.map((dept) => (
+                              <FieldGroup key={dept} label={dept}>
+                                <Input value={String(depts[dept] ?? '')} disabled />
+                              </FieldGroup>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
+                      {/* 간병시스템 */}
+                      <SectionHeader>간병시스템</SectionHeader>
+                      <div className="grid grid-cols-3 gap-4">
+                        <RadioField label="간호간병통합서비스" value={selectedItem.hasIntegratedNursing} />
+                        <RadioField label="보호자 간병" value={selectedItem.hasGuardianCare} />
+                        <RadioField label="공동 간병" value={selectedItem.hasSharedCare} />
+                      </div>
+
+                      {/* 격리병상 운영 현황 */}
+                      <SectionHeader>
+                        <span className="flex items-center gap-4">
+                          격리병상 운영 현황
+                          <RadioField label="" value={selectedItem.hasRehabIsolation} inline />
+                        </span>
+                      </SectionHeader>
+                      <div className="grid grid-cols-3 gap-4">
+                        <FieldGroup label="격리병상 수(1인실)">
+                          <Input value={selectedItem.isolationSingleCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                        <FieldGroup label="격리병상 수(2인실)">
+                          <Input value={selectedItem.isolationDoubleCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                        <FieldGroup label="격리병상 수(다인실)">
+                          <Input value={selectedItem.isolationTripleCount?.toString() || ''} disabled />
+                        </FieldGroup>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">격리유형</p>
+                      {(() => {
+                        const types = selectedItem.isolationTypes;
+                        const checkedSet = new Set<string>(
+                          Array.isArray(types) ? types as string[] : typeof types === 'object' && types ? Object.keys(types as Record<string, unknown>) : []
+                        );
+                        const ISOLATION_TYPES = ['VRE', 'CRE', 'CPE', 'TB', '기타'];
+                        return (
+                          <div className="flex flex-wrap gap-x-6 gap-y-2">
+                            {ISOLATION_TYPES.map((t) => (
+                              <CheckItem key={t} label={t} checked={checkedSet.has(t)} />
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      <p className="text-sm font-semibold text-foreground">격리 중 간병</p>
+                      {(() => {
+                        const careType = selectedItem.isolationCareType || '';
+                        const CARE_TYPES = ['공동간병', '개인간병', '보호자간병'];
+                        return (
+                          <div className="flex flex-wrap gap-x-6 gap-y-2">
+                            {CARE_TYPES.map((t) => (
+                              <CheckItem key={t} label={t} checked={careType.includes(t)} />
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      <p className="text-sm font-semibold text-foreground">격리 중 재활</p>
+                      {(() => {
+                        const rehabType = selectedItem.isolationRehabType || '';
+                        const REHAB_TYPES = ['No', '침상재활', '격리병동 재활실 운영'];
+                        return (
+                          <div className="flex flex-wrap gap-x-6 gap-y-2">
+                            {REHAB_TYPES.map((t) => (
+                              <CheckItem key={t} label={t} checked={rehabType.includes(t)} />
+                            ))}
+                          </div>
+                        );
+                      })()}
+
+                      {/* 주요 보유 장비 */}
+                      <SectionHeader>주요 보유 장비</SectionHeader>
+                      {(() => {
+                        const equip = selectedItem.majorEquipment || '';
+                        const EQUIPMENT_LIST = [
+                          'X-RAY', 'MRI', 'CT', 'PET', '초음파', '심장초음파',
+                          'EKG', '내시경', 'mammography', 'VFSS', '골밀도 검사기',
+                          'CPM', 'Ventilator', 'Home Ventilator', 'High flow O2',
+                          'Pratable O2/Suction', 'PFT', '혈액투석기', 'CRRT',
+                          '정맥주입기 (Infusion pump)',
+                        ];
+                        return (
+                          <div className="grid grid-cols-5 gap-x-4 gap-y-2">
+                            {EQUIPMENT_LIST.map((e) => (
+                              <CheckItem key={e} label={e} checked={equip.includes(e)} />
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">기타장비</p>
+                        <div className="grid grid-cols-3 gap-4">
+                          <Input value="" disabled placeholder="기타장비명" />
+                          <Input value="" disabled placeholder="기타장비명" />
+                          <Input value="" disabled placeholder="기타장비명" />
+                        </div>
+                      </div>
+
+                      {/* 기본 처치 가능 항목 */}
+                      <SectionHeader>기본 처치 가능 항목</SectionHeader>
+                      {(() => {
+                        const treatments = selectedItem.availableTreatments;
+                        const treatStr = typeof treatments === 'string' ? treatments : JSON.stringify(treatments ?? '');
+                        const isChecked = (item: string) => treatStr.includes(item);
+
+                        const TREATMENT_CATEGORIES = [
+                          {
+                            category: '관리',
+                            items: [
+                              'Tracheostomy care', 'E-tube', 'L-tube', 'PEG',
+                              'Foley/Nelaton(CIC)', '배액관(위루관, 장루, 요루 등)',
+                              '중심정맥관 삽입 및 관리', 'Chemo-port 관리',
+                            ],
+                          },
+                          {
+                            category: '처방',
+                            items: [
+                              '수혈(전혈, 적혈구, 혈소판)', 'TPN/PPN',
+                              '항생제(1, 3세대, Vanco 등)',
+                            ],
+                          },
+                          {
+                            category: '드레싱',
+                            items: [
+                              '욕창 예방 및 치료', 'Vaccum 관리',
+                              '단순드레싱 및 복합드레싱',
+                            ],
+                          },
+                          {
+                            category: '처치',
+                            items: [
+                              'Intubation', 'Ventilator care', 'Home Ventilator',
+                              'High flow O2', 'O2 Therapy', 'Suction',
+                              '복수천자', '흉수천자', '흉관 삽입 및 관리',
+                              '혈액투석', '복막투석', 'Enema',
+                            ],
+                          },
+                        ];
+
+                        return TREATMENT_CATEGORIES.map(({ category, items }) => (
+                          <div key={category}>
+                            <p className="text-sm font-semibold text-foreground">{category}</p>
+                            <div className="grid grid-cols-5 gap-x-4 gap-y-2 mt-1">
+                              {items.map((item) => (
+                                <CheckItem key={item} label={item} checked={isChecked(item)} />
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">기타항목</p>
+                        <div className="grid grid-cols-3 gap-4">
+                          <Input value="" disabled placeholder="기타항목명" />
+                          <Input value="" disabled placeholder="기타항목명" />
+                          <Input value="" disabled placeholder="기타항목명" />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* ═══ 협력의원: 제한된 체크리스트 ═══ */}
+                      <SectionHeader>병원 세부 정보</SectionHeader>
+
+                      {/* 물리치료실 / 투석 / 투약 */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <RadioField label="물리치료실" value={selectedItem.hasPhysicalTherapy} />
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-sm font-semibold text-foreground">투석</label>
+                          <div className="flex items-center h-10 gap-4">
+                            <CheckItem label="혈액" checked={selectedItem.hasDialysisRoom} />
+                            <CheckItem label="복막" checked={selectedItem.hasRehabIsolation} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-sm font-semibold text-foreground">투약</label>
+                          <div className="flex items-center h-10 gap-4">
+                            <label className="flex items-center gap-1.5 text-sm">
+                              <input type="radio" className="accent-primary" checked={selectedItem.clinicMedicationInjectable !== true} disabled />
+                              불가능
+                            </label>
+                            <label className="flex items-center gap-1.5 text-sm">
+                              <input type="radio" className="accent-primary" checked={selectedItem.clinicMedicationInjectable === true} disabled />
+                              G-CSF 피하주사 투여 가능
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 피부과 / 이비인후과 */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-sm font-semibold text-foreground">피부과</label>
+                          <div className="flex items-center h-10 gap-4">
+                            <CheckItem label="광선치료" checked={selectedItem.clinicLightTherapy} />
+                            <CheckItem label="엑시머레이저" checked={selectedItem.clinicExcimerLaser} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-sm font-semibold text-foreground">이비인후과</label>
+                          <div className="flex items-center h-10 gap-4">
+                            <CheckItem label="귀 수술환자 단순 소독" checked={selectedItem.clinicEarSurgeryDressing} />
+                            <CheckItem label="Betadine Soaking" checked={selectedItem.clinicBetadineSoaking} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 기타 */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-semibold text-foreground">기타</label>
+                        <div className="flex flex-wrap gap-x-6 gap-y-2">
+                          <CheckItem label="수술부위 단순 소독" checked={selectedItem.clinicSurgicalDressing} />
+                          <CheckItem label="stich out" checked={selectedItem.clinicStitchOut} />
+                          <CheckItem label="Chemoport needle out" checked={selectedItem.clinicWoundCare} />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </TabsContent>
               </Tabs>
             ) : null}
