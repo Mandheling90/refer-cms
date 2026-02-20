@@ -11,6 +11,7 @@ import {
   Image,
   LayoutDashboard,
   PenLine,
+  Stethoscope,
   UserPlus,
   Users
 } from 'lucide-react';
@@ -57,11 +58,11 @@ const NAV_ITEMS: NavItem[] = [
       { title: '팝업', href: '/cms/banner/popup' },
     ],
   },
-  // {
-  //   title: '의료진',
-  //   href: '/cms/doctor',
-  //   icon: Stethoscope,
-  // },
+  {
+    title: '의료진',
+    href: '/cms/medical-staff',
+    icon: Stethoscope,
+  },
   // {
   //   title: '협력병의원 체결관리',
   //   href: '/cms/cooperation/contract',

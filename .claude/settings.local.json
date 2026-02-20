@@ -30,7 +30,13 @@
       "mcp__figma__get_figma_data",
       "WebFetch(domain:refer-front-test.vercel.app)",
       "WebFetch(domain:223.130.133.40)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth status:*)",
+      "mcp__claude_ai_Figma__get_design_context",
+      "mcp__claude_ai_Figma__get_screenshot",
+      "Bash(npx shadcn@latest add:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
