@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronDown,
   Columns3,
+  FileImage,
   Image,
   LayoutDashboard,
   PenLine,
@@ -84,11 +85,15 @@ const NAV_ITEMS: NavItem[] = [
       { title: '협력의원 수정 관리', href: '/cms/cooperation/clinic-edit' },
     ],
   },
-  // {
-  //   title: '검사이미지 관리',
-  //   href: '/cms/exam-image',
-  //   icon: FileImage,
-  // },
+  {
+    title: '검사이미지 관리',
+    icon: FileImage,
+    children: [
+      { title: '영상검사', href: '/cms/exam-image/radiology' },
+      { title: '내시경검사', href: '/cms/exam-image/endoscopy' },
+      { title: '기타검사', href: '/cms/exam-image/etc' },
+    ],
+  },
   // {
   //   title: '게시판 설정',
   //   href: '/cms/board/config',
