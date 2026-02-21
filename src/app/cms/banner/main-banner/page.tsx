@@ -30,13 +30,15 @@ import {
   Check,
   CheckSquare,
   GripVertical,
+  Image as ImageIcon,
   Pencil,
+  Play,
   Plus,
   RotateCcw,
-  Upload,
   Save,
   Search,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -62,6 +64,9 @@ import { CSS } from '@dnd-kit/utilities';
 
 const PAGE_SIZE = 12;
 const MAX_ACTIVE_COUNT = 12;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+const MAX_SLOGAN_LENGTH = 30;
 
 const SITE_OPTIONS = [
   { value: 'anam', label: '안암' },
@@ -162,6 +167,103 @@ function LinkTypeToggle({
 }
 
 // ---------------------------------------------------------------------------
+// ImageUploadArea (재사용 가능한 이미지 업로드 영역)
+// ---------------------------------------------------------------------------
+
+function ImageUploadArea({
+  label,
+  sizeText,
+  preview,
+  onFileChange,
+  disabled,
+}: {
+  label: string;
+  sizeText: string;
+  preview: string | null;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    // FileList를 가진 가짜 이벤트를 만들어 기존 onFileChange 핸들러 재사용
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    const syntheticEvent = {
+      target: { files: dataTransfer.files },
+    } as React.ChangeEvent<HTMLInputElement>;
+    onFileChange(syntheticEvent);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  return (
+    <div className={cn('space-y-2', disabled && 'opacity-40 pointer-events-none')}>
+      <Label className="text-sm font-bold">{label}</Label>
+      <div
+        className={cn(
+          'flex flex-col items-center justify-center w-full min-h-[180px] border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+          dragOver
+            ? 'border-primary bg-primary/5'
+            : 'border-gray-400 hover:border-primary'
+        )}
+        onClick={() => fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {preview ? (
+          <img
+            src={preview}
+            alt="미리보기"
+            className="max-h-[160px] object-contain rounded-lg my-2"
+          />
+        ) : (
+          <>
+            <Upload className="h-8 w-8 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-500">
+              {dragOver ? '여기에 파일을 놓으세요.' : '이곳에 파일을 드래그&드롭 하거나 클릭하여 선택하세요.'}
+            </p>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <span>{sizeText}</span>
+        <span className="text-gray-300">|</span>
+        <span>파일형식: PNG, JPG</span>
+        <span className="text-gray-300">|</span>
+        <span>최대 5MB</span>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg"
+        className="hidden"
+        onChange={onFileChange}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // BannerCardContent (공통 카드 UI)
 // ---------------------------------------------------------------------------
 
@@ -186,6 +288,7 @@ function BannerCardContent({
   index: number;
 }) {
   const isUsed = banner.USE_YN !== 'N';
+  const isVideo = banner.MEDIA_TYPE === 'VIDEO';
 
   const formatPeriod = () => {
     if (banner.ALWAYS_YN === 'Y') return '상시 노출';
@@ -221,6 +324,19 @@ function BannerCardContent({
               미사용
             </Badge>
           )}
+          <Badge className="gap-1 text-xs px-2 py-0.5 bg-gray-100 text-gray-700 border-gray-300" variant="outline">
+            {isVideo ? (
+              <>
+                <Play className="h-3 w-3" />
+                영상
+              </>
+            ) : (
+              <>
+                <ImageIcon className="h-3 w-3" />
+                이미지
+              </>
+            )}
+          </Badge>
         </div>
         <button
           className="p-1 text-gray-500 hover:text-red-500 transition-colors"
@@ -247,7 +363,7 @@ function BannerCardContent({
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm">
             <Pencil className="h-5 w-5 mb-1" />
-            <span>팝업 이미지</span>
+            <span>배너 이미지</span>
             <span>조회 및 수정</span>
           </div>
         )}
@@ -267,7 +383,7 @@ function BannerCardContent({
         ) : (
           <div
             className="p-0.5 text-gray-300 shrink-0"
-            title={banner.USE_YN === 'N' ? '미사용 팝업은 순서변경이 불가합니다' : ''}
+            title={banner.USE_YN === 'N' ? '미사용 배너는 순서변경이 불가합니다' : '1페이지에서만 순서변경이 가능합니다'}
           >
             <GripVertical className="h-4 w-4" />
           </div>
@@ -414,21 +530,21 @@ function AddBannerCard({ onClick }: { onClick: () => void }) {
             <Plus className="h-5 w-5 text-gray-500 group-hover:text-primary transition-colors" />
           </div>
           <span className="text-sm font-medium text-gray-500 group-hover:text-primary transition-colors">
-            팝업 등록
+            배너 등록
           </span>
         </div>
       </div>
 
       {/* 하단: 높이 맞춤 */}
       <div className="px-3 py-2.5 min-h-[52px] flex items-center">
-        <span className="text-xs text-gray-400">새로운 팝업을 등록합니다.</span>
+        <span className="text-xs text-gray-400">새로운 배너를 등록합니다.</span>
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// BannerFormDialog (등록/수정 다이얼로그) - 기존 유지
+// BannerFormDialog (등록/수정 다이얼로그)
 // ---------------------------------------------------------------------------
 
 interface BannerFormData {
@@ -436,12 +552,25 @@ interface BannerFormData {
   USE_YN: string;
   LINK_TYPE: string;
   ALWAYS_YN: string;
+  MEDIA_TYPE: string;
   START_DATE: string;
   START_TIME: string;
   END_DATE: string;
   END_TIME: string;
   LINK_URL: string;
+  // 이미지 배너 (라이트/다크 × PC/Mobile)
   IMAGE_URL: string;
+  MOBILE_IMAGE_URL: string;
+  PC_IMAGE_DARK: string;
+  MOBILE_IMAGE_DARK: string;
+  // 영상 배너 (라이트/다크)
+  VIDEO_URL: string;
+  VIDEO_URL_DARK: string;
+  // 설명 & 슬로건
+  MEDIA_DESC: string;
+  MAIN_SLOGAN: string;
+  SUB_SLOGAN: string;
+  // 타임스탬프
   INSERT_DTTM?: string;
   UPDATE_DTTM?: string;
 }
@@ -450,12 +579,21 @@ const INITIAL_FORM: BannerFormData = {
   USE_YN: 'Y',
   LINK_TYPE: 'NEW',
   ALWAYS_YN: 'N',
+  MEDIA_TYPE: 'IMAGE',
   START_DATE: '',
   START_TIME: '',
   END_DATE: '',
   END_TIME: '',
   LINK_URL: '',
   IMAGE_URL: '',
+  MOBILE_IMAGE_URL: '',
+  PC_IMAGE_DARK: '',
+  MOBILE_IMAGE_DARK: '',
+  VIDEO_URL: '',
+  VIDEO_URL_DARK: '',
+  MEDIA_DESC: '',
+  MAIN_SLOGAN: '',
+  SUB_SLOGAN: '',
 };
 
 function BannerFormDialog({
@@ -474,10 +612,13 @@ function BannerFormDialog({
   siteCd: SiteCode;
 }) {
   const [form, setForm] = useState<BannerFormData>(INITIAL_FORM);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 이미지 미리보기 (4개)
+  const [pcLightPreview, setPcLightPreview] = useState<string | null>(null);
+  const [mobileLightPreview, setMobileLightPreview] = useState<string | null>(null);
+  const [pcDarkPreview, setPcDarkPreview] = useState<string | null>(null);
+  const [mobileDarkPreview, setMobileDarkPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -487,52 +628,87 @@ function BannerFormDialog({
         USE_YN: editBanner.USE_YN || 'Y',
         LINK_TYPE: editBanner.LINK_TYPE || 'NEW',
         ALWAYS_YN: editBanner.ALWAYS_YN || 'N',
+        MEDIA_TYPE: editBanner.MEDIA_TYPE || 'IMAGE',
         START_DATE: editBanner.START_DATE || '',
         START_TIME: editBanner.START_TIME || '',
         END_DATE: editBanner.END_DATE || '',
         END_TIME: editBanner.END_TIME || '',
         LINK_URL: editBanner.LINK_URL || '',
         IMAGE_URL: editBanner.IMAGE_URL || '',
+        MOBILE_IMAGE_URL: editBanner.MOBILE_IMAGE_URL || '',
+        PC_IMAGE_DARK: editBanner.PC_IMAGE_DARK || '',
+        MOBILE_IMAGE_DARK: editBanner.MOBILE_IMAGE_DARK || '',
+        VIDEO_URL: editBanner.VIDEO_URL || '',
+        VIDEO_URL_DARK: editBanner.VIDEO_URL_DARK || '',
+        MEDIA_DESC: editBanner.MEDIA_DESC || '',
+        MAIN_SLOGAN: editBanner.MAIN_SLOGAN || '',
+        SUB_SLOGAN: editBanner.SUB_SLOGAN || '',
         INSERT_DTTM: editBanner.INSERT_DTTM,
         UPDATE_DTTM: editBanner.UPDATE_DTTM,
       });
-      setImagePreview(editBanner.IMAGE_URL || null);
+      setPcLightPreview(editBanner.IMAGE_URL || null);
+      setMobileLightPreview(editBanner.MOBILE_IMAGE_URL || null);
+      setPcDarkPreview(editBanner.PC_IMAGE_DARK || null);
+      setMobileDarkPreview(editBanner.MOBILE_IMAGE_DARK || null);
     } else {
       setForm(INITIAL_FORM);
-      setImagePreview(null);
+      setPcLightPreview(null);
+      setMobileLightPreview(null);
+      setPcDarkPreview(null);
+      setMobileDarkPreview(null);
     }
   }, [open, editBanner]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const validateAndReadFile = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setPreview: (v: string | null) => void,
+    expectedWidth?: number,
+    expectedHeight?: number,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 파일 확장자 체크
     const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.png') && !fileName.endsWith('.jpg') && !fileName.endsWith('.jpeg')) {
+    const validExtensions = ['.png', '.jpg', '.jpeg'];
+    const hasValidExt = validExtensions.some((ext) => fileName.endsWith(ext));
+    if (!hasValidExt) {
       alert('PNG, JPG 확장자 파일만 업로드 가능합니다.');
       return;
     }
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+
+    // MIME 타입 체크
+    if (!ACCEPTED_TYPES.includes(file.type)) {
       alert('PNG, JPG 형식만 업로드 가능합니다.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      alert('파일 크기는 2MB 미만이어야 합니다.');
+
+    // 파일 크기 체크
+    if (file.size > MAX_FILE_SIZE) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      const img = new window.Image();
-      img.onload = () => {
-        if (img.width !== 588 || img.height !== 439) {
-          alert(`이미지 사이즈가 맞지 않습니다.\n(588x439px 필요, 현재 ${img.width}x${img.height}px)`);
-          return;
-        }
-        setImagePreview(dataUrl);
-      };
-      img.src = dataUrl;
+
+      // 이미지 사이즈 체크
+      if (expectedWidth && expectedHeight) {
+        const img = new window.Image();
+        img.onload = () => {
+          if (img.width !== expectedWidth || img.height !== expectedHeight) {
+            alert(
+              `이미지 사이즈가 맞지 않습니다. (${expectedWidth}x${expectedHeight}px 필요, 현재 ${img.width}x${img.height}px)`
+            );
+            return;
+          }
+          setPreview(dataUrl);
+        };
+        img.src = dataUrl;
+      } else {
+        setPreview(dataUrl);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -544,7 +720,7 @@ function BannerFormDialog({
     const isNewActive = form.USE_YN === 'Y';
     const wasAlreadyActive = editBanner?.USE_YN === 'Y';
     if (isNewActive && !wasAlreadyActive && activeCount >= MAX_ACTIVE_COUNT) {
-      toast.error(`사용중인 팝업은 최대 ${MAX_ACTIVE_COUNT}개까지 등록 가능합니다.`);
+      toast.error(`사용중인 배너는 최대 ${MAX_ACTIVE_COUNT}개까지 등록 가능합니다.`);
       return;
     }
 
@@ -562,18 +738,32 @@ function BannerFormDialog({
     setSaving(true);
     try {
       const payload: Partial<Banner> = {
-        BANNER_TYPE: 'POPUP',
+        BANNER_TYPE: 'MAIN',
         SITE_CD: siteCd,
         USE_YN: form.USE_YN,
         LINK_TYPE: form.LINK_TYPE,
         ALWAYS_YN: form.ALWAYS_YN,
+        MEDIA_TYPE: form.MEDIA_TYPE,
         START_DATE: form.START_DATE,
         START_TIME: form.START_TIME,
         END_DATE: form.END_DATE,
         END_TIME: form.END_TIME,
         LINK_URL: form.LINK_URL,
-        IMAGE_URL: form.IMAGE_URL,
+        MEDIA_DESC: form.MEDIA_DESC,
+        MAIN_SLOGAN: form.MAIN_SLOGAN,
+        SUB_SLOGAN: form.SUB_SLOGAN,
       };
+      if (form.MEDIA_TYPE === 'IMAGE') {
+        payload.IMAGE_URL = form.IMAGE_URL;
+        payload.MOBILE_IMAGE_URL = form.MOBILE_IMAGE_URL;
+        payload.PC_IMAGE_DARK = form.PC_IMAGE_DARK;
+        payload.MOBILE_IMAGE_DARK = form.MOBILE_IMAGE_DARK;
+      } else {
+        payload.VIDEO_URL = form.VIDEO_URL;
+        payload.VIDEO_URL_DARK = form.VIDEO_URL_DARK;
+        payload.MOBILE_IMAGE_URL = form.MOBILE_IMAGE_URL;
+        payload.MOBILE_IMAGE_DARK = form.MOBILE_IMAGE_DARK;
+      }
       if (form.BANNER_ID) {
         payload.BANNER_ID = form.BANNER_ID;
       }
@@ -597,33 +787,24 @@ function BannerFormDialog({
   };
 
   const isEdit = !!form.BANNER_ID;
+  const isImage = form.MEDIA_TYPE === 'IMAGE';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="default">
+      <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>팝업 {isEdit ? '수정' : '등록'}</DialogTitle>
+          <DialogTitle>배너 {isEdit ? '수정' : '등록'}</DialogTitle>
         </DialogHeader>
         <DialogBody className="max-h-[70vh] overflow-y-auto p-0">
-          {/* 사용여부 + 연결 방식 */}
-          <div className="flex gap-6 px-6 py-5">
-            <div className="flex-1 space-y-2">
+          {/* 사용여부 */}
+          <div className="px-6 py-5">
+            <div className="space-y-2">
               <Label className="text-sm font-bold">
                 사용여부 <span className="text-destructive">*</span>
               </Label>
               <ToggleSwitch
                 checked={form.USE_YN === 'Y'}
                 onChange={(v) => setForm((p) => ({ ...p, USE_YN: v ? 'Y' : 'N' }))}
-              />
-            </div>
-            <div className="flex-1 space-y-2">
-              <Label className="text-sm font-bold">
-                연결 방식 <span className="text-destructive">*</span>
-                <span className="text-gray-500 font-normal text-xs ml-1">(현재 창 / 새 창)</span>
-              </Label>
-              <LinkTypeToggle
-                value={form.LINK_TYPE}
-                onChange={(v) => setForm((p) => ({ ...p, LINK_TYPE: v }))}
               />
             </div>
           </div>
@@ -685,71 +866,173 @@ function BannerFormDialog({
 
           <hr className="border-gray-300" />
 
-          {/* 팝업 이미지 */}
-          <div className="px-6 py-5 space-y-2">
+          {/* 배너 타입 선택 (이미지 / 영상 라디오) */}
+          <div className="px-6 py-5 space-y-3">
             <Label className="text-sm font-bold">
-              팝업 이미지 <span className="text-destructive">*</span>
+              배너 타입 <span className="text-destructive">*</span>
             </Label>
-            <div
-              className={cn(
-                'flex flex-col items-center justify-center w-full min-h-[180px] border-2 border-dashed rounded-lg cursor-pointer transition-colors',
-                dragOver ? 'border-primary bg-primary/5' : 'border-gray-400 hover:border-primary'
-              )}
-              onClick={() => fileInputRef.current?.click()}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setDragOver(false);
-                const file = e.dataTransfer.files?.[0];
-                if (!file) return;
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                const synth = { target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>;
-                handleFileChange(synth);
-              }}
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
-              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
-            >
-              {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="미리보기"
-                  className="max-h-[160px] object-contain rounded-lg my-2"
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="mediaType"
+                  checked={isImage}
+                  onChange={() => setForm((p) => ({ ...p, MEDIA_TYPE: 'IMAGE' }))}
+                  className="h-4 w-4 text-primary accent-gray-800"
                 />
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">
-                    {dragOver ? '여기에 파일을 놓으세요.' : '이곳에 파일을 드래그&드롭 하거나 클릭하여 선택하세요.'}
-                  </p>
-                </>
-              )}
+                <span className="text-sm">이미지 배너</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="mediaType"
+                  checked={!isImage}
+                  onChange={() => setForm((p) => ({ ...p, MEDIA_TYPE: 'VIDEO' }))}
+                  className="h-4 w-4 text-primary accent-gray-800"
+                />
+                <span className="text-sm">영상 배너</span>
+              </label>
             </div>
-            <div className="space-y-0.5 text-xs text-gray-500">
-              <p>이미지 사이즈: 가로 588px, 세로 439px / 파일 형식: png, jpg</p>
-              <p>※ 해상도 588 x 439 고정입니다.</p>
-              <p>※ 최대 1개 까지 첨부 가능합니다.</p>
-              <p>※ 2MB 미만의 확장자 png, jpg파일만 업로드 가능합니다.</p>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <p className="text-xs text-gray-500">
+              *형식은 이미지/영상 중 한 개만 설정이 가능하며 선택 시 다른 항목은 비활성화 됩니다.
+            </p>
           </div>
 
           <hr className="border-gray-300" />
 
-          {/* 연결 링크 주소 */}
-          <div className="px-6 py-5 space-y-2">
-            <Label className="text-sm font-bold">연결 링크 주소</Label>
-            <Input
-              value={form.LINK_URL}
-              onChange={(e) => setForm((p) => ({ ...p, LINK_URL: e.target.value }))}
-              placeholder="연결할 링크 주소를 입력해주세요. ex) www.youtube.com"
-            />
+          {/* 이미지 배너 영역 (이미지 선택 시에만 표시) */}
+          {isImage && (
+            <div className="px-6 py-5 space-y-5">
+              <ImageUploadArea
+                label="PC 배너 이미지(라이트모드) *"
+                sizeText="이미지 사이즈: 1920 x 1080px"
+                preview={pcLightPreview}
+                onFileChange={(e) => validateAndReadFile(e, setPcLightPreview, 1920, 1080)}
+              />
+              <ImageUploadArea
+                label="Mobile 배너 이미지(라이트모드) *"
+                sizeText="이미지 사이즈: 768 x 1080px"
+                preview={mobileLightPreview}
+                onFileChange={(e) => validateAndReadFile(e, setMobileLightPreview, 768, 1080)}
+              />
+              <ImageUploadArea
+                label="PC 배너 이미지(다크모드)"
+                sizeText="이미지 사이즈: 1920 x 1080px"
+                preview={pcDarkPreview}
+                onFileChange={(e) => validateAndReadFile(e, setPcDarkPreview, 1920, 1080)}
+              />
+              <ImageUploadArea
+                label="Mobile 배너 이미지(다크모드)"
+                sizeText="이미지 사이즈: 768 x 1080px"
+                preview={mobileDarkPreview}
+                onFileChange={(e) => validateAndReadFile(e, setMobileDarkPreview, 768, 1080)}
+              />
+
+              {/* 이미지 설명 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-bold">이미지 설명</Label>
+                <Input
+                  value={form.MEDIA_DESC}
+                  onChange={(e) => setForm((p) => ({ ...p, MEDIA_DESC: e.target.value }))}
+                  placeholder="이미지에 대한 설명을 입력해주세요."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 영상 배너 영역 (영상 선택 시에만 표시) */}
+          {!isImage && (
+            <div className="px-6 py-5 space-y-5">
+              <p className="text-xs text-amber-600">
+                * 영상 타입의 경우 모바일에서는 이미지로 노출됩니다. 모바일용 이미지를 등록해주세요.
+              </p>
+
+              {/* 라이트모드: 영상 URL + Mobile 이미지 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-bold">
+                  배너 영상 URL(라이트모드) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  value={form.VIDEO_URL}
+                  onChange={(e) => setForm((p) => ({ ...p, VIDEO_URL: e.target.value }))}
+                  placeholder="영상 URL을 입력해주세요. ex) https://www.youtube.com/watch?v=..."
+                />
+              </div>
+              <ImageUploadArea
+                label="Mobile 배너 이미지(라이트모드) *"
+                sizeText="이미지 사이즈: 768 x 1080px"
+                preview={mobileLightPreview}
+                onFileChange={(e) => validateAndReadFile(e, setMobileLightPreview, 768, 1080)}
+              />
+
+              {/* 다크모드: 영상 URL + Mobile 이미지 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-bold">배너 영상 URL(다크모드)</Label>
+                <Input
+                  value={form.VIDEO_URL_DARK}
+                  onChange={(e) => setForm((p) => ({ ...p, VIDEO_URL_DARK: e.target.value }))}
+                  placeholder="다크모드 영상 URL을 입력해주세요."
+                />
+              </div>
+              <ImageUploadArea
+                label="Mobile 배너 이미지(다크모드)"
+                sizeText="이미지 사이즈: 768 x 1080px"
+                preview={mobileDarkPreview}
+                onFileChange={(e) => validateAndReadFile(e, setMobileDarkPreview, 768, 1080)}
+              />
+
+              {/* 영상 설명 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-bold">영상 설명</Label>
+                <Input
+                  value={form.MEDIA_DESC}
+                  onChange={(e) => setForm((p) => ({ ...p, MEDIA_DESC: e.target.value }))}
+                  placeholder="영상에 대한 설명을 입력해주세요."
+                />
+              </div>
+            </div>
+          )}
+
+          <hr className="border-gray-300" />
+
+          {/* 슬로건 */}
+          <div className="px-6 py-5 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-bold">메인 슬로건</Label>
+                <span className="text-xs text-gray-500">
+                  {form.MAIN_SLOGAN.length}/{MAX_SLOGAN_LENGTH}
+                </span>
+              </div>
+              <Input
+                value={form.MAIN_SLOGAN}
+                onChange={(e) => {
+                  if (e.target.value.length <= MAX_SLOGAN_LENGTH) {
+                    setForm((p) => ({ ...p, MAIN_SLOGAN: e.target.value }));
+                  }
+                }}
+                placeholder="메인 슬로건을 입력해주세요. (최대 30자)"
+                maxLength={MAX_SLOGAN_LENGTH}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-bold">서브 슬로건(부제)</Label>
+                <span className="text-xs text-gray-500">
+                  {form.SUB_SLOGAN.length}/{MAX_SLOGAN_LENGTH}
+                </span>
+              </div>
+              <Input
+                value={form.SUB_SLOGAN}
+                onChange={(e) => {
+                  if (e.target.value.length <= MAX_SLOGAN_LENGTH) {
+                    setForm((p) => ({ ...p, SUB_SLOGAN: e.target.value }));
+                  }
+                }}
+                placeholder="서브 슬로건을 입력해주세요. (최대 30자)"
+                maxLength={MAX_SLOGAN_LENGTH}
+              />
+            </div>
           </div>
 
           <hr className="border-gray-300" />
@@ -768,7 +1051,7 @@ function BannerFormDialog({
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            취소
+            닫기
           </Button>
           <Button variant="dark" onClick={handleSave} disabled={saving}>
             저장
@@ -784,44 +1067,300 @@ function BannerFormDialog({
 // ---------------------------------------------------------------------------
 
 const MOCK_BANNERS: Banner[] = [
-  // 안암
-  { BANNER_ID: 'P001', BANNER_NAME: '안암 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_URL: 'https://example.com', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P002', BANNER_NAME: '안암 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 2, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P003', BANNER_NAME: '안암 팝업 3', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 3, START_DATE: '2025-03-21', END_DATE: '2025-03-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P004', BANNER_NAME: '안암 상시 팝업', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 4, ALWAYS_YN: 'Y', LINK_TYPE: 'NEW', LANG_SET: 'kr' },
-  { BANNER_ID: 'P005', BANNER_NAME: '안암 팝업 5', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 5, START_DATE: '2025-05-01', END_DATE: '2025-05-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P006', BANNER_NAME: '안암 팝업 6', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 6, START_DATE: '2025-05-10', END_DATE: '2025-06-10', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P007', BANNER_NAME: '안암 팝업 7', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 7, ALWAYS_YN: 'Y', LINK_TYPE: 'NEW', LANG_SET: 'kr' },
-  { BANNER_ID: 'P008', BANNER_NAME: '안암 팝업 8', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 8, START_DATE: '2025-06-01', END_DATE: '2025-06-30', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P009', BANNER_NAME: '안암 미사용 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 9, START_DATE: '2025-04-21', END_DATE: '2025-04-22', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P010', BANNER_NAME: '안암 미사용 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 10, START_DATE: '2025-03-01', END_DATE: '2025-03-15', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P011', BANNER_NAME: '안암 미사용 팝업 3', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 11, START_DATE: '2025-02-01', END_DATE: '2025-02-28', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P017', BANNER_NAME: '안암 미사용 팝업 4', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 12, START_DATE: '2025-01-10', END_DATE: '2025-01-31', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P018', BANNER_NAME: '안암 미사용 팝업 5', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 13, START_DATE: '2025-01-01', END_DATE: '2025-01-15', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  // 구로
-  { BANNER_ID: 'P012', BANNER_NAME: '구로 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'guro', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P013', BANNER_NAME: '구로 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'guro', USE_YN: 'Y', SORT_ORDER: 2, START_DATE: '2025-05-01', END_DATE: '2025-05-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P014', BANNER_NAME: '구로 미사용 팝업', BANNER_TYPE: 'POPUP', SITE_CD: 'guro', USE_YN: 'N', SORT_ORDER: 3, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  // 안산
-  { BANNER_ID: 'P015', BANNER_NAME: '안산 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'ansan', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P016', BANNER_NAME: '안산 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'ansan', USE_YN: 'Y', SORT_ORDER: 2, ALWAYS_YN: 'Y', LINK_TYPE: 'SELF', LANG_SET: 'kr' },
+  {
+    BANNER_ID: 'B001',
+    BANNER_NAME: '안암 메인 배너 1',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 1,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-04-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-04-25',
+    END_TIME: '17:00',
+    LINK_URL: 'https://example.com',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B002',
+    BANNER_NAME: '안암 메인 배너 2',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 2,
+    MEDIA_TYPE: 'VIDEO',
+    START_DATE: '2025-04-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-04-25',
+    END_TIME: '17:00',
+    LINK_TYPE: 'SELF',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B003',
+    BANNER_NAME: '안암 메인 배너 3',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 3,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-03-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-03-31',
+    END_TIME: '09:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B004',
+    BANNER_NAME: '안암 상시 배너',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 4,
+    MEDIA_TYPE: 'IMAGE',
+    ALWAYS_YN: 'Y',
+    LINK_TYPE: 'NEW',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B005',
+    BANNER_NAME: '안암 메인 배너 5',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 5,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-05-01',
+    START_TIME: '09:00',
+    END_DATE: '2025-05-31',
+    END_TIME: '18:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B006',
+    BANNER_NAME: '안암 메인 배너 6',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 6,
+    MEDIA_TYPE: 'VIDEO',
+    START_DATE: '2025-05-10',
+    START_TIME: '10:00',
+    END_DATE: '2025-06-10',
+    END_TIME: '17:00',
+    LINK_TYPE: 'SELF',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B007',
+    BANNER_NAME: '안암 메인 배너 7',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 7,
+    MEDIA_TYPE: 'IMAGE',
+    ALWAYS_YN: 'Y',
+    LINK_TYPE: 'NEW',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B008',
+    BANNER_NAME: '안암 메인 배너 8',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'Y',
+    SORT_ORDER: 8,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-06-01',
+    START_TIME: '09:00',
+    END_DATE: '2025-06-30',
+    END_TIME: '18:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B009',
+    BANNER_NAME: '안암 미사용 배너 1',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'N',
+    SORT_ORDER: 9,
+    MEDIA_TYPE: 'VIDEO',
+    START_DATE: '2025-04-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-04-22',
+    END_TIME: '17:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B010',
+    BANNER_NAME: '안암 미사용 배너 2',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'N',
+    SORT_ORDER: 10,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-03-01',
+    START_TIME: '09:00',
+    END_DATE: '2025-03-15',
+    END_TIME: '17:00',
+    LINK_TYPE: 'SELF',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B011',
+    BANNER_NAME: '안암 미사용 배너 3',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'N',
+    SORT_ORDER: 11,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-02-01',
+    START_TIME: '09:00',
+    END_DATE: '2025-02-28',
+    END_TIME: '17:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B017',
+    BANNER_NAME: '안암 미사용 배너 4',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'N',
+    SORT_ORDER: 12,
+    MEDIA_TYPE: 'VIDEO',
+    START_DATE: '2025-01-10',
+    START_TIME: '09:00',
+    END_DATE: '2025-01-31',
+    END_TIME: '17:00',
+    LINK_TYPE: 'SELF',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B018',
+    BANNER_NAME: '안암 미사용 배너 5',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'anam',
+    USE_YN: 'N',
+    SORT_ORDER: 13,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-01-01',
+    START_TIME: '09:00',
+    END_DATE: '2025-01-15',
+    END_TIME: '17:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B012',
+    BANNER_NAME: '구로 메인 배너 1',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'guro',
+    USE_YN: 'Y',
+    SORT_ORDER: 1,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-04-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-04-25',
+    END_TIME: '17:00',
+    LINK_TYPE: 'SELF',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B013',
+    BANNER_NAME: '구로 메인 배너 2',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'guro',
+    USE_YN: 'Y',
+    SORT_ORDER: 2,
+    MEDIA_TYPE: 'VIDEO',
+    START_DATE: '2025-05-01',
+    START_TIME: '09:00',
+    END_DATE: '2025-05-31',
+    END_TIME: '17:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B014',
+    BANNER_NAME: '구로 메인 배너 3',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'guro',
+    USE_YN: 'N',
+    SORT_ORDER: 3,
+    MEDIA_TYPE: 'IMAGE',
+    START_DATE: '2025-04-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-04-25',
+    END_TIME: '17:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B015',
+    BANNER_NAME: '안산 메인 배너 1',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'ansan',
+    USE_YN: 'Y',
+    SORT_ORDER: 1,
+    MEDIA_TYPE: 'VIDEO',
+    START_DATE: '2025-04-21',
+    START_TIME: '09:00',
+    END_DATE: '2025-04-25',
+    END_TIME: '17:00',
+    LINK_TYPE: 'NEW',
+    ALWAYS_YN: 'N',
+    LANG_SET: 'kr',
+  },
+  {
+    BANNER_ID: 'B016',
+    BANNER_NAME: '안산 메인 배너 2',
+    BANNER_TYPE: 'MAIN',
+    SITE_CD: 'ansan',
+    USE_YN: 'Y',
+    SORT_ORDER: 2,
+    MEDIA_TYPE: 'IMAGE',
+    ALWAYS_YN: 'Y',
+    LINK_TYPE: 'SELF',
+    LANG_SET: 'kr',
+  },
 ];
 
 // ---------------------------------------------------------------------------
-// PopupBannerPage
+// MainBannerPage
 // ---------------------------------------------------------------------------
 
-export default function PopupBannerPage() {
+export default function MainBannerPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
 
-  // 필터 UI 상태
+  // 필터 UI 상태 (사용자가 선택 중인 값)
   const [selectedSite, setSelectedSite] = useState<SiteCode>('anam');
   const [useFilter, setUseFilter] = useState('ALL');
 
-  // 적용된 검색 파라미터
+  // 적용된 검색 파라미터 (실제 API 호출에 사용)
   const [appliedSite, setAppliedSite] = useState<SiteCode>('anam');
   const [appliedUseFilter, setAppliedUseFilter] = useState('ALL');
 
@@ -859,8 +1398,9 @@ export default function PopupBannerPage() {
   const loadBanners = useCallback(
     async (page = currentPage) => {
       try {
+        // 사용중 배너 수 조회
         try {
-          const activeRes = await bannerApi.popupList({
+          const activeRes = await bannerApi.mainList({
             CURRENT_PAGE: 1,
             SHOWN_ENTITY: 1,
             LANG_SET: 'kr',
@@ -870,7 +1410,7 @@ export default function PopupBannerPage() {
           setActiveCount(activeRes.TOTAL_ENTITY || 0);
         } catch { /* ignore */ }
 
-        const res = await bannerApi.popupList({
+        const res = await bannerApi.mainList({
           CURRENT_PAGE: page,
           SHOWN_ENTITY: pageSize,
           LANG_SET: 'kr',
@@ -881,6 +1421,7 @@ export default function PopupBannerPage() {
           setBanners(res.list);
           setTotalItems(res.TOTAL_ENTITY || 0);
         } else {
+          // Mock fallback
           let filtered = MOCK_BANNERS.filter((b) => b.SITE_CD === appliedSite);
           if (appliedUseFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
           else if (appliedUseFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
@@ -889,6 +1430,7 @@ export default function PopupBannerPage() {
           setBanners(filtered.slice(start, start + pageSize));
         }
       } catch {
+        // Mock fallback
         let filtered = MOCK_BANNERS.filter((b) => b.SITE_CD === appliedSite);
         if (appliedUseFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
         else if (appliedUseFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
@@ -996,7 +1538,7 @@ export default function PopupBannerPage() {
       const list = Array.from(selectedIds).map((id) => ({ BANNER_ID: id }));
       const res = await bannerApi.remove(list);
       if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('선택한 팝업이 삭제되었습니다.');
+        toast.success('선택한 배너가 삭제되었습니다.');
         setSelectedIds(new Set());
         setMode('normal');
         loadBanners();
@@ -1009,7 +1551,7 @@ export default function PopupBannerPage() {
     setDeleteSelectedOpen(false);
   };
 
-  // DnD
+  // DnD 센서 설정 - 약간의 활성화 거리를 두어 클릭과 드래그를 구분
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -1040,7 +1582,7 @@ export default function PopupBannerPage() {
   return (
     <div className="p-6 space-y-5">
       {/* 페이지 헤더 */}
-      <h1 className="text-2xl font-bold text-gray-900">팝업</h1>
+      <h1 className="text-2xl font-bold text-gray-900">메인배너</h1>
 
       {/* 검색 필터 영역 */}
       <div className="rounded-lg border border-gray-300 bg-gray-50 p-5 space-y-4">
@@ -1077,8 +1619,8 @@ export default function PopupBannerPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">전체</SelectItem>
-              <SelectItem value="USED">사용 팝업</SelectItem>
-              <SelectItem value="UNUSED">미사용 팝업</SelectItem>
+              <SelectItem value="USED">사용 배너</SelectItem>
+              <SelectItem value="UNUSED">미사용 배너</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1109,7 +1651,7 @@ export default function PopupBannerPage() {
         )}
         {isSelectMode && (
           <p className="text-sm text-gray-500">
-            삭제할 팝업을 선택 후 <strong className="text-gray-700">선택 삭제</strong> 버튼을 눌러주세요.
+            삭제할 배너를 선택 후 <strong className="text-gray-700">선택 삭제</strong> 버튼을 눌러주세요.
           </p>
         )}
       </div>
@@ -1125,7 +1667,7 @@ export default function PopupBannerPage() {
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5" onClick={handleEnterSelectMode}>
                 <CheckSquare className="h-3.5 w-3.5" />
-                팝업 선택
+                배너 선택
               </Button>
             </>
           )}
@@ -1241,8 +1783,8 @@ export default function PopupBannerPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(v) => !v && setDeleteTarget(null)}
-        title="팝업 삭제"
-        description="팝업은 삭제 후 복구할 수 없습니다. 정말 삭제하시겠습니까?"
+        title="배너 삭제"
+        description="배너는 삭제 후 복구할 수 없습니다. 정말 삭제하시겠습니까?"
         onConfirm={handleDeleteSingle}
         confirmLabel="삭제"
         destructive
@@ -1253,7 +1795,7 @@ export default function PopupBannerPage() {
         open={deleteSelectedOpen}
         onOpenChange={setDeleteSelectedOpen}
         title="선택 삭제"
-        description={`선택한 ${selectedIds.size}개의 팝업을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.`}
+        description={`선택한 ${selectedIds.size}개의 배너를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.`}
         onConfirm={handleDeleteSelected}
         confirmLabel="삭제"
         destructive

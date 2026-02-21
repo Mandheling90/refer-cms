@@ -19,6 +19,7 @@ interface PaginationProps {
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  hidePageSize?: boolean;
 }
 
 export function Pagination({
@@ -28,6 +29,7 @@ export function Pagination({
   totalItems,
   onPageChange,
   onPageSizeChange,
+  hidePageSize,
 }: PaginationProps) {
   const pageNumbers: number[] = [];
   const startPage = Math.max(1, currentPage - 4);
@@ -38,24 +40,26 @@ export function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between px-2 py-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Select
-          value={String(pageSize)}
-          onValueChange={(v) => onPageSizeChange(Number(v))}
-        >
-          <SelectTrigger className="h-10 w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size}건
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className={cn('flex items-center px-2 py-4', hidePageSize ? 'justify-center' : 'justify-between')}>
+      {!hidePageSize && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => onPageSizeChange(Number(v))}
+          >
+            <SelectTrigger className="h-10 w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}건
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="flex items-center justify-center gap-1">
         <Button

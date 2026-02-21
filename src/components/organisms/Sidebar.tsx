@@ -55,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
     title: '배너관리',
     icon: Image,
     children: [
+      { title: '메인배너', href: '/cms/banner/main-banner' },
       { title: '미니배너', href: '/cms/banner/mini-banner' },
       { title: '팝업', href: '/cms/banner/popup' },
     ],

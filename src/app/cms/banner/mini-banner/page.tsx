@@ -26,11 +26,15 @@ import { Pagination } from '@/components/molecules/Pagination';
 import { bannerApi, type Banner } from '@/lib/api/banner';
 import { cn } from '@/lib/utils';
 import {
+  ArrowUpDown,
   Check,
+  CheckSquare,
   GripVertical,
-  Minus,
   Pencil,
   Plus,
+  RotateCcw,
+  Save,
+  Search,
   Trash2,
   Upload,
   X,
@@ -56,7 +60,15 @@ import { CSS } from '@dnd-kit/utilities';
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 12;
+
+const SITE_OPTIONS = [
+  { value: 'anam', label: '안암' },
+  { value: 'guro', label: '구로' },
+  { value: 'ansan', label: '안산' },
+] as const;
+
+type SiteCode = (typeof SITE_OPTIONS)[number]['value'];
 
 // ---------------------------------------------------------------------------
 // ToggleSwitch (ON/OFF 텍스트 포함)
@@ -149,29 +161,29 @@ function LinkTypeToggle({
 }
 
 // ---------------------------------------------------------------------------
-// BannerCard
+// BannerCardContent (공통 카드 UI)
 // ---------------------------------------------------------------------------
 
-function SortableBannerCard({
+function BannerCardContent({
   banner,
   onEdit,
   onDelete,
+  dragHandleProps,
+  selectable,
+  selected,
+  onSelect,
+  index,
 }: {
   banner: Banner;
   onEdit: (banner: Banner) => void;
   onDelete: (banner: Banner) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dragHandleProps?: { attributes: Record<string, any>; listeners: Record<string, any> | undefined };
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  index: number;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: banner.BANNER_ID,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : undefined,
-    opacity: isDragging ? 0.8 : undefined,
-  };
-
   const isUsed = banner.USE_YN !== 'N';
 
   const formatPeriod = () => {
@@ -179,31 +191,36 @@ function SortableBannerCard({
     const start = banner.START_DATE || '';
     const end = banner.END_DATE || '';
     if (!start && !end) return '-';
-    return `${start}${banner.START_TIME ? ', ' + banner.START_TIME : ''} ~\n${end}${banner.END_TIME ? ', ' + banner.END_TIME : ''}`;
+    return { start, end };
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        'flex flex-col rounded-lg border border-gray-300 bg-white overflow-hidden',
-        isDragging && 'shadow-lg'
-      )}
-    >
-      {/* 상단: 사용여부 배지 + 삭제 버튼 */}
+    <>
+      {/* 상단: 인덱스 + 체크박스/배지 + 삭제 버튼 */}
       <div className="flex items-center justify-between px-3 py-2">
-        {isUsed ? (
-          <Badge className="gap-1 bg-white text-green-600 border-green-300 text-xs px-2 py-0.5" variant="outline">
-            <Check className="h-3 w-3" />
-            사용 중
-          </Badge>
-        ) : (
-          <Badge className="gap-1 bg-white text-red-500 border-red-300 text-xs px-2 py-0.5" variant="outline">
-            <X className="h-3 w-3" />
-            미사용
-          </Badge>
-        )}
+        <div className="flex items-center gap-1.5">
+          {selectable && (
+            <Checkbox
+              checked={selected}
+              onCheckedChange={() => onSelect?.(banner.BANNER_ID)}
+              className="mr-1"
+            />
+          )}
+          <span className="flex items-center justify-center h-5 w-5 rounded-full bg-gray-900 text-white text-[11px] font-bold shrink-0">
+            {index}
+          </span>
+          {isUsed ? (
+            <Badge className="gap-1 bg-white text-green-600 border-green-300 text-xs px-2 py-0.5" variant="outline">
+              <Check className="h-3 w-3" />
+              사용 중
+            </Badge>
+          ) : (
+            <Badge className="gap-1 bg-white text-red-500 border-red-300 text-xs px-2 py-0.5" variant="outline">
+              <X className="h-3 w-3" />
+              미사용
+            </Badge>
+          )}
+        </div>
         <button
           className="p-1 text-gray-500 hover:text-red-500 transition-colors"
           onClick={(e) => {
@@ -217,7 +234,7 @@ function SortableBannerCard({
 
       {/* 이미지 영역 */}
       <div
-        className="relative mx-3 aspect-square bg-gray-200 rounded cursor-pointer group overflow-hidden"
+        className="relative mx-3 aspect-[16/9] bg-gray-200 rounded cursor-pointer group overflow-hidden"
         onClick={() => onEdit(banner)}
       >
         {banner.IMAGE_URL ? (
@@ -229,7 +246,7 @@ function SortableBannerCard({
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm">
             <Pencil className="h-5 w-5 mb-1" />
-            <span>팝업 이미지</span>
+            <span>배너 이미지</span>
             <span>조회 및 수정</span>
           </div>
         )}
@@ -237,18 +254,136 @@ function SortableBannerCard({
       </div>
 
       {/* 하단: 드래그 핸들 + 기간 */}
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <button
-          className="cursor-grab active:cursor-grabbing p-0.5 text-gray-400 hover:text-gray-600 touch-none self-center"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-        <span className="text-xs text-gray-600 whitespace-pre-line leading-relaxed text-right">
-          {formatPeriod()}
-        </span>
+      <div className="flex items-center px-3 py-2.5 min-h-[52px]">
+        {dragHandleProps ? (
+          <button
+            className="cursor-grab active:cursor-grabbing p-0.5 text-gray-400 hover:text-gray-600 touch-none shrink-0"
+            {...dragHandleProps.attributes}
+            {...dragHandleProps.listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        ) : (
+          <div
+            className="p-0.5 text-gray-300 shrink-0"
+            title={banner.USE_YN === 'N' ? '미사용 배너는 순서변경이 불가합니다' : ''}
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+        )}
+        <div className="flex-1 text-center">
+          {(() => {
+            const period = formatPeriod();
+            if (typeof period === 'string') {
+              return <span className="text-xs text-gray-600">{period}</span>;
+            }
+            return (
+              <div className="text-xs text-gray-600 leading-relaxed">
+                <div>시작일 : {period.start}</div>
+                <div>종료일 : {period.end}</div>
+              </div>
+            );
+          })()}
+        </div>
       </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SortableBannerCard (사용 배너 전용 - DnD 참여)
+// ---------------------------------------------------------------------------
+
+function SortableBannerCard({
+  banner,
+  onEdit,
+  onDelete,
+  dragDisabled,
+  selectable,
+  selected,
+  onSelect,
+  index,
+}: {
+  banner: Banner;
+  onEdit: (banner: Banner) => void;
+  onDelete: (banner: Banner) => void;
+  dragDisabled?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  index: number;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: banner.BANNER_ID,
+    disabled: dragDisabled,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex flex-col rounded-lg border bg-white overflow-hidden',
+        selected ? 'border-primary border-2' : 'border-gray-300',
+        isDragging && 'shadow-lg'
+      )}
+    >
+      <BannerCardContent
+        banner={banner}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        dragHandleProps={!dragDisabled ? { attributes, listeners } : undefined}
+        selectable={selectable}
+        selected={selected}
+        onSelect={onSelect}
+        index={index}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// StaticBannerCard (미사용 배너 전용 - DnD 미참여)
+// ---------------------------------------------------------------------------
+
+function StaticBannerCard({
+  banner,
+  onEdit,
+  onDelete,
+  selectable,
+  selected,
+  onSelect,
+  index,
+}: {
+  banner: Banner;
+  onEdit: (banner: Banner) => void;
+  onDelete: (banner: Banner) => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+  index: number;
+}) {
+  return (
+    <div className={cn(
+      'flex flex-col rounded-lg border bg-white overflow-hidden',
+      selected ? 'border-primary border-2' : 'border-gray-300',
+    )}>
+      <BannerCardContent
+        banner={banner}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        selectable={selectable}
+        selected={selected}
+        onSelect={onSelect}
+        index={index}
+      />
     </div>
   );
 }
@@ -259,17 +394,40 @@ function SortableBannerCard({
 
 function AddBannerCard({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-400 bg-white hover:border-primary hover:bg-gray-100 transition-colors cursor-pointer min-h-[240px]"
-      onClick={onClick}
-    >
-      <Plus className="h-10 w-10 text-gray-400" />
-    </button>
+    <div className="flex flex-col rounded-lg border border-gray-300 bg-white overflow-hidden">
+      {/* 상단: 배지 영역과 높이 맞춤 */}
+      <div className="flex items-center px-3 py-2">
+        <Badge className="gap-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/30" variant="outline">
+          <Plus className="h-3 w-3" />
+          신규
+        </Badge>
+      </div>
+
+      {/* 중앙: 등록 영역 */}
+      <div
+        className="relative mx-3 aspect-[16/9] bg-gray-100 border-2 border-dashed border-gray-300 rounded cursor-pointer group overflow-hidden hover:border-primary hover:bg-primary/5 transition-colors"
+        onClick={onClick}
+      >
+        <div className="flex flex-col items-center justify-center h-full gap-2">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 group-hover:bg-primary/10 transition-colors">
+            <Plus className="h-5 w-5 text-gray-500 group-hover:text-primary transition-colors" />
+          </div>
+          <span className="text-sm font-medium text-gray-500 group-hover:text-primary transition-colors">
+            배너 등록
+          </span>
+        </div>
+      </div>
+
+      {/* 하단: 높이 맞춤 */}
+      <div className="px-3 py-2.5 min-h-[52px] flex items-center">
+        <span className="text-xs text-gray-400">새로운 배너를 등록합니다.</span>
+      </div>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// BannerFormDialog (등록/수정 다이얼로그)
+// BannerFormDialog (등록/수정 다이얼로그) - 기존 유지
 // ---------------------------------------------------------------------------
 
 interface BannerFormData {
@@ -304,15 +462,18 @@ function BannerFormDialog({
   onOpenChange,
   editBanner,
   onSaved,
+  siteCd,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editBanner: Banner | null;
   onSaved: () => void;
+  siteCd: SiteCode;
 }) {
   const [form, setForm] = useState<BannerFormData>(INITIAL_FORM);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -343,18 +504,32 @@ function BannerFormDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('파일 크기는 2MB 이하여야 합니다.');
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.png') && !fileName.endsWith('.jpg') && !fileName.endsWith('.jpeg')) {
+      alert('PNG, JPG 확장자 파일만 업로드 가능합니다.');
       return;
     }
     if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-      toast.error('PNG, JPG 형식만 업로드 가능합니다.');
+      alert('PNG, JPG 형식만 업로드 가능합니다.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('파일 크기는 2MB 미만이어야 합니다.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setImagePreview(ev.target?.result as string);
+      const dataUrl = ev.target?.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        if (img.width !== 588 || img.height !== 439) {
+          alert(`이미지 사이즈가 맞지 않습니다.\n(588x439px 필요, 현재 ${img.width}x${img.height}px)`);
+          return;
+        }
+        setImagePreview(dataUrl);
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -377,6 +552,7 @@ function BannerFormDialog({
     try {
       const payload: Partial<Banner> = {
         BANNER_TYPE: 'STRIP',
+        SITE_CD: siteCd,
         USE_YN: form.USE_YN,
         LINK_TYPE: form.LINK_TYPE,
         ALWAYS_YN: form.ALWAYS_YN,
@@ -389,6 +565,9 @@ function BannerFormDialog({
       };
       if (form.BANNER_ID) {
         payload.BANNER_ID = form.BANNER_ID;
+      }
+      if (form.USE_YN === 'N') {
+        payload.SORT_ORDER = 0;
       }
       const res = await bannerApi.save(payload);
       if (res.ServiceResult.IS_SUCCESS) {
@@ -497,35 +676,48 @@ function BannerFormDialog({
           {/* 팝업 이미지 */}
           <div className="px-6 py-5 space-y-2">
             <Label className="text-sm font-bold">
-              팝업 이미지 <span className="text-destructive">*</span>
+              배너 이미지 <span className="text-destructive">*</span>
             </Label>
-            <div className="flex gap-5">
-              {/* 업로드 영역 (좌) */}
-              <div
-                className="flex flex-col items-center justify-center border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:border-primary transition-colors w-[150px] h-[150px] shrink-0"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="미리보기"
-                    className="h-full w-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <>
-                    <Plus className="h-8 w-8 text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-500">이미지 업로드</span>
-                  </>
-                )}
-              </div>
-              {/* 안내 텍스트 (우) */}
-              <div className="flex flex-col justify-center text-sm text-gray-700 space-y-1">
-                <p>이미지 사이즈: 가로 600px, 세로 600px</p>
-                <p>파일형식: PNG, JPG</p>
-                <p className="mt-2 text-xs text-gray-500">*해상도 600x600 고정입니다.</p>
-                <p className="text-xs text-gray-500">*최대 1개 까지 첨부 가능합니다.</p>
-                <p className="text-xs text-gray-500">*2MB 미만의 확장자 PNG, JPG 파일만 업로드가 가능합니다.</p>
-              </div>
+            <div
+              className={cn(
+                'flex flex-col items-center justify-center w-full min-h-[180px] border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+                dragOver ? 'border-primary bg-primary/5' : 'border-gray-400 hover:border-primary'
+              )}
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (!file) return;
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const synth = { target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>;
+                handleFileChange(synth);
+              }}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+            >
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="미리보기"
+                  className="max-h-[160px] object-contain rounded-lg my-2"
+                />
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">
+                    {dragOver ? '여기에 파일을 놓으세요.' : '이곳에 파일을 드래그&드롭 하거나 클릭하여 선택하세요.'}
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="space-y-0.5 text-xs text-gray-500">
+              <p>이미지 사이즈: 가로 588px, 세로 439px / 파일 형식: png, jpg</p>
+              <p>※ 해상도 588 x 439 고정입니다.</p>
+              <p>※ 최대 1개 까지 첨부 가능합니다.</p>
+              <p>※ 2MB 미만의 확장자 png, jpg파일만 업로드 가능합니다.</p>
             </div>
             <input
               ref={fileInputRef}
@@ -580,115 +772,27 @@ function BannerFormDialog({
 // ---------------------------------------------------------------------------
 
 const MOCK_BANNERS: Banner[] = [
-  {
-    BANNER_ID: 'B001',
-    BANNER_NAME: '메인 배너 1',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'Y',
-    SORT_ORDER: 1,
-    START_DATE: '2025-04-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-04-25',
-    END_TIME: '17:00',
-    LINK_URL: 'https://example.com',
-    LINK_TYPE: 'NEW',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B002',
-    BANNER_NAME: '메인 배너 2',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'Y',
-    SORT_ORDER: 2,
-    START_DATE: '2025-04-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-04-25',
-    END_TIME: '17:00',
-    LINK_TYPE: 'SELF',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B003',
-    BANNER_NAME: '메인 배너 3',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'Y',
-    SORT_ORDER: 3,
-    START_DATE: '2025-03-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-03-31',
-    END_TIME: '09:00',
-    LINK_TYPE: 'NEW',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B004',
-    BANNER_NAME: '상시 배너',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'Y',
-    SORT_ORDER: 4,
-    ALWAYS_YN: 'Y',
-    LINK_TYPE: 'NEW',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B005',
-    BANNER_NAME: '미사용 배너 1',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'N',
-    SORT_ORDER: 5,
-    START_DATE: '2025-04-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-04-22',
-    END_TIME: '17:00',
-    LINK_TYPE: 'NEW',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B006',
-    BANNER_NAME: '미사용 배너 2',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'N',
-    SORT_ORDER: 6,
-    START_DATE: '2025-04-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-04-25',
-    END_TIME: '17:00',
-    LINK_TYPE: 'SELF',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B007',
-    BANNER_NAME: '미사용 배너 3',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'N',
-    SORT_ORDER: 7,
-    START_DATE: '2025-04-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-04-25',
-    END_TIME: '17:00',
-    LINK_TYPE: 'NEW',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
-  {
-    BANNER_ID: 'B008',
-    BANNER_NAME: '미사용 배너 4',
-    BANNER_TYPE: 'STRIP',
-    USE_YN: 'N',
-    SORT_ORDER: 8,
-    START_DATE: '2025-04-21',
-    START_TIME: '09:00',
-    END_DATE: '2025-04-25',
-    END_TIME: '17:00',
-    LINK_TYPE: 'NEW',
-    ALWAYS_YN: 'N',
-    LANG_SET: 'kr',
-  },
+  // 안암
+  { BANNER_ID: 'S001', BANNER_NAME: '안암 미니배너 1', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_URL: 'https://example.com', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S002', BANNER_NAME: '안암 미니배너 2', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 2, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S003', BANNER_NAME: '안암 미니배너 3', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 3, START_DATE: '2025-03-21', END_DATE: '2025-03-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S004', BANNER_NAME: '안암 상시 미니배너', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 4, ALWAYS_YN: 'Y', LINK_TYPE: 'NEW', LANG_SET: 'kr' },
+  { BANNER_ID: 'S005', BANNER_NAME: '안암 미니배너 5', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 5, START_DATE: '2025-05-01', END_DATE: '2025-05-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S006', BANNER_NAME: '안암 미니배너 6', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 6, START_DATE: '2025-05-10', END_DATE: '2025-06-10', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S007', BANNER_NAME: '안암 미니배너 7', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 7, ALWAYS_YN: 'Y', LINK_TYPE: 'NEW', LANG_SET: 'kr' },
+  { BANNER_ID: 'S008', BANNER_NAME: '안암 미니배너 8', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 8, START_DATE: '2025-06-01', END_DATE: '2025-06-30', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S009', BANNER_NAME: '안암 미사용 미니배너 1', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 9, START_DATE: '2025-04-21', END_DATE: '2025-04-22', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S010', BANNER_NAME: '안암 미사용 미니배너 2', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 10, START_DATE: '2025-03-01', END_DATE: '2025-03-15', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S011', BANNER_NAME: '안암 미사용 미니배너 3', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 11, START_DATE: '2025-02-01', END_DATE: '2025-02-28', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S017', BANNER_NAME: '안암 미사용 미니배너 4', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 12, START_DATE: '2025-01-10', END_DATE: '2025-01-31', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S018', BANNER_NAME: '안암 미사용 미니배너 5', BANNER_TYPE: 'STRIP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 13, START_DATE: '2025-01-01', END_DATE: '2025-01-15', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  // 구로
+  { BANNER_ID: 'S012', BANNER_NAME: '구로 미니배너 1', BANNER_TYPE: 'STRIP', SITE_CD: 'guro', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S013', BANNER_NAME: '구로 미니배너 2', BANNER_TYPE: 'STRIP', SITE_CD: 'guro', USE_YN: 'Y', SORT_ORDER: 2, START_DATE: '2025-05-01', END_DATE: '2025-05-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S014', BANNER_NAME: '구로 미사용 미니배너', BANNER_TYPE: 'STRIP', SITE_CD: 'guro', USE_YN: 'N', SORT_ORDER: 3, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  // 안산
+  { BANNER_ID: 'S015', BANNER_NAME: '안산 미니배너 1', BANNER_TYPE: 'STRIP', SITE_CD: 'ansan', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
+  { BANNER_ID: 'S016', BANNER_NAME: '안산 미니배너 2', BANNER_TYPE: 'STRIP', SITE_CD: 'ansan', USE_YN: 'Y', SORT_ORDER: 2, ALWAYS_YN: 'Y', LINK_TYPE: 'SELF', LANG_SET: 'kr' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -701,48 +805,87 @@ export default function MiniBannerPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
 
-  // 필터
+  // 필터 UI 상태
+  const [selectedSite, setSelectedSite] = useState<SiteCode>('anam');
   const [useFilter, setUseFilter] = useState('ALL');
+
+  // 적용된 검색 파라미터
+  const [appliedSite, setAppliedSite] = useState<SiteCode>('anam');
+  const [appliedUseFilter, setAppliedUseFilter] = useState('ALL');
+
+  // 사용중 배너 수
+  const [activeCount, setActiveCount] = useState(0);
+
+  // 모드: normal | sort | select
+  const [mode, setMode] = useState<'normal' | 'sort' | 'select'>('normal');
+  const [originalBanners, setOriginalBanners] = useState<Banner[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
 
   // 다이얼로그
   const [formOpen, setFormOpen] = useState(false);
   const [editBanner, setEditBanner] = useState<Banner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null);
-  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+
+  // 검색 버튼 클릭
+  const handleSearch = () => {
+    setAppliedSite(selectedSite);
+    setAppliedUseFilter(useFilter);
+    setCurrentPage(1);
+  };
+
+  // 조건 초기화 버튼 클릭
+  const handleReset = () => {
+    setSelectedSite('anam');
+    setUseFilter('ALL');
+    setAppliedSite('anam');
+    setAppliedUseFilter('ALL');
+    setCurrentPage(1);
+  };
 
   // 데이터 로드
   const loadBanners = useCallback(
     async (page = currentPage) => {
       try {
+        try {
+          const activeRes = await bannerApi.stripList({
+            CURRENT_PAGE: 1,
+            SHOWN_ENTITY: 1,
+            LANG_SET: 'kr',
+            SITE_CD: appliedSite,
+            USE_YN: 'Y',
+          });
+          setActiveCount(activeRes.TOTAL_ENTITY || 0);
+        } catch { /* ignore */ }
+
         const res = await bannerApi.stripList({
           CURRENT_PAGE: page,
           SHOWN_ENTITY: pageSize,
           LANG_SET: 'kr',
-          USE_YN: useFilter === 'ALL' ? undefined : useFilter === 'USED' ? 'Y' : 'N',
+          SITE_CD: appliedSite,
+          USE_YN: appliedUseFilter === 'ALL' ? undefined : appliedUseFilter === 'USED' ? 'Y' : 'N',
         });
         if (res.list && res.list.length > 0) {
           setBanners(res.list);
           setTotalItems(res.TOTAL_ENTITY || 0);
         } else {
-          // Mock fallback
-          let filtered = MOCK_BANNERS;
-          if (useFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
-          else if (useFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
+          let filtered = MOCK_BANNERS.filter((b) => b.SITE_CD === appliedSite);
+          if (appliedUseFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
+          else if (appliedUseFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
           setTotalItems(filtered.length);
           const start = (page - 1) * pageSize;
           setBanners(filtered.slice(start, start + pageSize));
         }
       } catch {
-        // Mock fallback
-        let filtered = MOCK_BANNERS;
-        if (useFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
-        else if (useFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
+        let filtered = MOCK_BANNERS.filter((b) => b.SITE_CD === appliedSite);
+        if (appliedUseFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
+        else if (appliedUseFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
         setTotalItems(filtered.length);
         const start = (page - 1) * pageSize;
         setBanners(filtered.slice(start, start + pageSize));
       }
     },
-    [currentPage, pageSize, useFilter]
+    [currentPage, pageSize, appliedUseFilter, appliedSite]
   );
 
   useEffect(() => {
@@ -776,11 +919,74 @@ export default function MiniBannerPage() {
     setDeleteTarget(null);
   };
 
-  const handleDeleteAll = async () => {
+  // --- 순서변경 모드 ---
+  const handleEnterSortMode = () => {
+    setOriginalBanners([...banners]);
+    setMode('sort');
+  };
+
+  const handleCancelSort = () => {
+    setBanners(originalBanners);
+    setMode('normal');
+  };
+
+  const handleSaveSort = async () => {
     try {
-      const res = await bannerApi.removeAll({ BANNER_TYPE: 'STRIP', LANG_SET: 'kr' });
+      const orderList = banners
+        .filter((b) => b.USE_YN !== 'N')
+        .map((b, i) => ({
+          BANNER_ID: b.BANNER_ID,
+          SORT_ORDER: i + 1,
+        }));
+      const res = await bannerApi.saveOrders(orderList);
       if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('전체 삭제되었습니다.');
+        toast.success('순서가 저장되었습니다.');
+      } else {
+        toast.error(res.ServiceResult.MESSAGE_TEXT || '순서 저장에 실패했습니다.');
+        loadBanners();
+      }
+    } catch {
+      toast.error('순서 저장에 실패했습니다.');
+      loadBanners();
+    }
+    setMode('normal');
+  };
+
+  // --- 배너 선택 모드 ---
+  const handleEnterSelectMode = () => {
+    setSelectedIds(new Set());
+    setMode('select');
+  };
+
+  const handleCancelSelect = () => {
+    setSelectedIds(new Set());
+    setMode('normal');
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    const allIds = banners.map((b) => b.BANNER_ID);
+    const allSelected = allIds.every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(allIds));
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const list = Array.from(selectedIds).map((id) => ({ BANNER_ID: id }));
+      const res = await bannerApi.remove(list);
+      if (res.ServiceResult.IS_SUCCESS) {
+        toast.success('선택한 배너가 삭제되었습니다.');
+        setSelectedIds(new Set());
+        setMode('normal');
         loadBanners();
       } else {
         toast.error(res.ServiceResult.MESSAGE_TEXT || '삭제에 실패했습니다.');
@@ -788,116 +994,207 @@ export default function MiniBannerPage() {
     } catch {
       toast.error('삭제에 실패했습니다.');
     }
-    setDeleteAllOpen(false);
+    setDeleteSelectedOpen(false);
   };
 
-  // DnD 센서 설정 - 약간의 활성화 거리를 두어 클릭과 드래그를 구분
+  // DnD
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     })
   );
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
+    if (mode !== 'sort') return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
+    const activeBanner = banners.find((b) => b.BANNER_ID === active.id);
+    const overBanner = banners.find((b) => b.BANNER_ID === over.id);
+    if (activeBanner?.USE_YN === 'N' || overBanner?.USE_YN === 'N') return;
 
     const oldIndex = banners.findIndex((b) => b.BANNER_ID === active.id);
     const newIndex = banners.findIndex((b) => b.BANNER_ID === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(banners, oldIndex, newIndex);
-    setBanners(reordered);
-
-    // 서버에 순서 저장
-    try {
-      const orderList = reordered.map((b, i) => ({
-        BANNER_ID: b.BANNER_ID,
-        SORT_ORDER: i + 1,
-      }));
-      const res = await bannerApi.saveOrders(orderList);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('순서가 저장되었습니다.');
-      } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '순서 저장에 실패했습니다.');
-        loadBanners(); // 실패 시 원래 순서로 복원
-      }
-    } catch {
-      toast.error('순서 저장에 실패했습니다.');
-      loadBanners();
-    }
+    setBanners(arrayMove(banners, oldIndex, newIndex));
   };
 
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const isSortMode = mode === 'sort';
+  const isSelectMode = mode === 'select';
+  const allSelected = banners.length > 0 && banners.every((b) => selectedIds.has(b.BANNER_ID));
 
   return (
     <div className="p-6 space-y-5">
       {/* 페이지 헤더 */}
       <h1 className="text-2xl font-bold text-gray-900">미니배너</h1>
 
+      {/* 검색 필터 영역 */}
+      <div className="rounded-lg border border-gray-300 bg-gray-50 p-5 space-y-4">
+        {/* 기관 선택 */}
+        <div className="flex items-center gap-4">
+          <Label className="text-sm font-bold whitespace-nowrap w-[90px]">기관 선택</Label>
+          <div className="flex">
+            {SITE_OPTIONS.map((site) => (
+              <button
+                key={site.value}
+                type="button"
+                onClick={() => setSelectedSite(site.value)}
+                className={cn(
+                  'px-6 py-2 text-sm font-medium border transition-colors',
+                  'first:rounded-l-md last:rounded-r-md',
+                  '-ml-px first:ml-0',
+                  selectedSite === site.value
+                    ? 'bg-gray-900 text-white border-gray-900 relative z-10'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                )}
+              >
+                {site.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 사용여부 선택 */}
+        <div className="flex items-center gap-4">
+          <Label className="text-sm font-bold whitespace-nowrap w-[90px]">사용여부</Label>
+          <Select value={useFilter} onValueChange={setUseFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">전체</SelectItem>
+              <SelectItem value="USED">사용 배너</SelectItem>
+              <SelectItem value="UNUSED">미사용 배너</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 조건초기화 / 검색 버튼 */}
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleReset}>
+            <RotateCcw className="h-3.5 w-3.5" />
+            조건초기화
+          </Button>
+          <Button variant="dark" size="sm" className="gap-1.5" onClick={handleSearch}>
+            <Search className="h-3.5 w-3.5" />
+            검색
+          </Button>
+        </div>
+      </div>
+
       {/* 검색 결과 */}
       <div className="flex items-center justify-between border-b border-gray-300 pb-3">
         <p className="text-sm text-gray-900">
           <strong className="text-primary">{totalItems}</strong> 건이 조회되었습니다.
         </p>
-        <p className="flex items-center gap-1 text-sm text-gray-500">
-          각 항목의 <GripVertical className="inline h-4 w-4 text-gray-400" /> 을 드래그 &amp; 드롭하시면 순서를 변경하실 수 있습니다.
-        </p>
+        {isSortMode && (
+          <p className="flex items-center gap-1 text-sm text-gray-500">
+            각 항목의 <GripVertical className="inline h-4 w-4 text-gray-400" /> 을 드래그 &amp; 드롭하여 순서를 변경 후
+            <strong className="text-gray-700 ml-0.5">순서저장</strong> 버튼을 눌러주세요.
+          </p>
+        )}
+        {isSelectMode && (
+          <p className="text-sm text-gray-500">
+            삭제할 배너를 선택 후 <strong className="text-gray-700">선택 삭제</strong> 버튼을 눌러주세요.
+          </p>
+        )}
       </div>
 
-      {/* 사용여부 선택 */}
-      <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium whitespace-nowrap">사용여부 선택</Label>
-        <Select value={useFilter} onValueChange={setUseFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">전체</SelectItem>
-            <SelectItem value="USED">사용 배너</SelectItem>
-            <SelectItem value="UNUSED">미사용 배너</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* 액션 버튼 */}
+      {/* 액션 버튼 - 모드별 */}
       <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleOpenAdd}>
-            <Plus className="h-3.5 w-3.5" />
-            팝업등록
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setDeleteAllOpen(true)}
-          >
-            <Minus className="h-3.5 w-3.5" />
-            팝업 전체 삭제
-          </Button>
+          {mode === 'normal' && (
+            <>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleEnterSortMode}>
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                순서변경
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleEnterSelectMode}>
+                <CheckSquare className="h-3.5 w-3.5" />
+                배너 선택
+              </Button>
+            </>
+          )}
+          {mode === 'sort' && (
+            <>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCancelSort}>
+                <X className="h-3.5 w-3.5" />
+                취소
+              </Button>
+              <Button variant="dark" size="sm" className="gap-1.5" onClick={handleSaveSort}>
+                <Save className="h-3.5 w-3.5" />
+                순서저장
+              </Button>
+            </>
+          )}
+          {mode === 'select' && (
+            <>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCancelSelect}>
+                <X className="h-3.5 w-3.5" />
+                선택취소
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleToggleSelectAll}>
+                <CheckSquare className="h-3.5 w-3.5" />
+                {allSelected ? '선택 해제' : '전체 선택'}
+              </Button>
+              <Button
+                variant="dark"
+                size="sm"
+                className="gap-1.5"
+                disabled={selectedIds.size === 0}
+                onClick={() => setDeleteSelectedOpen(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                선택 삭제 ({selectedIds.size})
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* 카드 그리드 (DnD 적용) */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
-          items={banners.map((b) => b.BANNER_ID)}
+          items={banners.filter((b) => b.USE_YN !== 'N').map((b) => b.BANNER_ID)}
           strategy={rectSortingStrategy}
         >
           <div className="grid grid-cols-4 gap-4">
-            {/* 신규 등록 카드 (드래그 대상 아님) */}
-            <AddBannerCard onClick={handleOpenAdd} />
+            {/* 신규 등록 카드 (1페이지 + normal 모드에서만 표시) */}
+            {currentPage === 1 && mode === 'normal' && <AddBannerCard onClick={handleOpenAdd} />}
 
-            {/* 배너 카드 목록 */}
-            {banners.map((banner) => (
+            {/* 사용 배너 (DnD 참여) */}
+            {banners.filter((b) => b.USE_YN !== 'N').map((banner, i) => (
               <SortableBannerCard
                 key={banner.BANNER_ID}
                 banner={banner}
                 onEdit={handleOpenEdit}
                 onDelete={(b) => setDeleteTarget(b)}
+                dragDisabled={!isSortMode}
+                selectable={isSelectMode}
+                selected={selectedIds.has(banner.BANNER_ID)}
+                onSelect={handleToggleSelect}
+                index={(currentPage - 1) * pageSize + i + 1}
               />
             ))}
+
+            {/* 미사용 배너 (DnD 미참여) */}
+            {(() => {
+              const usedCount = banners.filter((b) => b.USE_YN !== 'N').length;
+              return banners.filter((b) => b.USE_YN === 'N').map((banner, i) => (
+                <StaticBannerCard
+                  key={banner.BANNER_ID}
+                  banner={banner}
+                  onEdit={handleOpenEdit}
+                  onDelete={(b) => setDeleteTarget(b)}
+                  selectable={isSelectMode}
+                  selected={selectedIds.has(banner.BANNER_ID)}
+                  onSelect={handleToggleSelect}
+                  index={(currentPage - 1) * pageSize + usedCount + i + 1}
+                />
+              ));
+            })()}
           </div>
         </SortableContext>
       </DndContext>
@@ -914,6 +1211,7 @@ export default function MiniBannerPage() {
             loadBanners(page);
           }}
           onPageSizeChange={() => {}}
+          hidePageSize
         />
       )}
 
@@ -923,6 +1221,7 @@ export default function MiniBannerPage() {
         onOpenChange={setFormOpen}
         editBanner={editBanner}
         onSaved={() => loadBanners()}
+        siteCd={appliedSite}
       />
 
       {/* 개별 삭제 확인 */}
@@ -930,19 +1229,19 @@ export default function MiniBannerPage() {
         open={!!deleteTarget}
         onOpenChange={(v) => !v && setDeleteTarget(null)}
         title="배너 삭제"
-        description="팝업은 삭제 후 복구할 수 없습니다. 정말 삭제하시겠습니까?"
+        description="배너는 삭제 후 복구할 수 없습니다. 정말 삭제하시겠습니까?"
         onConfirm={handleDeleteSingle}
         confirmLabel="삭제"
         destructive
       />
 
-      {/* 전체 삭제 확인 */}
+      {/* 선택 삭제 확인 */}
       <ConfirmDialog
-        open={deleteAllOpen}
-        onOpenChange={setDeleteAllOpen}
-        title="전체 삭제"
-        description="팝업은 삭제 후 복구할 수 없습니다. 정말 삭제하시겠습니까?"
-        onConfirm={handleDeleteAll}
+        open={deleteSelectedOpen}
+        onOpenChange={setDeleteSelectedOpen}
+        title="선택 삭제"
+        description={`선택한 ${selectedIds.size}개의 배너를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.`}
+        onConfirm={handleDeleteSelected}
         confirmLabel="삭제"
         destructive
       />
