@@ -38,7 +38,9 @@
       "mcp__claude_ai_Figma__get_screenshot",
       "Bash(npx shadcn@latest add:*)",
       "Bash(cd:*)",
-      "Bash(echo test:*)"
+      "Bash(echo test:*)",
+      "WebFetch(domain:api.propai.kr)",
+      "Bash(find C:\\\\Users\\\\LSY\\\\Desktop\\\\Propject\\\\refer-cms\\\\src\\\\components:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

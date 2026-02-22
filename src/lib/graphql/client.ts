@@ -97,11 +97,14 @@ async function refreshAccessToken(): Promise<boolean> {
 const httpLink = createHttpLink({ uri: GRAPHQL_URI });
 
 const authLink = setContext((_, { headers }) => {
-  const token = getAuthState()?.accessToken ?? null;
+  const state = getAuthState();
+  const token = state?.accessToken ?? null;
+  const hospitalCode = state?.hospitalCode ?? null;
   return {
     headers: {
       ...headers,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(hospitalCode ? { 'x-hospital-code': hospitalCode } : {}),
     },
   };
 });
@@ -127,10 +130,14 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
   if (isRefreshing) {
     return new Observable((observer) => {
       pendingRequests.push(() => {
-        const token = getAuthState()?.accessToken;
-        if (token) {
+        const s = getAuthState();
+        if (s?.accessToken) {
           operation.setContext(({ headers = {} }: { headers?: Record<string, string> }) => ({
-            headers: { ...headers, Authorization: `Bearer ${token}` },
+            headers: {
+              ...headers,
+              Authorization: `Bearer ${s.accessToken}`,
+              ...(s.hospitalCode ? { 'x-hospital-code': s.hospitalCode } : {}),
+            },
           }));
         }
         forward(operation).subscribe(observer);
@@ -144,10 +151,14 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
     refreshAccessToken()
       .then((success) => {
         if (success) {
-          const token = getAuthState()?.accessToken;
-          if (token) {
+          const s = getAuthState();
+          if (s?.accessToken) {
             operation.setContext(({ headers = {} }: { headers?: Record<string, string> }) => ({
-              headers: { ...headers, Authorization: `Bearer ${token}` },
+              headers: {
+                ...headers,
+                Authorization: `Bearer ${s.accessToken}`,
+                ...(s.hospitalCode ? { 'x-hospital-code': s.hospitalCode } : {}),
+              },
             }));
           }
           resolvePending();

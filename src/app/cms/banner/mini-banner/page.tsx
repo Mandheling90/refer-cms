@@ -861,7 +861,6 @@ export default function MiniBannerPage() {
     try {
       const res = await bannerApi.list({
         popupType: 'STRIP',
-        hospitalCode: appliedSite,
       });
       setAllBanners(res.list);
     } catch {
@@ -917,7 +916,6 @@ export default function MiniBannerPage() {
         .filter((b) => b.USE_YN !== 'N')
         .map((b) => b.BANNER_ID);
       const res = await bannerApi.reorder({
-        hospitalCode: appliedSite,
         popupType: 'STRIP',
         orderedIds,
       });

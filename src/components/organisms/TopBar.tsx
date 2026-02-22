@@ -7,9 +7,15 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useMenuStore } from '@/stores/menu-store';
 import { ThemeToggle } from '@/components/atoms/ThemeToggle';
 
+const HOSPITAL_LABEL: Record<string, string> = {
+  ANAM: '안암병원',
+  GURO: '구로병원',
+  ANSAN: '안산병원',
+};
+
 export function TopBar() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, hospitalCode, logout } = useAuthStore();
   const { toggleSidebar } = useMenuStore();
 
   const handleLogout = () => {
@@ -30,6 +36,11 @@ export function TopBar() {
 
       <div className="flex items-center gap-3">
         <ThemeToggle />
+        {hospitalCode && (
+          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+            {HOSPITAL_LABEL[hospitalCode] || hospitalCode}
+          </span>
+        )}
         {user && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-4 w-4" />

@@ -36,7 +36,7 @@ export default function StripBannerPage() {
   const retrieveList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await bannerApi.list({ popupType: 'STRIP', hospitalCode: 'anam' });
+      const res = await bannerApi.list({ popupType: 'STRIP' });
       const start = (currentPage - 1) * pageSize;
       setData(res.list.slice(start, start + pageSize));
       setTotalItems(res.totalCount);

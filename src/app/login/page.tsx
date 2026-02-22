@@ -45,10 +45,13 @@ export default function LoginPage() {
       });
 
       if (data?.login) {
-        login({
-          accessToken: data.login.accessToken,
-          refreshToken: data.login.refreshToken,
-        });
+        login(
+          {
+            accessToken: data.login.accessToken,
+            refreshToken: data.login.refreshToken,
+          },
+          institution.toUpperCase(),
+        );
         toast.success('로그인 성공');
         router.push('/cms/home');
       }
@@ -102,7 +105,6 @@ export default function LoginPage() {
                 }}
               >
                 <option value="" disabled>선택하세요</option>
-                <option value="admin">통합관리자</option>
                 <option value="anam">진료협력센터 안암병원</option>
                 <option value="guro">진료협력센터 구로병원</option>
                 <option value="ansan">진료협력센터 안산병원</option>

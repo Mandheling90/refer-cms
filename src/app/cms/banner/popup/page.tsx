@@ -872,7 +872,6 @@ export default function PopupBannerPage() {
     try {
       const res = await bannerApi.list({
         popupType: 'POPUP',
-        hospitalCode: appliedSite,
       });
       setAllBanners(res.list);
     } catch {
@@ -928,7 +927,6 @@ export default function PopupBannerPage() {
         .filter((b) => b.USE_YN !== 'N')
         .map((b) => b.BANNER_ID);
       const res = await bannerApi.reorder({
-        hospitalCode: appliedSite,
         popupType: 'POPUP',
         orderedIds,
       });

@@ -1176,7 +1176,6 @@ export default function MainBannerPage() {
     try {
       const res = await bannerApi.list({
         popupType: 'MAIN',
-        hospitalCode: appliedSite,
       });
       setAllBanners(res.list);
     } catch {
@@ -1232,7 +1231,6 @@ export default function MainBannerPage() {
         .filter((b) => b.USE_YN !== 'N')
         .map((b) => b.BANNER_ID);
       const res = await bannerApi.reorder({
-        hospitalCode: appliedSite,
         popupType: 'MAIN',
         orderedIds,
       });

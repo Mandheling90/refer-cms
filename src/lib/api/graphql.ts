@@ -30,6 +30,15 @@ function getAccessToken(): string | null {
   return getAuthState()?.accessToken ?? null;
 }
 
+function getHospitalCode(): string | null {
+  return getAuthState()?.hospitalCode ?? null;
+}
+
+/** 외부에서 현재 hospitalCode를 읽을 수 있도록 노출 */
+export function getStoredHospitalCode(): string | null {
+  return getHospitalCode();
+}
+
 function getRefreshToken(): string | null {
   return getAuthState()?.refreshToken ?? null;
 }
@@ -139,11 +148,15 @@ async function executeRequest<T>(
   variables?: Record<string, unknown>,
 ): Promise<T> {
   const token = getAccessToken();
+  const hospitalCode = getHospitalCode();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (hospitalCode) {
+    headers['x-hospital-code'] = hospitalCode;
   }
 
   const response = await fetch(GRAPHQL_URL, {
@@ -187,12 +200,16 @@ export interface UploadResult {
 
 async function executeUpload(file: File): Promise<UploadResult> {
   const token = getAccessToken();
+  const hospitalCode = getHospitalCode();
   const formData = new FormData();
   formData.append('file', file);
 
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (hospitalCode) {
+    headers['x-hospital-code'] = hospitalCode;
   }
 
   const response = await fetch(`${API_BASE_URL}/upload`, {
