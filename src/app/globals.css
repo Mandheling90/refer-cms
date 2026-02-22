@@ -195,6 +195,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Date input calendar icon */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+
   /* Scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;

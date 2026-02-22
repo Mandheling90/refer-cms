@@ -37,7 +37,8 @@
       "mcp__claude_ai_Figma__get_design_context",
       "mcp__claude_ai_Figma__get_screenshot",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(echo test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

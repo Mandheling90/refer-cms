@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +24,7 @@ import {
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { Pagination } from '@/components/molecules/Pagination';
 import { bannerApi, type Banner } from '@/lib/api/banner';
+import { uploadFile } from '@/lib/api/graphql';
 import { cn } from '@/lib/utils';
 import {
   ArrowUpDown,
@@ -223,7 +224,7 @@ function BannerCardContent({
           )}
         </div>
         <button
-          className="p-1 text-gray-500 hover:text-red-500 transition-colors"
+          className="p-1 text-gray-500 hover:text-red-500 transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onDelete(banner);
@@ -475,6 +476,7 @@ function BannerFormDialog({
 }) {
   const [form, setForm] = useState<BannerFormData>(INITIAL_FORM);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -497,9 +499,11 @@ function BannerFormDialog({
         UPDATE_DTTM: editBanner.UPDATE_DTTM,
       });
       setImagePreview(editBanner.IMAGE_URL || null);
+      setPendingFile(null);
     } else {
       setForm(INITIAL_FORM);
       setImagePreview(null);
+      setPendingFile(null);
     }
   }, [open, editBanner]);
 
@@ -531,6 +535,7 @@ function BannerFormDialog({
           return;
         }
         setImagePreview(dataUrl);
+        setPendingFile(file);
       };
       img.src = dataUrl;
     };
@@ -561,6 +566,13 @@ function BannerFormDialog({
     setErrors({});
     setSaving(true);
     try {
+      // 새 파일이 선택된 경우 업로드
+      let imageUrl = form.IMAGE_URL;
+      if (pendingFile) {
+        const uploadRes = await uploadFile(pendingFile);
+        imageUrl = uploadRes.url;
+      }
+
       const payload: Partial<Banner> = {
         BANNER_TYPE: 'POPUP',
         SITE_CD: siteCd,
@@ -572,22 +584,21 @@ function BannerFormDialog({
         END_DATE: form.END_DATE,
         END_TIME: form.END_TIME,
         LINK_URL: form.LINK_URL,
-        IMAGE_URL: form.IMAGE_URL,
+        IMAGE_URL: imageUrl,
       };
       if (form.BANNER_ID) {
         payload.BANNER_ID = form.BANNER_ID;
       }
-      // 사용안함으로 변경시 순서 해제
       if (form.USE_YN === 'N') {
         payload.SORT_ORDER = 0;
       }
       const res = await bannerApi.save(payload);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success(res.ServiceResult.MESSAGE_TEXT || '저장되었습니다.');
+      if (res.success) {
+        toast.success(res.message || '저장되었습니다.');
         onOpenChange(false);
         onSaved();
       } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '저장에 실패했습니다.');
+        toast.error(res.message || '저장에 실패했습니다.');
       }
     } catch {
       toast.error('저장에 실패했습니다.');
@@ -711,16 +722,33 @@ function BannerFormDialog({
               onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
             >
               {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="미리보기"
-                  className="max-h-[160px] object-contain rounded-lg my-2"
-                />
+                <>
+                  <img
+                    src={imagePreview}
+                    alt="미리보기"
+                    className="max-w-full object-contain rounded-lg my-2"
+                  />
+                  <p className="text-sm text-gray-700 font-medium">
+                    {pendingFile
+                      ? `${pendingFile.name} (${pendingFile.size < 1024 * 1024 ? `${(pendingFile.size / 1024).toFixed(0)}KB` : `${(pendingFile.size / (1024 * 1024)).toFixed(1)}MB`})`
+                      : form.IMAGE_URL ? decodeURIComponent(form.IMAGE_URL.split('/').pop() || '') : ''}
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-2 px-4 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer"
+                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  >
+                    파일선택
+                  </button>
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    이곳에 파일을 드래그&드롭 하거나 버튼으로 선택하세요
+                  </p>
+                </>
               ) : (
                 <>
                   <Upload className="h-8 w-8 text-gray-400 mb-2" />
                   <p className="text-sm text-gray-500">
-                    {dragOver ? '여기에 파일을 놓으세요.' : '이곳에 파일을 드래그&드롭 하거나 클릭하여 선택하세요.'}
+                    {dragOver ? '여기에 파일을 놓으세요.' : '이곳에 파일을 드래그&드롭 하거나 버튼으로 선택하세요.'}
                   </p>
                 </>
               )}
@@ -780,40 +808,11 @@ function BannerFormDialog({
 }
 
 // ---------------------------------------------------------------------------
-// Mock data
-// ---------------------------------------------------------------------------
-
-const MOCK_BANNERS: Banner[] = [
-  // 안암
-  { BANNER_ID: 'P001', BANNER_NAME: '안암 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_URL: 'https://example.com', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P002', BANNER_NAME: '안암 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 2, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P003', BANNER_NAME: '안암 팝업 3', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 3, START_DATE: '2025-03-21', END_DATE: '2025-03-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P004', BANNER_NAME: '안암 상시 팝업', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 4, ALWAYS_YN: 'Y', LINK_TYPE: 'NEW', LANG_SET: 'kr' },
-  { BANNER_ID: 'P005', BANNER_NAME: '안암 팝업 5', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 5, START_DATE: '2025-05-01', END_DATE: '2025-05-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P006', BANNER_NAME: '안암 팝업 6', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 6, START_DATE: '2025-05-10', END_DATE: '2025-06-10', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P007', BANNER_NAME: '안암 팝업 7', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 7, ALWAYS_YN: 'Y', LINK_TYPE: 'NEW', LANG_SET: 'kr' },
-  { BANNER_ID: 'P008', BANNER_NAME: '안암 팝업 8', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'Y', SORT_ORDER: 8, START_DATE: '2025-06-01', END_DATE: '2025-06-30', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P009', BANNER_NAME: '안암 미사용 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 9, START_DATE: '2025-04-21', END_DATE: '2025-04-22', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P010', BANNER_NAME: '안암 미사용 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 10, START_DATE: '2025-03-01', END_DATE: '2025-03-15', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P011', BANNER_NAME: '안암 미사용 팝업 3', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 11, START_DATE: '2025-02-01', END_DATE: '2025-02-28', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P017', BANNER_NAME: '안암 미사용 팝업 4', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 12, START_DATE: '2025-01-10', END_DATE: '2025-01-31', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P018', BANNER_NAME: '안암 미사용 팝업 5', BANNER_TYPE: 'POPUP', SITE_CD: 'anam', USE_YN: 'N', SORT_ORDER: 13, START_DATE: '2025-01-01', END_DATE: '2025-01-15', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  // 구로
-  { BANNER_ID: 'P012', BANNER_NAME: '구로 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'guro', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'SELF', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P013', BANNER_NAME: '구로 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'guro', USE_YN: 'Y', SORT_ORDER: 2, START_DATE: '2025-05-01', END_DATE: '2025-05-31', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P014', BANNER_NAME: '구로 미사용 팝업', BANNER_TYPE: 'POPUP', SITE_CD: 'guro', USE_YN: 'N', SORT_ORDER: 3, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  // 안산
-  { BANNER_ID: 'P015', BANNER_NAME: '안산 팝업 1', BANNER_TYPE: 'POPUP', SITE_CD: 'ansan', USE_YN: 'Y', SORT_ORDER: 1, START_DATE: '2025-04-21', END_DATE: '2025-04-25', LINK_TYPE: 'NEW', ALWAYS_YN: 'N', LANG_SET: 'kr' },
-  { BANNER_ID: 'P016', BANNER_NAME: '안산 팝업 2', BANNER_TYPE: 'POPUP', SITE_CD: 'ansan', USE_YN: 'Y', SORT_ORDER: 2, ALWAYS_YN: 'Y', LINK_TYPE: 'SELF', LANG_SET: 'kr' },
-];
-
-// ---------------------------------------------------------------------------
 // PopupBannerPage
 // ---------------------------------------------------------------------------
 
 export default function PopupBannerPage() {
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
+  const [allBanners, setAllBanners] = useState<Banner[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
 
@@ -825,12 +824,9 @@ export default function PopupBannerPage() {
   const [appliedSite, setAppliedSite] = useState<SiteCode>('anam');
   const [appliedUseFilter, setAppliedUseFilter] = useState('ALL');
 
-  // 사용중 배너 수
-  const [activeCount, setActiveCount] = useState(0);
-
   // 모드: normal | sort | select
   const [mode, setMode] = useState<'normal' | 'sort' | 'select'>('normal');
-  const [originalBanners, setOriginalBanners] = useState<Banner[]>([]);
+  const [sortModeBanners, setSortModeBanners] = useState<Banner[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
 
@@ -838,6 +834,22 @@ export default function PopupBannerPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editBanner, setEditBanner] = useState<Banner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null);
+
+  // 파생 데이터
+  const filteredBanners = useMemo(() => {
+    let result = [...allBanners];
+    if (appliedUseFilter === 'USED') result = result.filter((b) => b.USE_YN === 'Y');
+    else if (appliedUseFilter === 'UNUSED') result = result.filter((b) => b.USE_YN === 'N');
+    return result;
+  }, [allBanners, appliedUseFilter]);
+
+  const totalItems = filteredBanners.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const activeCount = allBanners.filter((b) => b.USE_YN === 'Y').length;
+
+  const banners = mode === 'sort'
+    ? sortModeBanners
+    : filteredBanners.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // 검색 버튼 클릭
   const handleSearch = () => {
@@ -856,49 +868,17 @@ export default function PopupBannerPage() {
   };
 
   // 데이터 로드
-  const loadBanners = useCallback(
-    async (page = currentPage) => {
-      try {
-        try {
-          const activeRes = await bannerApi.popupList({
-            CURRENT_PAGE: 1,
-            SHOWN_ENTITY: 1,
-            LANG_SET: 'kr',
-            SITE_CD: appliedSite,
-            USE_YN: 'Y',
-          });
-          setActiveCount(activeRes.TOTAL_ENTITY || 0);
-        } catch { /* ignore */ }
-
-        const res = await bannerApi.popupList({
-          CURRENT_PAGE: page,
-          SHOWN_ENTITY: pageSize,
-          LANG_SET: 'kr',
-          SITE_CD: appliedSite,
-          USE_YN: appliedUseFilter === 'ALL' ? undefined : appliedUseFilter === 'USED' ? 'Y' : 'N',
-        });
-        if (res.list && res.list.length > 0) {
-          setBanners(res.list);
-          setTotalItems(res.TOTAL_ENTITY || 0);
-        } else {
-          let filtered = MOCK_BANNERS.filter((b) => b.SITE_CD === appliedSite);
-          if (appliedUseFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
-          else if (appliedUseFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
-          setTotalItems(filtered.length);
-          const start = (page - 1) * pageSize;
-          setBanners(filtered.slice(start, start + pageSize));
-        }
-      } catch {
-        let filtered = MOCK_BANNERS.filter((b) => b.SITE_CD === appliedSite);
-        if (appliedUseFilter === 'USED') filtered = filtered.filter((b) => b.USE_YN === 'Y');
-        else if (appliedUseFilter === 'UNUSED') filtered = filtered.filter((b) => b.USE_YN === 'N');
-        setTotalItems(filtered.length);
-        const start = (page - 1) * pageSize;
-        setBanners(filtered.slice(start, start + pageSize));
-      }
-    },
-    [currentPage, pageSize, appliedUseFilter, appliedSite]
-  );
+  const loadBanners = useCallback(async () => {
+    try {
+      const res = await bannerApi.list({
+        popupType: 'POPUP',
+        hospitalCode: appliedSite,
+      });
+      setAllBanners(res.list);
+    } catch {
+      toast.error('데이터를 불러오는데 실패했습니다.');
+    }
+  }, [appliedSite]);
 
   useEffect(() => {
     loadBanners();
@@ -918,12 +898,12 @@ export default function PopupBannerPage() {
   const handleDeleteSingle = async () => {
     if (!deleteTarget) return;
     try {
-      const res = await bannerApi.remove([{ BANNER_ID: deleteTarget.BANNER_ID }]);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('삭제되었습니다.');
+      const res = await bannerApi.remove([deleteTarget.BANNER_ID]);
+      if (res.success) {
+        toast.success(res.message || '삭제되었습니다.');
         loadBanners();
       } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '삭제에 실패했습니다.');
+        toast.error(res.message || '삭제에 실패했습니다.');
       }
     } catch {
       toast.error('삭제에 실패했습니다.');
@@ -933,34 +913,36 @@ export default function PopupBannerPage() {
 
   // --- 순서변경 모드 ---
   const handleEnterSortMode = () => {
-    setOriginalBanners([...banners]);
+    setSortModeBanners(filteredBanners.slice((currentPage - 1) * pageSize, currentPage * pageSize));
     setMode('sort');
   };
 
   const handleCancelSort = () => {
-    setBanners(originalBanners);
+    setSortModeBanners([]);
     setMode('normal');
   };
 
   const handleSaveSort = async () => {
     try {
-      const orderList = banners
+      const orderedIds = sortModeBanners
         .filter((b) => b.USE_YN !== 'N')
-        .map((b, i) => ({
-          BANNER_ID: b.BANNER_ID,
-          SORT_ORDER: i + 1,
-        }));
-      const res = await bannerApi.saveOrders(orderList);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('순서가 저장되었습니다.');
-      } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '순서 저장에 실패했습니다.');
+        .map((b) => b.BANNER_ID);
+      const res = await bannerApi.reorder({
+        hospitalCode: appliedSite,
+        popupType: 'POPUP',
+        orderedIds,
+      });
+      if (res.success) {
+        toast.success(res.message || '순서가 저장되었습니다.');
         loadBanners();
+      } else {
+        toast.error(res.message || '순서 저장에 실패했습니다.');
       }
     } catch {
       toast.error('순서 저장에 실패했습니다.');
       loadBanners();
     }
+    setSortModeBanners([]);
     setMode('normal');
   };
 
@@ -993,15 +975,15 @@ export default function PopupBannerPage() {
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
     try {
-      const list = Array.from(selectedIds).map((id) => ({ BANNER_ID: id }));
-      const res = await bannerApi.remove(list);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('선택한 팝업이 삭제되었습니다.');
+      const ids = Array.from(selectedIds);
+      const res = await bannerApi.remove(ids);
+      if (res.success) {
+        toast.success(res.message || '선택한 팝업이 삭제되었습니다.');
         setSelectedIds(new Set());
         setMode('normal');
         loadBanners();
       } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '삭제에 실패했습니다.');
+        toast.error(res.message || '삭제에 실패했습니다.');
       }
     } catch {
       toast.error('삭제에 실패했습니다.');
@@ -1021,18 +1003,17 @@ export default function PopupBannerPage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const activeBanner = banners.find((b) => b.BANNER_ID === active.id);
-    const overBanner = banners.find((b) => b.BANNER_ID === over.id);
+    const activeBanner = sortModeBanners.find((b) => b.BANNER_ID === active.id);
+    const overBanner = sortModeBanners.find((b) => b.BANNER_ID === over.id);
     if (activeBanner?.USE_YN === 'N' || overBanner?.USE_YN === 'N') return;
 
-    const oldIndex = banners.findIndex((b) => b.BANNER_ID === active.id);
-    const newIndex = banners.findIndex((b) => b.BANNER_ID === over.id);
+    const oldIndex = sortModeBanners.findIndex((b) => b.BANNER_ID === active.id);
+    const newIndex = sortModeBanners.findIndex((b) => b.BANNER_ID === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    setBanners(arrayMove(banners, oldIndex, newIndex));
+    setSortModeBanners(arrayMove(sortModeBanners, oldIndex, newIndex));
   };
 
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
   const isSortMode = mode === 'sort';
   const isSelectMode = mode === 'select';
   const allSelected = banners.length > 0 && banners.every((b) => selectedIds.has(b.BANNER_ID));
@@ -1218,10 +1199,7 @@ export default function PopupBannerPage() {
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={(page) => {
-            setCurrentPage(page);
-            loadBanners(page);
-          }}
+          onPageChange={(page) => setCurrentPage(page)}
           onPageSizeChange={() => {}}
           hidePageSize
         />

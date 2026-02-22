@@ -33,12 +33,13 @@ export default function StripBannerPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Banner>>({ BANNER_TYPE: 'STRIP' });
 
-  const retrieveList = useCallback(async (page = currentPage, size = pageSize) => {
+  const retrieveList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await bannerApi.stripList({ CURRENT_PAGE: page, SHOWN_ENTITY: size });
-      setData(res.list || []);
-      setTotalItems(res.TOTAL_ENTITY || 0);
+      const res = await bannerApi.list({ popupType: 'STRIP', hospitalCode: 'anam' });
+      const start = (currentPage - 1) * pageSize;
+      setData(res.list.slice(start, start + pageSize));
+      setTotalItems(res.totalCount);
     } catch {
       toast.error('목록 조회에 실패했습니다.');
     } finally {
@@ -53,12 +54,12 @@ export default function StripBannerPage() {
     }
     try {
       const res = await bannerApi.save({ ...formData, BANNER_TYPE: 'STRIP' });
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('저장되었습니다.');
+      if (res.success) {
+        toast.success(res.message || '저장되었습니다.');
         setFormData({ BANNER_TYPE: 'STRIP' });
         retrieveList();
       } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '저장에 실패했습니다.');
+        toast.error(res.message || '저장에 실패했습니다.');
       }
     } catch {
       toast.error('저장에 실패했습니다.');
@@ -67,9 +68,10 @@ export default function StripBannerPage() {
 
   const handleDelete = async () => {
     try {
-      const res = await bannerApi.remove(selectedRows);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('삭제되었습니다.');
+      const ids = selectedRows.map((r) => r.BANNER_ID);
+      const res = await bannerApi.remove(ids);
+      if (res.success) {
+        toast.success(res.message || '삭제되었습니다.');
         setSelectedRows([]);
         retrieveList();
       }
@@ -103,8 +105,8 @@ export default function StripBannerPage() {
             pageSize={pageSize}
             totalPages={Math.ceil(totalItems / pageSize) || 1}
             enableSelection
-            onPageChange={(page) => { setCurrentPage(page); retrieveList(page, pageSize); }}
-            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); retrieveList(1, size); }}
+            onPageChange={(page) => { setCurrentPage(page); }}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
             onRowClick={(row) => setFormData(row)}
             onSelectionChange={setSelectedRows}
           />
