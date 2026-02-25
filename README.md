@@ -77,9 +77,15 @@ npm run test:e2e:ui
 
 ## 환경변수
 
-### `.env.local`
+### `.env.local` (개발)
 
-| 변수명                    | 설명                                | 예시                            |
+| 변수명                    | 설명                                | 값                              |
+| ------------------------- | ----------------------------------- | ------------------------------- |
+| `NEXT_PUBLIC_GRAPHQL_URL` | GraphQL API 엔드포인트 (클라이언트) | `https://api.propai.kr/graphql` |
+
+### `.env.production` (운영)
+
+| 변수명                    | 설명                                | 값                              |
 | ------------------------- | ----------------------------------- | ------------------------------- |
 | `NEXT_PUBLIC_GRAPHQL_URL` | GraphQL API 엔드포인트 (클라이언트) | `https://api.propai.kr/graphql` |
 
