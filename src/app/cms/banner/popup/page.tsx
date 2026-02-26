@@ -530,8 +530,8 @@ function BannerFormDialog({
       const dataUrl = ev.target?.result as string;
       const img = new window.Image();
       img.onload = () => {
-        if (img.width !== 588 || img.height !== 439) {
-          alert(`이미지 사이즈가 맞지 않습니다.\n(588x439px 필요, 현재 ${img.width}x${img.height}px)`);
+        if (img.width !== 408 || img.height !== 440) {
+          alert(`이미지 사이즈가 맞지 않습니다.\n(408x440px 필요, 현재 ${img.width}x${img.height}px)`);
           return;
         }
         setImagePreview(dataUrl);
@@ -754,8 +754,8 @@ function BannerFormDialog({
               )}
             </div>
             <div className="space-y-0.5 text-xs text-gray-500">
-              <p>이미지 사이즈: 가로 588px, 세로 439px / 파일 형식: png, jpg</p>
-              <p>※ 해상도 588 x 439 고정입니다.</p>
+              <p>이미지 사이즈: 가로 408px, 세로 440px / 파일 형식: png, jpg</p>
+              <p>※ 해상도 408 x 440 고정입니다.</p>
               <p>※ 최대 1개 까지 첨부 가능합니다.</p>
               <p>※ 2MB 미만의 확장자 png, jpg파일만 업로드 가능합니다.</p>
             </div>
