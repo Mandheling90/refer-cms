@@ -8,6 +8,7 @@ import { useMenuStore } from '@/stores/menu-store';
 import { ThemeToggle } from '@/components/atoms/ThemeToggle';
 
 const HOSPITAL_LABEL: Record<string, string> = {
+  ALL: '통합',
   ANAM: '안암병원',
   GURO: '구로병원',
   ANSAN: '안산병원',

@@ -40,7 +40,7 @@ export default function LoginPage() {
     try {
       const { data } = await loginMutation({
         variables: {
-          input: { userId, password },
+          input: { userId, password, hospitalCode: institution.toUpperCase() },
         },
       });
 
@@ -105,6 +105,7 @@ export default function LoginPage() {
                 }}
               >
                 <option value="" disabled>선택하세요</option>
+                <option value="all">통합로그인</option>
                 <option value="anam">진료협력센터 안암병원</option>
                 <option value="guro">진료협력센터 구로병원</option>
                 <option value="ansan">진료협력센터 안산병원</option>
