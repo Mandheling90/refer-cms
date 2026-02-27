@@ -43,6 +43,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/auth-store';
 import {
   DndContext,
   closestCenter,
@@ -813,7 +814,7 @@ function BannerFormDialog({
       if (form.USE_YN === 'N') {
         payload.SORT_ORDER = 0;
       }
-      const res = await bannerApi.save(payload);
+      const res = await bannerApi.save(payload, siteCd.toUpperCase());
       if (res.success) {
         toast.success(res.message || '저장되었습니다.');
         onOpenChange(false);
@@ -1115,6 +1116,8 @@ function BannerFormDialog({
 // ---------------------------------------------------------------------------
 
 export default function MainBannerPage() {
+  const { hospitalCode } = useAuthStore();
+  const isAllHospital = hospitalCode === 'ALL';
   const [allBanners, setAllBanners] = useState<Banner[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
@@ -1176,12 +1179,13 @@ export default function MainBannerPage() {
     try {
       const res = await bannerApi.list({
         popupType: 'MAIN',
+        hospitalCode: isAllHospital ? appliedSite.toUpperCase() : undefined,
       });
       setAllBanners(res.list);
     } catch {
       toast.error('데이터를 불러오는데 실패했습니다.');
     }
-  }, [appliedSite]);
+  }, [appliedSite, isAllHospital]);
 
   useEffect(() => {
     loadBanners();
@@ -1233,6 +1237,7 @@ export default function MainBannerPage() {
       const res = await bannerApi.reorder({
         popupType: 'MAIN',
         orderedIds,
+        hospitalCode: isAllHospital ? appliedSite.toUpperCase() : undefined,
       });
       if (res.success) {
         toast.success(res.message || '순서가 저장되었습니다.');
@@ -1327,7 +1332,8 @@ export default function MainBannerPage() {
 
       {/* 검색 필터 영역 */}
       <div className="rounded-lg border border-gray-300 bg-gray-50 p-5 space-y-4">
-        {/* 기관 선택 */}
+        {/* 기관 선택 — 통합관리자(ALL)만 표시 */}
+        {isAllHospital && (
         <div className="flex items-center gap-4">
           <Label className="text-sm font-bold whitespace-nowrap w-[90px]">기관 선택</Label>
           <div className="flex">
@@ -1350,6 +1356,7 @@ export default function MainBannerPage() {
             ))}
           </div>
         </div>
+        )}
 
         {/* 사용여부 선택 */}
         <div className="flex items-center gap-4">

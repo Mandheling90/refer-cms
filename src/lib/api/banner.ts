@@ -167,8 +167,8 @@ const POPUP_FIELDS = `
 `;
 
 const ADMIN_POPUPS_QUERY = `
-  query AdminPopups($popupType: PopupType, $pagination: PaginationInput) {
-    adminPopups(popupType: $popupType, pagination: $pagination) {
+  query AdminPopups($popupType: PopupType, $hospitalCode: HospitalCode, $pagination: PaginationInput) {
+    adminPopups(popupType: $popupType, hospitalCode: $hospitalCode, pagination: $pagination) {
       items { ${POPUP_FIELDS} }
       totalCount
       hasNextPage
@@ -220,16 +220,21 @@ export interface BannerActionResult {
 // ---------------------------------------------------------------------------
 
 export const bannerApi = {
-  /** 배너 목록 조회 (hospitalCode는 x-hospital-code 헤더로 전달) */
+  /** 배너 목록 조회 */
   list: async (params: {
     popupType: string;
+    hospitalCode?: string;
   }): Promise<BannerListResult> => {
+    const variables: Record<string, unknown> = {
+      popupType: BANNER_TO_POPUP_TYPE[params.popupType] || params.popupType,
+      pagination: { limit: 100 },
+    };
+    if (params.hospitalCode) {
+      variables.hospitalCode = params.hospitalCode;
+    }
     const data = await graphqlRequest<{ adminPopups: PaginatedPopupResponse }>(
       ADMIN_POPUPS_QUERY,
-      {
-        popupType: BANNER_TO_POPUP_TYPE[params.popupType] || params.popupType,
-        pagination: { limit: 100 },
-      },
+      variables,
     );
 
     const banners = data.adminPopups.items.map(popupToBanner);
@@ -248,9 +253,9 @@ export const bannerApi = {
   },
 
   /** 배너 저장 (생성 또는 수정) */
-  save: async (banner: Partial<Banner>): Promise<BannerActionResult> => {
+  save: async (banner: Partial<Banner>, hospitalCode?: string): Promise<BannerActionResult> => {
     const input: Record<string, unknown> = {
-      hospitalCode: getStoredHospitalCode(),
+      hospitalCode: hospitalCode || getStoredHospitalCode(),
       popupType: BANNER_TO_POPUP_TYPE[banner.BANNER_TYPE || ''] || banner.BANNER_TYPE,
       isActive: banner.USE_YN === 'Y',
       alwaysVisible: banner.ALWAYS_YN === 'Y',
@@ -291,14 +296,15 @@ export const bannerApi = {
     return { success: true, message: '삭제되었습니다.' };
   },
 
-  /** 배너 순서 변경 (hospitalCode는 localStorage에서 가져옴) */
+  /** 배너 순서 변경 */
   reorder: async (params: {
     popupType: string;
     orderedIds: string[];
+    hospitalCode?: string;
   }): Promise<BannerActionResult> => {
     await graphqlRequest(REORDER_POPUPS_MUTATION, {
       input: {
-        hospitalCode: getStoredHospitalCode(),
+        hospitalCode: params.hospitalCode || getStoredHospitalCode(),
         popupType: BANNER_TO_POPUP_TYPE[params.popupType] || params.popupType,
         orderedIds: params.orderedIds,
       },
