@@ -1118,16 +1118,17 @@ function BannerFormDialog({
 export default function MainBannerPage() {
   const { hospitalCode } = useAuthStore();
   const isAllHospital = hospitalCode === 'ALL';
+  const defaultSite = (hospitalCode?.toLowerCase() || 'anam') as SiteCode;
   const [allBanners, setAllBanners] = useState<Banner[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
 
   // 필터 UI 상태 (사용자가 선택 중인 값)
-  const [selectedSite, setSelectedSite] = useState<SiteCode>('anam');
+  const [selectedSite, setSelectedSite] = useState<SiteCode>(defaultSite);
   const [useFilter, setUseFilter] = useState('ALL');
 
   // 적용된 검색 파라미터 (실제 API 호출에 사용)
-  const [appliedSite, setAppliedSite] = useState<SiteCode>('anam');
+  const [appliedSite, setAppliedSite] = useState<SiteCode>(defaultSite);
   const [appliedUseFilter, setAppliedUseFilter] = useState('ALL');
 
   // 모드: normal | sort | select
@@ -1167,9 +1168,9 @@ export default function MainBannerPage() {
 
   // 조건 초기화 버튼 클릭
   const handleReset = () => {
-    setSelectedSite('anam');
+    setSelectedSite(defaultSite);
     setUseFilter('ALL');
-    setAppliedSite('anam');
+    setAppliedSite(defaultSite);
     setAppliedUseFilter('ALL');
     setCurrentPage(1);
   };
