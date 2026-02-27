@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Columns3,
   FileImage,
+  FileText,
   Image,
   LayoutDashboard,
   PenLine,
@@ -105,16 +106,11 @@ const NAV_ITEMS: NavItem[] = [
   //   href: '/cms/board',
   //   icon: ClipboardList,
   // },
-  // {
-  //   title: '콘텐츠 설정',
-  //   href: '/cms/contents/config',
-  //   icon: FileText,
-  // },
-  // {
-  //   title: '콘텐츠 관리',
-  //   href: '/cms/contents',
-  //   icon: FileText,
-  // },
+  {
+    title: '콘텐츠 관리',
+    href: '/cms/contents',
+    icon: FileText,
+  },
   // {
   //   title: 'e-Consult',
   //   href: '/cms/e-consult',

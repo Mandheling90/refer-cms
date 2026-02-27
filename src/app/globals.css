@@ -210,4 +210,38 @@
     background-color: var(--gray-800);
     border-radius: 4px;
   }
+
+  /* CKEditor 다이얼로그 내부 스타일 */
+  .ck-editor-wrapper .ck.ck-editor {
+    width: 100%;
+  }
+  .ck-editor-wrapper .ck.ck-editor__main > .ck-editor__editable {
+    min-height: var(--ck-editor-min-height, 200px);
+    border-color: var(--gray-800);
+    border-radius: 0 0 8px 8px;
+  }
+  .ck-editor-wrapper .ck.ck-toolbar {
+    border-color: var(--gray-800);
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  /* CKEditor 팝업이 Radix Dialog 위에서 조작 가능하도록 */
+  body > .ck-body-wrapper {
+    z-index: 9999 !important;
+    position: relative;
+  }
+  body > .ck-body-wrapper .ck.ck-balloon-panel,
+  body > .ck-body-wrapper .ck.ck-dialog-overlay,
+  body > .ck-body-wrapper .ck.ck-dialog {
+    pointer-events: auto !important;
+  }
+  body > .ck-body-wrapper .ck.ck-balloon-panel {
+    z-index: 10060 !important;
+  }
+  body > .ck-body-wrapper .ck.ck-dialog-overlay {
+    z-index: 10058 !important;
+  }
+  body > .ck-body-wrapper .ck.ck-dialog {
+    z-index: 10059 !important;
+  }
 }

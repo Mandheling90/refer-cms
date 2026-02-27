@@ -40,7 +40,11 @@
       "Bash(cd:*)",
       "Bash(echo test:*)",
       "WebFetch(domain:api.propai.kr)",
-      "Bash(find C:\\\\Users\\\\LSY\\\\Desktop\\\\Propject\\\\refer-cms\\\\src\\\\components:*)"
+      "Bash(find C:\\\\Users\\\\LSY\\\\Desktop\\\\Propject\\\\refer-cms\\\\src\\\\components:*)",
+      "WebFetch(domain:www.figma.com)",
+      "mcp__claude_ai_Figma__whoami",
+      "Bash(xargs grep:*)",
+      "Bash(npx next:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
