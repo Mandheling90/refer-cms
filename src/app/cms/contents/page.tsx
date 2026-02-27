@@ -1,9 +1,16 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
 import { RichEditor } from '@/components/organisms/RichEditor';
+import type { PageEditorHandle } from '@/components/organisms/PageEditor';
+
+const PageEditor = dynamic(
+  () => import('@/components/organisms/PageEditor').then((mod) => ({ default: mod.PageEditor })),
+  { ssr: false, loading: () => <div className="flex items-center justify-center h-full text-muted-foreground">페이지 에디터 로딩중...</div> },
+);
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { Input } from '@/components/ui/input';
@@ -25,7 +32,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { Eye, FolderOpen, Plus, Search, Trash2 } from 'lucide-react';
+import { Code, Eye, FolderOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
 // ── 샘플 데이터 (API 연동 전 확인용, 실 연동 시 USE_MOCK = false) ──
 const USE_MOCK = true;
@@ -248,8 +255,21 @@ export default function ContentsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Contents>>({});
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [editorMode, setEditorMode] = useState<'richtext' | 'pageeditor'>('richtext');
+  const [pageEditorOpen, setPageEditorOpen] = useState(false);
+  const [pageEditorKey, setPageEditorKey] = useState(0);
+  const pageEditorRef = useRef<PageEditorHandle>(null);
+
+  // 미리보기: 새 탭에서 전체 HTML 렌더링
+  const handlePreview = useCallback(() => {
+    const html = formData.CONTENTS_BODY;
+    if (!html) return;
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
+  }, [formData.CONTENTS_BODY]);
 
   const user = useAuthStore((s) => s.user);
   const currentUserName = user?.USER_NM || '관리자';
@@ -441,6 +461,7 @@ export default function ContentsPage() {
   const handleOpenDialog = () => {
     setIsEditMode(false);
     setFormData({ USE_YN: 'Y' });
+    setEditorMode('richtext');
     setDialogOpen(true);
   };
 
@@ -448,6 +469,10 @@ export default function ContentsPage() {
   const handleRowClick = (row: Contents) => {
     setIsEditMode(true);
     setFormData({ ...row });
+    // 콘텐츠 내용에 따라 에디터 모드 자동 감지
+    const body = row.CONTENTS_BODY || '';
+    const isFullHtml = body.includes('<!DOCTYPE') || body.includes('<html') || body.includes('<style');
+    setEditorMode(isFullHtml ? 'pageeditor' : 'richtext');
     setDialogOpen(true);
   };
 
@@ -687,25 +712,69 @@ export default function ContentsPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label>본문</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewOpen(true)}
-                  disabled={!formData.CONTENTS_BODY}
-                >
-                  <Eye className="h-4 w-4" />
-                  미리보기
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={editorMode === 'richtext' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setEditorMode('richtext')}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    간편 에디터
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={editorMode === 'pageeditor' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setEditorMode('pageeditor');
+                      setPageEditorKey((k) => k + 1);
+                      setPageEditorOpen(true);
+                    }}
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                    페이지 에디터
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreview}
+                    disabled={!formData.CONTENTS_BODY}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    미리보기
+                  </Button>
+                </div>
               </div>
-              <RichEditor
-                value={formData.CONTENTS_BODY || ''}
-                onChange={(data) =>
-                  setFormData({ ...formData, CONTENTS_BODY: data })
-                }
-                placeholder="내용을 입력하세요"
-                minHeight={200}
-              />
+
+              {editorMode === 'richtext' ? (
+                <RichEditor
+                  value={formData.CONTENTS_BODY || ''}
+                  onChange={(data) =>
+                    setFormData({ ...formData, CONTENTS_BODY: data })
+                  }
+                  placeholder="내용을 입력하세요"
+                  minHeight={200}
+                />
+              ) : (
+                <div className="rounded-lg border border-dashed border-gray-400 p-6 text-center text-sm text-muted-foreground">
+                  <p>페이지 에디터로 편집 중입니다.</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => {
+                      setPageEditorKey((k) => k + 1);
+                      setPageEditorOpen(true);
+                    }}
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                    페이지 에디터 열기
+                  </Button>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -742,26 +811,58 @@ export default function ContentsPage() {
         destructive
       />
 
-      {/* HTML 미리보기 팝업 */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent size="lg" className="max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>콘텐츠 미리보기</DialogTitle>
+      {/* GrapesJS 풀스크린 에디터 */}
+      <Dialog open={pageEditorOpen} onOpenChange={setPageEditorOpen}>
+        <DialogContent
+          size="fullscreen"
+          className="flex flex-col p-0"
+          showCloseButton={false}
+          onPointerDownOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.gjs-') || target.closest('.sp-')) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader className="flex-row items-center justify-between px-4 py-3 shrink-0">
+            <DialogTitle className="text-lg">페이지 에디터</DialogTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreview}
+                disabled={!formData.CONTENTS_BODY}
+              >
+                <Eye className="h-4 w-4" />
+                미리보기
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  // 닫기 전에 에디터에서 최신 HTML을 명시적으로 가져옴
+                  if (pageEditorRef.current) {
+                    const html = pageEditorRef.current.getCurrentHtml();
+                    setFormData((prev) => ({ ...prev, CONTENTS_BODY: html }));
+                  }
+                  setPageEditorOpen(false);
+                }}
+              >
+                편집 완료
+              </Button>
+            </div>
           </DialogHeader>
-          <DialogBody className="flex-1 overflow-hidden p-0">
-            <iframe
-              ref={iframeRef}
-              srcDoc={formData.CONTENTS_BODY || ''}
-              className="w-full h-[70vh] border-0"
-              sandbox="allow-same-origin"
-              title="콘텐츠 미리보기"
-            />
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
-              닫기
-            </Button>
-          </DialogFooter>
+          <div className="flex-1 overflow-hidden">
+            {pageEditorOpen && (
+              <PageEditor
+                key={pageEditorKey}
+                ref={pageEditorRef}
+                value={formData.CONTENTS_BODY || ''}
+                onChange={(html) =>
+                  setFormData((prev) => ({ ...prev, CONTENTS_BODY: html }))
+                }
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

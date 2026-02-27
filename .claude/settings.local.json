@@ -44,7 +44,9 @@
       "WebFetch(domain:www.figma.com)",
       "mcp__claude_ai_Figma__whoami",
       "Bash(xargs grep:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:grapesjs.com)"
     ]
   },
   "enableAllProjectMcpServers": true,

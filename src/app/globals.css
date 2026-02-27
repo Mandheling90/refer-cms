@@ -244,4 +244,23 @@
   body > .ck-body-wrapper .ck.ck-dialog {
     z-index: 10059 !important;
   }
+
+  /* GrapesJS 에디터 */
+  .gjs-editor-wrapper {
+    height: 100% !important;
+    width: 100%;
+  }
+  .gjs-editor-wrapper .gjs-one-bg {
+    background-color: #333845;
+  }
+  .gjs-editor-wrapper .gjs-two-color {
+    color: #f1f2f6;
+  }
+  .gjs-editor-wrapper .gjs-three-bg {
+    background-color: #9F1836;
+  }
+  .gjs-editor-wrapper .gjs-four-color,
+  .gjs-editor-wrapper .gjs-four-color-h:hover {
+    color: #9F1836;
+  }
 }

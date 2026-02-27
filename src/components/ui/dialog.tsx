@@ -55,7 +55,7 @@ function DialogContent({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
-  size?: "sm" | "default" | "lg"
+  size?: "sm" | "default" | "lg" | "fullscreen"
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
@@ -67,6 +67,7 @@ function DialogContent({
           size === "sm" && "sm:max-w-[420px]",
           size === "default" && "sm:max-w-[720px]",
           size === "lg" && "sm:max-w-[1000px]",
+          size === "fullscreen" && "sm:max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] h-full",
           className
         )}
         {...props}
