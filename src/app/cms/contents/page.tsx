@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
-import { RichEditor } from '@/components/organisms/RichEditor';
 import type { PageEditorHandle } from '@/components/organisms/PageEditor';
 
 const PageEditor = dynamic(
@@ -32,7 +31,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { Code, Eye, FolderOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Code, Eye, FolderOpen, Plus, Search, Trash2 } from 'lucide-react';
 
 // ── 샘플 데이터 (API 연동 전 확인용, 실 연동 시 USE_MOCK = false) ──
 const USE_MOCK = true;
@@ -255,7 +254,6 @@ export default function ContentsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Contents>>({});
-  const [editorMode, setEditorMode] = useState<'richtext' | 'pageeditor'>('richtext');
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
   const [pageEditorKey, setPageEditorKey] = useState(0);
   const pageEditorRef = useRef<PageEditorHandle>(null);
@@ -461,7 +459,6 @@ export default function ContentsPage() {
   const handleOpenDialog = () => {
     setIsEditMode(false);
     setFormData({ USE_YN: 'Y' });
-    setEditorMode('richtext');
     setDialogOpen(true);
   };
 
@@ -469,10 +466,6 @@ export default function ContentsPage() {
   const handleRowClick = (row: Contents) => {
     setIsEditMode(true);
     setFormData({ ...row });
-    // 콘텐츠 내용에 따라 에디터 모드 자동 감지
-    const body = row.CONTENTS_BODY || '';
-    const isFullHtml = body.includes('<!DOCTYPE') || body.includes('<html') || body.includes('<style');
-    setEditorMode(isFullHtml ? 'pageeditor' : 'richtext');
     setDialogOpen(true);
   };
 
@@ -637,13 +630,6 @@ export default function ContentsPage() {
         <DialogContent
           size="lg"
           className="max-h-[90vh] flex flex-col"
-          onPointerDownOutside={(e) => {
-            // CKEditor 팝업 클릭 시 Dialog 닫힘 방지
-            const target = e.target as HTMLElement;
-            if (target.closest('.ck-body-wrapper') || target.closest('.ck-balloon-panel') || target.closest('.ck-dialog')) {
-              e.preventDefault();
-            }
-          }}
         >
           <DialogHeader>
             <DialogTitle>{isEditMode ? '콘텐츠 수정' : '콘텐츠 등록'}</DialogTitle>
@@ -715,28 +701,6 @@ export default function ContentsPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    variant={editorMode === 'richtext' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setEditorMode('richtext')}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    간편 에디터
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={editorMode === 'pageeditor' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => {
-                      setEditorMode('pageeditor');
-                      setPageEditorKey((k) => k + 1);
-                      setPageEditorOpen(true);
-                    }}
-                  >
-                    <Code className="h-3.5 w-3.5" />
-                    페이지 에디터
-                  </Button>
-                  <Button
-                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={handlePreview}
@@ -748,33 +712,22 @@ export default function ContentsPage() {
                 </div>
               </div>
 
-              {editorMode === 'richtext' ? (
-                <RichEditor
-                  value={formData.CONTENTS_BODY || ''}
-                  onChange={(data) =>
-                    setFormData({ ...formData, CONTENTS_BODY: data })
-                  }
-                  placeholder="내용을 입력하세요"
-                  minHeight={200}
-                />
-              ) : (
-                <div className="rounded-lg border border-dashed border-gray-400 p-6 text-center text-sm text-muted-foreground">
-                  <p>페이지 에디터로 편집 중입니다.</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => {
-                      setPageEditorKey((k) => k + 1);
-                      setPageEditorOpen(true);
-                    }}
-                  >
-                    <Code className="h-3.5 w-3.5" />
-                    페이지 에디터 열기
-                  </Button>
-                </div>
-              )}
+              <div className="rounded-lg border border-dashed border-gray-400 p-6 text-center text-sm text-muted-foreground">
+                <p>페이지 에디터로 편집 중입니다.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => {
+                    setPageEditorKey((k) => k + 1);
+                    setPageEditorOpen(true);
+                  }}
+                >
+                  <Code className="h-3.5 w-3.5" />
+                  페이지 에디터 열기
+                </Button>
+              </div>
             </div>
 
             <Separator />
@@ -823,6 +776,8 @@ export default function ContentsPage() {
               e.preventDefault();
             }
           }}
+          onFocusOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader className="flex-row items-center justify-between px-4 py-3 shrink-0">
             <DialogTitle className="text-lg">페이지 에디터</DialogTitle>

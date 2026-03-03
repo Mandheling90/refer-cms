@@ -263,4 +263,17 @@
   .gjs-editor-wrapper .gjs-four-color-h:hover {
     color: #9F1836;
   }
+
+  /* GrapesJS iframe 캔버스가 Radix Dialog 내에서 정상 동작하도록 */
+  .gjs-editor-wrapper .gjs-frame-wrapper,
+  .gjs-editor-wrapper .gjs-frame-wrapper iframe {
+    pointer-events: auto !important;
+  }
+
+  /* GrapesJS가 body에 붙이는 팝업(색상 피커 등)이 Dialog 위로 올라오도록 */
+  body > .sp-container,
+  body > .gjs-off-prv {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+  }
 }

@@ -52,6 +52,10 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
     const editorRef = useRef<Editor | null>(null);
     const valueRef = useRef(value);
     const isLoadingRef = useRef(false);
+    // 에디터 내부 변경인지 외부 prop 변경인지 구분하는 플래그
+    const isInternalChangeRef = useRef(false);
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
 
     // 외부에서 현재 HTML을 명시적으로 가져올 수 있도록 노출
     useImperativeHandle(ref, () => ({
@@ -63,9 +67,14 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
       },
     }));
 
-    // value가 바뀌면 ref를 업데이트하고 에디터에 로드
+    // value가 외부에서 바뀌었을 때만 에디터에 로드
     useEffect(() => {
       valueRef.current = value;
+      // 에디터 내부 변경으로 인한 value 업데이트는 무시 (피드백 루프 방지)
+      if (isInternalChangeRef.current) {
+        isInternalChangeRef.current = false;
+        return;
+      }
       if (editorRef.current && value) {
         isLoadingRef.current = true;
         const { styles, bodyHtml } = parseFullHtml(value);
@@ -98,7 +107,8 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
           const html = editor.getHtml();
           const css = editor.getCss() || '';
           const fullHtml = buildFullHtml(html, css);
-          onChange?.(fullHtml);
+          isInternalChangeRef.current = true;
+          onChangeRef.current?.(fullHtml);
         };
 
         editor.on('component:update', handleUpdate);
@@ -106,7 +116,7 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
         editor.on('component:remove', handleUpdate);
         editor.on('style:change', handleUpdate);
       },
-      [onChange],
+      [], // onChangeRef 사용으로 deps 불필요
     );
 
     return (
