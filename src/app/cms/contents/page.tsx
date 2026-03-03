@@ -46,6 +46,7 @@ function detectEditorMode(html: string | undefined): EditorMode {
 
 // ── 샘플 데이터 (API 연동 전 확인용, 실 연동 시 USE_MOCK = false) ──
 const USE_MOCK = true;
+const STORAGE_KEY = 'cms_contents_mock';
 
 // 샘플 HTML (진료정보교류 의뢰 페이지)
 const SAMPLE_HTML = `<!DOCTYPE html>
@@ -287,10 +288,25 @@ export default function ContentsPage() {
   const user = useAuthStore((s) => s.user);
   const currentUserName = user?.USER_NM || '관리자';
 
-  // mock 데이터 저장소 (추가/삭제 반영용)
-  const mockContentsRef = useRef<Record<string, Contents[]>>(
-    JSON.parse(JSON.stringify(MOCK_CONTENTS)),
-  );
+  // mock 데이터 저장소 (localStorage 연동)
+  const mockContentsRef = useRef<Record<string, Contents[]>>(null!);
+  if (mockContentsRef.current === null) {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+      mockContentsRef.current = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(MOCK_CONTENTS));
+    } catch {
+      mockContentsRef.current = JSON.parse(JSON.stringify(MOCK_CONTENTS));
+    }
+  }
+
+  // localStorage 동기화 함수
+  const syncToStorage = useCallback(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockContentsRef.current));
+    } catch (e) {
+      console.error('localStorage 저장 실패:', e);
+    }
+  }, []);
 
   // ── 그룹 목록 조회 ──
   const retrieveGroups = useCallback(async () => {
@@ -408,6 +424,7 @@ export default function ContentsPage() {
         };
         mockContentsRef.current[grpId] = [...items, newItem];
       }
+      syncToStorage();
       toast.success('저장되었습니다.');
       setDialogOpen(false);
       setFormData({});
@@ -445,6 +462,7 @@ export default function ContentsPage() {
       mockContentsRef.current[grpId] = (mockContentsRef.current[grpId] || []).filter(
         (c) => !deleteIds.has(c.CONTENTS_ID),
       );
+      syncToStorage();
       toast.success('삭제되었습니다.');
       setSelectedRows([]);
       setConfirmOpen(false);

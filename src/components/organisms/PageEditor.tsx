@@ -27,12 +27,20 @@ function parseFullHtml(html: string) {
     .map((s) => s.textContent || '')
     .join('\n');
 
-  const bodyHtml = doc.body?.innerHTML || html;
+  let bodyHtml = doc.body?.innerHTML || html;
+  // 이전에 이중 body로 저장된 데이터 호환: 내부 <body> 래퍼 제거
+  bodyHtml = stripBodyWrapper(bodyHtml);
   return { styles, bodyHtml };
+}
+
+/** GrapesJS getHtml()이 반환하는 <body> 래퍼 태그 제거 */
+function stripBodyWrapper(html: string): string {
+  return html.replace(/^\s*<body[^>]*>([\s\S]*)<\/body>\s*$/i, '$1').trim();
 }
 
 /** GrapesJS 출력을 완전한 HTML 문서로 조합 */
 function buildFullHtml(html: string, css: string) {
+  const bodyContent = stripBodyWrapper(html);
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -43,7 +51,7 @@ ${css}
   </style>
 </head>
 <body>
-${html}
+${bodyContent}
 </body>
 </html>`;
 }
@@ -55,6 +63,8 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
     const isLoadingRef = useRef(false);
     // 에디터 내부 변경인지 외부 prop 변경인지 구분하는 플래그
     const isInternalChangeRef = useRef(false);
+    // 에디터 파괴 중 onChange 호출 방지 플래그
+    const isDestroyingRef = useRef(false);
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
 
@@ -122,7 +132,7 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
 
         // 변경 감지 → onChange 호출
         const handleUpdate = () => {
-          if (isLoadingRef.current) return;
+          if (isLoadingRef.current || isDestroyingRef.current) return;
           const html = editor.getHtml();
           const css = editor.getCss() || '';
           const fullHtml = buildFullHtml(html, css);
@@ -134,6 +144,11 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
         editor.on('component:add', handleUpdate);
         editor.on('component:remove', handleUpdate);
         editor.on('style:change', handleUpdate);
+
+        // 에디터 파괴 시 이벤트 핸들러가 빈 HTML로 onChange를 호출하지 않도록 방지
+        editor.on('destroy', () => {
+          isDestroyingRef.current = true;
+        });
       },
       [], // onChangeRef 사용으로 deps 불필요
     );
