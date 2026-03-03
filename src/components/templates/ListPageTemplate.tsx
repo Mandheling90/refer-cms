@@ -11,6 +11,7 @@ interface ListPageTemplateProps {
   listContent: ReactNode;
   listHeaderActions?: ReactNode;
   formSection?: ReactNode;
+  children?: ReactNode;
   onSearch?: () => void;
   onReset?: () => void;
 }
@@ -22,6 +23,7 @@ export function ListPageTemplate({
   listContent,
   listHeaderActions,
   formSection,
+  children,
   onSearch,
   onReset,
 }: ListPageTemplateProps) {
@@ -66,6 +68,7 @@ export function ListPageTemplate({
       </section>
 
       {formSection}
+      {children}
     </div>
   );
 }

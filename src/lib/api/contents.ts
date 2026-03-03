@@ -4,6 +4,7 @@ import type { ApiResponse, ListResponse, PaginationParams, AuditFields } from '@
 export interface ContentsGroup extends AuditFields {
   CONTENTS_GRP_ID: string;
   CONTENTS_GRP_NAME: string;
+  CONTENTS_GRP_DESC?: string;
   USE_YN?: string;
   SORT_ORDER?: number;
   CONTENTS_COUNT?: number;
@@ -23,6 +24,14 @@ export interface Contents extends AuditFields {
 export const contentsGroupApi = {
   list: (params?: PaginationParams & Partial<ContentsGroup>) =>
     apiClient.get<ListResponse<ContentsGroup>>('/contents/group/list.ajax', params),
+
+  save: (data: Partial<ContentsGroup>) =>
+    apiClient.post<ApiResponse>('/contents/group/save.ajax', data),
+
+  remove: (list: Partial<ContentsGroup>[]) =>
+    apiClient.post<ApiResponse>('/contents/group/remove.ajax', {
+      LIST: JSON.stringify(list),
+    }),
 };
 
 export const contentsApi = {

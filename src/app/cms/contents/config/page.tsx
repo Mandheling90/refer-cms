@@ -13,13 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -27,8 +20,10 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { boardApi } from '@/lib/api/board';
-import type { Board } from '@/types/board';
+import {
+  contentsGroupApi,
+  type ContentsGroup,
+} from '@/lib/api/contents';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth-store';
@@ -36,24 +31,16 @@ import { Plus, Trash2 } from 'lucide-react';
 
 // ── Mock 모드 (API 연동 전까지 true) ──
 const USE_MOCK = true;
-const STORAGE_KEY = 'cms_board_config';
+const STORAGE_KEY = 'cms_contents_group_config';
 
-const MOCK_DATA: Board[] = [
-  { BOARD_ID: 'notice', BOARD_NAME: '공지사항', BOARD_TYPE: 'basic', USE_YN: 'Y', FILE_ATTACH_YN: 'Y', BOARD_DESC: '공지사항 게시판', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-29 09:17:24' },
-  { BOARD_ID: 'press', BOARD_NAME: '언론보도', BOARD_TYPE: 'press', USE_YN: 'Y', FILE_ATTACH_YN: 'N', BOARD_DESC: '언론보도 게시판', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-25 14:30:00' },
-  { BOARD_ID: 'gallery', BOARD_NAME: '포토갤러리', BOARD_TYPE: 'thumbnail', USE_YN: 'Y', FILE_ATTACH_YN: 'Y', BOARD_DESC: '사진 갤러리 게시판', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-21 10:00:00' },
-  { BOARD_ID: 'consult', BOARD_NAME: '협진 컨설팅 신청', BOARD_TYPE: 'consult', USE_YN: 'Y', FILE_ATTACH_YN: 'Y', BOARD_DESC: '협진 컨설팅 신청 게시판', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-18 09:00:00' },
-  { BOARD_ID: 'faq', BOARD_NAME: 'FAQ', BOARD_TYPE: 'basic', USE_YN: 'Y', FILE_ATTACH_YN: 'N', BOARD_DESC: '자주 묻는 질문', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-15 11:20:00' },
-  { BOARD_ID: 'event', BOARD_NAME: '교육/행사', BOARD_TYPE: 'thumbnail', USE_YN: 'N', FILE_ATTACH_YN: 'Y', BOARD_DESC: '교육 및 행사 안내 게시판', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-10 08:45:00' },
+const MOCK_DATA: ContentsGroup[] = [
+  { CONTENTS_GRP_ID: 'Interior', CONTENTS_GRP_NAME: '진료협력센터소개', USE_YN: 'Y', CONTENTS_GRP_DESC: '진료협력센터 소개 페이지 콘텐츠 그룹', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-29 09:17:24' },
+  { CONTENTS_GRP_ID: 'contents02', CONTENTS_GRP_NAME: '협력네트워크', USE_YN: 'Y', CONTENTS_GRP_DESC: '협력네트워크 관련 콘텐츠', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-21 09:00:00' },
+  { CONTENTS_GRP_ID: 'contents03', CONTENTS_GRP_NAME: '진료의뢰', USE_YN: 'Y', CONTENTS_GRP_DESC: '진료의뢰 안내 콘텐츠', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-21 09:00:00' },
+  { CONTENTS_GRP_ID: 'contents04', CONTENTS_GRP_NAME: '검사결과조회', USE_YN: 'Y', CONTENTS_GRP_DESC: '검사결과 조회 페이지 콘텐츠', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-18 14:30:00' },
+  { CONTENTS_GRP_ID: 'contents05', CONTENTS_GRP_NAME: '교육/행사', USE_YN: 'N', CONTENTS_GRP_DESC: '교육 및 행사 안내', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-15 11:20:00' },
+  { CONTENTS_GRP_ID: 'contents06', CONTENTS_GRP_NAME: 'e-Consult 안내', USE_YN: 'Y', CONTENTS_GRP_DESC: 'e-Consult 서비스 안내 콘텐츠', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-10 08:45:00' },
 ];
-
-// ── 게시판 타입 옵션 ──
-const BOARD_TYPE_OPTIONS = [
-  { value: 'basic', label: '기본형' },
-  { value: 'thumbnail', label: '썸네일형' },
-  { value: 'press', label: '언론보도' },
-  { value: 'consult', label: '협진 컨설팅 신청' },
-] as const;
 
 // ── 사용여부 검색 옵션 ──
 const USE_YN_SEARCH_OPTIONS = [
@@ -62,69 +49,48 @@ const USE_YN_SEARCH_OPTIONS = [
   { value: 'N', label: '미사용' },
 ];
 
-// ── 게시판 아이디 유효성 검사 (영문자+숫자 조합, 12자 이내) ──
-const BOARD_ID_REGEX = /^[a-zA-Z0-9]{1,12}$/;
+// ── 콘텐츠(그룹) 아이디 유효성 검사 (영문자+숫자 조합, 12자 이내) ──
+const GRP_ID_REGEX = /^[a-zA-Z0-9]{1,12}$/;
 
 // ── 컬럼 정의 ──
-const columns: ColumnDef<Board, unknown>[] = [
+const columns: ColumnDef<ContentsGroup, unknown>[] = [
   {
     accessorKey: 'ROW_NUM',
     header: '번호',
     size: 70,
     cell: ({ row }) => row.index + 1,
   },
-  { accessorKey: 'BOARD_ID', header: '아이디', size: 140 },
-  {
-    accessorKey: 'BOARD_TYPE',
-    header: '타입',
-    size: 100,
-    cell: ({ getValue }) => {
-      const val = getValue() as string;
-      return BOARD_TYPE_OPTIONS.find((o) => o.value === val)?.label || val || '-';
-    },
-  },
-  { accessorKey: 'BOARD_NAME', header: '게시판명', size: 200 },
+  { accessorKey: 'CONTENTS_GRP_ID', header: '아이디', size: 160 },
+  { accessorKey: 'CONTENTS_GRP_NAME', header: '콘텐츠(그룹)명', size: 240 },
   {
     accessorKey: 'USE_YN',
     header: '사용여부',
-    size: 90,
+    size: 100,
     cell: ({ getValue }) => (
       <StatusBadge status={(getValue() as string) || 'N'} />
     ),
   },
-  {
-    accessorKey: 'FILE_ATTACH_YN',
-    header: '첨부파일',
-    size: 90,
-    cell: ({ getValue }) => (
-      <StatusBadge
-        status={(getValue() as string) || 'N'}
-        activeLabel="허용"
-        inactiveLabel="미허용"
-      />
-    ),
-  },
-  { accessorKey: 'INSERT_DTTM', header: '등록일시', size: 160 },
+  { accessorKey: 'INSERT_DTTM', header: '등록일시', size: 180 },
 ];
 
-export default function BoardConfigPage() {
+export default function ContentsConfigPage() {
   // ── 리스트 상태 ──
-  const [data, setData] = useState<Board[]>([]);
+  const [data, setData] = useState<ContentsGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [selectedRows, setSelectedRows] = useState<Board[]>([]);
+  const [selectedRows, setSelectedRows] = useState<ContentsGroup[]>([]);
 
   // ── 검색 상태 ──
-  const [searchBoardName, setSearchBoardName] = useState('');
-  const [searchBoardId, setSearchBoardId] = useState('');
+  const [searchGrpName, setSearchGrpName] = useState('');
+  const [searchGrpId, setSearchGrpId] = useState('');
   const [searchUseYn, setSearchUseYn] = useState('_all');
 
   // ── 다이얼로그 상태 ──
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState<Partial<Board>>({});
+  const [formData, setFormData] = useState<Partial<ContentsGroup>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // ── 중복확인 상태 ──
@@ -132,7 +98,7 @@ export default function BoardConfigPage() {
   const [idChecking, setIdChecking] = useState(false);
 
   // ── Mock 데이터 저장소 (localStorage 연동) ──
-  const mockDataRef = useRef<Board[]>(null!);
+  const mockDataRef = useRef<ContentsGroup[]>(null!);
   if (mockDataRef.current === null) {
     try {
       const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
@@ -159,8 +125,8 @@ export default function BoardConfigPage() {
       setLoading(true);
       if (USE_MOCK) {
         let items = [...mockDataRef.current];
-        if (searchBoardName) items = items.filter((i) => i.BOARD_NAME.includes(searchBoardName));
-        if (searchBoardId) items = items.filter((i) => i.BOARD_ID.includes(searchBoardId));
+        if (searchGrpName) items = items.filter((i) => i.CONTENTS_GRP_NAME.includes(searchGrpName));
+        if (searchGrpId) items = items.filter((i) => i.CONTENTS_GRP_ID.includes(searchGrpId));
         if (searchUseYn !== '_all') items = items.filter((i) => i.USE_YN === searchUseYn);
         const total = items.length;
         const start = (page - 1) * size;
@@ -175,11 +141,11 @@ export default function BoardConfigPage() {
           CURRENT_PAGE: page,
           SHOWN_ENTITY: size,
         };
-        if (searchBoardName) params.BOARD_NAME = searchBoardName;
-        if (searchBoardId) params.BOARD_ID = searchBoardId;
+        if (searchGrpName) params.CONTENTS_GRP_NAME = searchGrpName;
+        if (searchGrpId) params.CONTENTS_GRP_ID = searchGrpId;
         if (searchUseYn !== '_all') params.USE_YN = searchUseYn;
 
-        const res = await boardApi.configList(params);
+        const res = await contentsGroupApi.list(params);
         setData(res.list || []);
         setTotalItems(res.TOTAL_ENTITY || 0);
       } catch {
@@ -188,7 +154,7 @@ export default function BoardConfigPage() {
         setLoading(false);
       }
     },
-    [pageSize, searchBoardName, searchBoardId, searchUseYn],
+    [pageSize, searchGrpName, searchGrpId, searchUseYn],
   );
 
   // ── 초기 로딩 ──
@@ -204,8 +170,8 @@ export default function BoardConfigPage() {
 
   // ── 검색 조건 초기화 ──
   const handleReset = () => {
-    setSearchBoardName('');
-    setSearchBoardId('');
+    setSearchGrpName('');
+    setSearchGrpId('');
     setSearchUseYn('_all');
     setCurrentPage(1);
     retrieveList(1, pageSize);
@@ -214,33 +180,33 @@ export default function BoardConfigPage() {
   // ── 신규 등록 다이얼로그 ──
   const handleOpenCreate = () => {
     setIsEditMode(false);
-    setFormData({ USE_YN: 'Y', FILE_ATTACH_YN: 'N', BOARD_TYPE: 'basic' });
+    setFormData({ USE_YN: 'N' });
     setIdChecked(false);
     setDialogOpen(true);
   };
 
   // ── 수정 다이얼로그 (행 클릭) ──
-  const handleRowClick = (row: Board) => {
+  const handleRowClick = (row: ContentsGroup) => {
     setIsEditMode(true);
     setFormData({ ...row });
-    setIdChecked(true); // 수정 시 아이디 변경 불가이므로 확인 불필요
+    setIdChecked(true);
     setDialogOpen(true);
   };
 
   // ── 중복확인 ──
   const handleCheckDuplicate = async () => {
-    const boardId = formData.BOARD_ID?.trim();
-    if (!boardId) {
-      toast.error('게시판 아이디를 입력해 주세요.');
+    const grpId = formData.CONTENTS_GRP_ID?.trim();
+    if (!grpId) {
+      toast.error('콘텐츠(그룹) 아이디를 입력해 주세요.');
       return;
     }
-    if (!BOARD_ID_REGEX.test(boardId)) {
-      toast.error('게시판 아이디는 영문자+숫자 조합 12자 이내로 입력해 주세요.');
+    if (!GRP_ID_REGEX.test(grpId)) {
+      toast.error('영문자+숫자 조합 12자 이내로 입력해 주세요.');
       return;
     }
     setIdChecking(true);
     if (USE_MOCK) {
-      const exists = mockDataRef.current.some((i) => i.BOARD_ID === boardId);
+      const exists = mockDataRef.current.some((i) => i.CONTENTS_GRP_ID === grpId);
       if (exists) {
         toast.error('이미 사용 중인 아이디입니다.');
         setIdChecked(false);
@@ -252,7 +218,11 @@ export default function BoardConfigPage() {
       return;
     }
     try {
-      const res = await boardApi.configList({ BOARD_ID: boardId, CURRENT_PAGE: 1, SHOWN_ENTITY: 1 });
+      const res = await contentsGroupApi.list({
+        CONTENTS_GRP_ID: grpId,
+        CURRENT_PAGE: 1,
+        SHOWN_ENTITY: 1,
+      });
       const exists = (res.list || []).length > 0;
       if (exists) {
         toast.error('이미 사용 중인 아이디입니다.');
@@ -270,38 +240,32 @@ export default function BoardConfigPage() {
 
   // ── 저장 ──
   const handleSave = async () => {
-    if (!formData.BOARD_ID?.trim()) {
-      toast.error('게시판 아이디는 필수 입력입니다.');
+    if (!formData.CONTENTS_GRP_ID?.trim()) {
+      toast.error('콘텐츠(그룹) 아이디는 필수 입력입니다.');
       return;
     }
     if (!isEditMode && !idChecked) {
-      toast.error('게시판 아이디 중복확인을 해주세요.');
+      toast.error('콘텐츠(그룹) 아이디 중복확인을 해주세요.');
       return;
     }
-    if (!formData.BOARD_NAME?.trim()) {
-      toast.error('게시판명은 필수 입력입니다.');
-      return;
-    }
-    if (!formData.BOARD_TYPE) {
-      toast.error('게시판 타입을 선택해 주세요.');
+    if (!formData.CONTENTS_GRP_NAME?.trim()) {
+      toast.error('콘텐츠(그룹) 명은 필수 입력입니다.');
       return;
     }
     if (USE_MOCK) {
       const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
       if (isEditMode) {
         mockDataRef.current = mockDataRef.current.map((i) =>
-          i.BOARD_ID === formData.BOARD_ID
+          i.CONTENTS_GRP_ID === formData.CONTENTS_GRP_ID
             ? { ...i, ...formData, UPDATE_USER: currentUserName, UPDATE_DTTM: now }
             : i,
         );
       } else {
-        const newItem: Board = {
-          BOARD_ID: formData.BOARD_ID!,
-          BOARD_NAME: formData.BOARD_NAME!,
-          BOARD_TYPE: formData.BOARD_TYPE,
-          USE_YN: formData.USE_YN || 'Y',
-          FILE_ATTACH_YN: formData.FILE_ATTACH_YN || 'N',
-          BOARD_DESC: formData.BOARD_DESC,
+        const newItem: ContentsGroup = {
+          CONTENTS_GRP_ID: formData.CONTENTS_GRP_ID!,
+          CONTENTS_GRP_NAME: formData.CONTENTS_GRP_NAME!,
+          CONTENTS_GRP_DESC: formData.CONTENTS_GRP_DESC,
+          USE_YN: formData.USE_YN || 'N',
           INSERT_USER: currentUserName,
           INSERT_DTTM: now,
         };
@@ -315,7 +279,7 @@ export default function BoardConfigPage() {
       return;
     }
     try {
-      const res = await boardApi.configSave(formData);
+      const res = await contentsGroupApi.save(formData);
       if (res.ServiceResult.IS_SUCCESS) {
         toast.success('저장되었습니다.');
         setDialogOpen(false);
@@ -332,8 +296,8 @@ export default function BoardConfigPage() {
   // ── 선택 삭제 ──
   const handleDelete = async () => {
     if (USE_MOCK) {
-      const deleteIds = new Set(selectedRows.map((r) => r.BOARD_ID));
-      mockDataRef.current = mockDataRef.current.filter((i) => !deleteIds.has(i.BOARD_ID));
+      const deleteIds = new Set(selectedRows.map((r) => r.CONTENTS_GRP_ID));
+      mockDataRef.current = mockDataRef.current.filter((i) => !deleteIds.has(i.CONTENTS_GRP_ID));
       syncToStorage();
       toast.success('삭제되었습니다.');
       setSelectedRows([]);
@@ -342,7 +306,7 @@ export default function BoardConfigPage() {
       return;
     }
     try {
-      const res = await boardApi.configRemove(selectedRows);
+      const res = await contentsGroupApi.remove(selectedRows);
       if (res.ServiceResult.IS_SUCCESS) {
         toast.success('삭제되었습니다.');
         setSelectedRows([]);
@@ -358,7 +322,7 @@ export default function BoardConfigPage() {
 
   return (
     <ListPageTemplate
-      title="게시판 설정"
+      title="콘텐츠 설정"
       totalItems={totalItems}
       onSearch={handleSearch}
       onReset={handleReset}
@@ -383,16 +347,16 @@ export default function BoardConfigPage() {
         <SearchBar
           fields={[
             {
-              name: 'BOARD_NAME',
-              label: '게시판명',
-              value: searchBoardName,
-              onChange: setSearchBoardName,
+              name: 'CONTENTS_GRP_NAME',
+              label: '콘텐츠(그룹) 명',
+              value: searchGrpName,
+              onChange: setSearchGrpName,
             },
             {
-              name: 'BOARD_ID',
-              label: '게시판 아이디',
-              value: searchBoardId,
-              onChange: setSearchBoardId,
+              name: 'CONTENTS_GRP_ID',
+              label: '콘텐츠(그룹) 아이디',
+              value: searchGrpId,
+              onChange: setSearchGrpId,
             },
             {
               name: 'USE_YN',
@@ -435,142 +399,126 @@ export default function BoardConfigPage() {
         <DialogContent size="sm" className="max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
-              {isEditMode ? '게시판 설정 수정' : '게시판 설정 등록'}
+              {isEditMode
+                ? '콘텐츠(그룹) 설정 수정'
+                : '콘텐츠(그룹) 설정 등록'}
             </DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-5 overflow-y-auto flex-1">
-            {/* 게시판 아이디 */}
+            {/* 콘텐츠(그룹) 아이디 */}
             <div className="space-y-1.5">
               <Label>
-                게시판 아이디 <span className="text-destructive">*</span>
+                콘텐츠(그룹) 아이디{' '}
+                <span className="text-destructive">*</span>
               </Label>
               {isEditMode ? (
                 <Input
-                  value={formData.BOARD_ID || ''}
+                  value={formData.CONTENTS_GRP_ID || ''}
                   readOnly
                   className="bg-gray-200 text-muted-foreground"
                 />
               ) : (
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.BOARD_ID || ''}
-                    onChange={(e) => {
-                      setFormData({ ...formData, BOARD_ID: e.target.value });
-                      setIdChecked(false);
-                    }}
-                    placeholder="영문자+숫자 조합 12자 이내"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant={idChecked ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={handleCheckDuplicate}
-                    disabled={idChecking || idChecked}
-                    className="shrink-0"
-                  >
-                    {idChecking
-                      ? '확인 중...'
-                      : idChecked
-                        ? '중복확인 완료'
-                        : '중복확인'}
-                  </Button>
-                </div>
+                <>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.CONTENTS_GRP_ID || ''}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          CONTENTS_GRP_ID: e.target.value,
+                        });
+                        setIdChecked(false);
+                      }}
+                      placeholder="영문자+숫자 조합 12자 이내"
+                      className="flex-1"
+                      maxLength={12}
+                    />
+                    <Button
+                      type="button"
+                      variant={idChecked ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={handleCheckDuplicate}
+                      disabled={idChecking || idChecked}
+                      className="shrink-0"
+                    >
+                      {idChecking
+                        ? '확인 중...'
+                        : idChecked
+                          ? '중복확인 완료'
+                          : '중복확인'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    45자 이하로 띄어쓰기 없이 영문 대소문자와 숫자, 언더바만
+                    입력해 주세요.
+                  </p>
+                </>
               )}
             </div>
 
-            {/* 게시판명 */}
+            {/* 콘텐츠(그룹) 명 */}
             <div className="space-y-1.5">
               <Label>
-                게시판명 <span className="text-destructive">*</span>
+                콘텐츠(그룹) 명{' '}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
-                value={formData.BOARD_NAME || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, BOARD_NAME: e.target.value })
-                }
-                placeholder="게시판명을 입력해 주세요"
+                value={formData.CONTENTS_GRP_NAME || ''}
+                onChange={(e) => {
+                  if (e.target.value.length <= 20) {
+                    setFormData({
+                      ...formData,
+                      CONTENTS_GRP_NAME: e.target.value,
+                    });
+                  }
+                }}
+                placeholder="20자 이내로 입력해 주세요"
+                maxLength={20}
               />
             </div>
 
-            {/* 게시판 타입 */}
+            {/* 사용여부 */}
             <div className="space-y-1.5">
               <Label>
-                게시판 타입 <span className="text-destructive">*</span>
+                사용여부 <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={formData.BOARD_TYPE || ''}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, BOARD_TYPE: val })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BOARD_TYPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 사용여부 + 첨부파일 사용여부 */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1.5">
-                <Label>
-                  사용여부 <span className="text-destructive">*</span>
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.USE_YN === 'Y'}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, USE_YN: checked ? 'Y' : 'N' })
-                    }
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {formData.USE_YN === 'Y' ? 'ON' : 'OFF'}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>
-                  첨부파일 사용여부 <span className="text-destructive">*</span>
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.FILE_ATTACH_YN === 'Y'}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        FILE_ATTACH_YN: checked ? 'Y' : 'N',
-                      })
-                    }
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {formData.FILE_ATTACH_YN === 'Y' ? 'ON' : 'OFF'}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={formData.USE_YN === 'Y'}
+                  onCheckedChange={(checked) =>
+                    setFormData({
+                      ...formData,
+                      USE_YN: checked ? 'Y' : 'N',
+                    })
+                  }
+                />
+                <span className="text-sm text-muted-foreground">
+                  {formData.USE_YN === 'Y' ? 'ON' : 'OFF'}
+                </span>
               </div>
             </div>
 
-            {/* 게시판 설명 */}
+            {/* 콘텐츠(그룹) 설명 */}
             <div className="space-y-1.5">
-              <Label>게시판 설명</Label>
+              <Label>
+                콘텐츠(그룹) 설명 (200자 이내) (관리자 메모용){' '}
+                <span className="text-destructive">*</span>
+              </Label>
               <Textarea
-                value={formData.BOARD_DESC || ''}
+                value={formData.CONTENTS_GRP_DESC || ''}
                 onChange={(e) => {
-                  if (e.target.value.length <= 300) {
-                    setFormData({ ...formData, BOARD_DESC: e.target.value });
+                  if (e.target.value.length <= 200) {
+                    setFormData({
+                      ...formData,
+                      CONTENTS_GRP_DESC: e.target.value,
+                    });
                   }
                 }}
-                placeholder="게시판 설명을 입력해 주세요 (300자 이내)"
+                placeholder="200자 이내로 입력해 주세요"
                 rows={4}
               />
               <p className="text-xs text-muted-foreground text-right">
-                {formData.BOARD_DESC?.length || 0} / 300
+                {formData.CONTENTS_GRP_DESC?.length || 0} / 200
               </p>
             </div>
           </DialogBody>
@@ -587,8 +535,8 @@ export default function BoardConfigPage() {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="게시판 삭제"
-        description={`선택한 ${selectedRows.length}개 항목을 삭제하시겠습니까? 삭제 후 복구가 불가능합니다.`}
+        title="콘텐츠 그룹 삭제"
+        description={`선택한 ${selectedRows.length}개 항목을 삭제하시겠습니까? 삭제 시 콘텐츠 관리의 해당 그룹도 함께 삭제됩니다.`}
         onConfirm={handleDelete}
         destructive
       />

@@ -13,11 +13,16 @@ export const boardApi = {
       LIST: JSON.stringify(list),
     }),
 
-  configList: (params?: PaginationParams) =>
+  configList: (params?: PaginationParams & Partial<Board>) =>
     apiClient.get<ApiResponse<Board>>('/board/configList.ajax', params),
 
   configSave: (data: Partial<Board>) =>
     apiClient.post<ApiResponse>('/board/configSave.ajax', data),
+
+  configRemove: (list: Partial<Board>[]) =>
+    apiClient.post<ApiResponse>('/board/configRemove.ajax', {
+      LIST: JSON.stringify(list),
+    }),
 };
 
 export const boardArticleApi = {

@@ -48,7 +48,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:grapesjs.com)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__ide__getDiagnostics"
     ]
   },
   "enableAllProjectMcpServers": true,

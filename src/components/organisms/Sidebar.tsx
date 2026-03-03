@@ -13,6 +13,7 @@ import {
   Image,
   LayoutDashboard,
   PenLine,
+  Settings2,
   Stethoscope,
   UserPlus,
   Users
@@ -96,21 +97,26 @@ const NAV_ITEMS: NavItem[] = [
       { title: '기타검사', href: '/cms/exam-image/etc' },
     ],
   },
-  // {
-  //   title: '게시판 설정',
-  //   href: '/cms/board/config',
-  //   icon: Settings2,
-  // },
-  // {
-  //   title: '게시판 관리',
-  //   href: '/cms/board',
-  //   icon: ClipboardList,
-  // },
+  {
+    title: '콘텐츠 설정',
+    href: '/cms/contents/config',
+    icon: Settings2,
+  },
   {
     title: '콘텐츠 관리',
     href: '/cms/contents',
     icon: FileText,
   },
+  {
+    title: '게시판 설정',
+    href: '/cms/board/config',
+    icon: Settings2,
+  },
+  // {
+  //   title: '게시판 관리',
+  //   href: '/cms/board',
+  //   icon: ClipboardList,
+  // },
   // {
   //   title: 'e-Consult',
   //   href: '/cms/e-consult',
