@@ -46,7 +46,9 @@
       "Bash(xargs grep:*)",
       "Bash(npx next:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:grapesjs.com)"
+      "WebFetch(domain:grapesjs.com)",
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

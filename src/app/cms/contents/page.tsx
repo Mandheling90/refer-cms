@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
+import { RichEditor } from '@/components/organisms/RichEditor';
 import type { PageEditorHandle } from '@/components/organisms/PageEditor';
 
 const PageEditor = dynamic(
@@ -31,7 +32,17 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { Code, Eye, FolderOpen, Plus, Search, Trash2 } from 'lucide-react';
+import { Code, Eye, FolderOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+
+// ── 에디터 타입 판별 유틸 ──
+type EditorMode = 'richtext' | 'pageeditor';
+
+function detectEditorMode(html: string | undefined): EditorMode {
+  if (!html) return 'richtext';
+  return (html.includes('<!DOCTYPE') || html.includes('<html') || html.includes('<style'))
+    ? 'pageeditor'
+    : 'richtext';
+}
 
 // ── 샘플 데이터 (API 연동 전 확인용, 실 연동 시 USE_MOCK = false) ──
 const USE_MOCK = true;
@@ -254,6 +265,10 @@ export default function ContentsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Contents>>({});
+  const [editorMode, setEditorMode] = useState<EditorMode>('richtext');
+  const [detectedEditorMode, setDetectedEditorMode] = useState<EditorMode | null>(null);
+  const [editorSwitchConfirmOpen, setEditorSwitchConfirmOpen] = useState(false);
+  const [pendingEditorMode, setPendingEditorMode] = useState<EditorMode | null>(null);
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
   const [pageEditorKey, setPageEditorKey] = useState(0);
   const pageEditorRef = useRef<PageEditorHandle>(null);
@@ -455,10 +470,39 @@ export default function ContentsPage() {
     setConfirmOpen(false);
   };
 
+  // ── 에디터 모드 전환 요청 ──
+  const handleEditorModeChange = (mode: EditorMode) => {
+    if (mode === editorMode) return;
+    // 신규 등록이거나 본문이 비어있으면 경고 없이 전환
+    if (!detectedEditorMode || !formData.CONTENTS_BODY) {
+      setEditorMode(mode);
+      return;
+    }
+    // 원래 감지된 에디터와 다른 에디터로 전환 시 경고
+    if (mode !== detectedEditorMode) {
+      setPendingEditorMode(mode);
+      setEditorSwitchConfirmOpen(true);
+    } else {
+      setEditorMode(mode);
+    }
+  };
+
+  // ── 에디터 전환 확인 ──
+  const handleEditorSwitchConfirm = () => {
+    if (pendingEditorMode) {
+      setEditorMode(pendingEditorMode);
+      setFormData((prev) => ({ ...prev, CONTENTS_BODY: '' }));
+    }
+    setPendingEditorMode(null);
+    setEditorSwitchConfirmOpen(false);
+  };
+
   // ── 신규 등록 다이얼로그 열기 ──
   const handleOpenDialog = () => {
     setIsEditMode(false);
     setFormData({ USE_YN: 'Y' });
+    setEditorMode('richtext');
+    setDetectedEditorMode(null);
     setDialogOpen(true);
   };
 
@@ -466,6 +510,9 @@ export default function ContentsPage() {
   const handleRowClick = (row: Contents) => {
     setIsEditMode(true);
     setFormData({ ...row });
+    const detected = detectEditorMode(row.CONTENTS_BODY);
+    setEditorMode(detected);
+    setDetectedEditorMode(detected);
     setDialogOpen(true);
   };
 
@@ -630,6 +677,12 @@ export default function ContentsPage() {
         <DialogContent
           size="lg"
           className="max-h-[90vh] flex flex-col"
+          onPointerDownOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.ck-body-wrapper') || target.closest('.ck-balloon-panel') || target.closest('.ck-dialog')) {
+              e.preventDefault();
+            }
+          }}
         >
           <DialogHeader>
             <DialogTitle>{isEditMode ? '콘텐츠 수정' : '콘텐츠 등록'}</DialogTitle>
@@ -701,6 +754,24 @@ export default function ContentsPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
+                    variant={editorMode === 'richtext' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleEditorModeChange('richtext')}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    간편 에디터
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={editorMode === 'pageeditor' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleEditorModeChange('pageeditor')}
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                    페이지 에디터
+                  </Button>
+                  <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={handlePreview}
@@ -712,22 +783,33 @@ export default function ContentsPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-dashed border-gray-400 p-6 text-center text-sm text-muted-foreground">
-                <p>페이지 에디터로 편집 중입니다.</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => {
-                    setPageEditorKey((k) => k + 1);
-                    setPageEditorOpen(true);
-                  }}
-                >
-                  <Code className="h-3.5 w-3.5" />
-                  페이지 에디터 열기
-                </Button>
-              </div>
+              {editorMode === 'richtext' ? (
+                <RichEditor
+                  value={formData.CONTENTS_BODY || ''}
+                  onChange={(data) =>
+                    setFormData({ ...formData, CONTENTS_BODY: data })
+                  }
+                  placeholder="내용을 입력하세요"
+                  minHeight={200}
+                />
+              ) : (
+                <div className="rounded-lg border border-dashed border-gray-400 p-6 text-center text-sm text-muted-foreground">
+                  <p>페이지 에디터로 편집 중입니다.</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => {
+                      setPageEditorKey((k) => k + 1);
+                      setPageEditorOpen(true);
+                    }}
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                    페이지 에디터 열기
+                  </Button>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -761,6 +843,16 @@ export default function ContentsPage() {
         title="콘텐츠 삭제"
         description="콘텐츠 삭제 후 복구가 불가능합니다. 정말 삭제하시겠습니까?"
         onConfirm={handleDelete}
+        destructive
+      />
+
+      {/* 에디터 전환 경고 */}
+      <ConfirmDialog
+        open={editorSwitchConfirmOpen}
+        onOpenChange={setEditorSwitchConfirmOpen}
+        title="에디터 변경"
+        description="다른 에디터로 전환하면 현재 스타일 구조가 손실될 수 있습니다. 기존 본문 내용이 초기화됩니다. 계속하시겠습니까?"
+        onConfirm={handleEditorSwitchConfirm}
         destructive
       />
 

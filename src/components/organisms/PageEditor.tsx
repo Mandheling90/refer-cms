@@ -4,6 +4,7 @@ import { useRef, useCallback, useEffect, useImperativeHandle, forwardRef } from 
 import grapesjs, { type Editor } from 'grapesjs';
 import GjsEditor from '@grapesjs/react';
 import gjsPresetWebpage from 'grapesjs-preset-webpage';
+import { uploadFile } from '@/lib/api/graphql';
 
 import 'grapesjs/dist/css/grapes.min.css';
 
@@ -100,6 +101,24 @@ export const PageEditor = forwardRef<PageEditorHandle, PageEditorProps>(
             isLoadingRef.current = false;
           }, 100);
         }
+
+        // 에셋 매니저 커스텀 업로드 핸들러
+        const am = editor.AssetManager;
+        const amConfig = am.getConfig();
+        amConfig.uploadFile = async (ev: DragEvent) => {
+          const files = ev.dataTransfer ? ev.dataTransfer.files : (ev.target as HTMLInputElement).files;
+          if (!files) return;
+          editor.trigger('asset:upload:start');
+          for (let i = 0; i < files.length; i++) {
+            try {
+              const result = await uploadFile(files[i]);
+              am.add({ src: result.url, name: result.originalName });
+            } catch {
+              console.error('이미지 업로드 실패:', files[i].name);
+            }
+          }
+          editor.trigger('asset:upload:end');
+        };
 
         // 변경 감지 → onChange 호출
         const handleUpdate = () => {

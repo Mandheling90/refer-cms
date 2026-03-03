@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
+import type { Editor, FileLoader } from 'ckeditor5';
 import {
   ClassicEditor,
   Essentials,
@@ -27,15 +28,37 @@ import {
   ImageToolbar,
   ImageStyle,
   ImageResize,
-  Base64UploadAdapter,
   SourceEditing,
   HorizontalLine,
   RemoveFormat,
   GeneralHtmlSupport,
   HtmlEmbed,
 } from 'ckeditor5';
+import { uploadFile } from '@/lib/api/graphql';
 
 import 'ckeditor5/ckeditor5.css';
+
+// ── CKEditor 커스텀 업로드 어댑터 (서버 업로드) ──
+class ServerUploadAdapter {
+  private loader: FileLoader;
+  constructor(loader: FileLoader) {
+    this.loader = loader;
+  }
+  async upload(): Promise<{ default: string }> {
+    const file = await this.loader.file;
+    if (!file) throw new Error('파일을 읽을 수 없습니다.');
+    const result = await uploadFile(file);
+    return { default: result.url };
+  }
+  abort() {
+    // 서버 업로드는 중간 취소 미지원
+  }
+}
+
+function ServerUploadAdapterPlugin(editor: Editor) {
+  editor.plugins.get('FileRepository').createUploadAdapter = (loader: FileLoader) =>
+    new ServerUploadAdapter(loader);
+}
 
 interface RichEditorProps {
   value?: string;
@@ -76,6 +99,7 @@ export function RichEditor({
         editor={ClassicEditor}
         disabled={disabled}
         config={{
+          extraPlugins: [ServerUploadAdapterPlugin],
           plugins: [
             Essentials,
             Bold,
@@ -100,7 +124,6 @@ export function RichEditor({
             ImageToolbar,
             ImageStyle,
             ImageResize,
-            Base64UploadAdapter,
             SourceEditing,
             HorizontalLine,
             RemoveFormat,
