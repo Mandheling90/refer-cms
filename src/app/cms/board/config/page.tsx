@@ -366,14 +366,14 @@ export default function BoardConfigPage() {
         <>
           <Button
             variant="outline-red"
-            size="sm"
+            size="md"
             onClick={() => setConfirmOpen(true)}
             disabled={selectedRows.length === 0}
           >
             <Trash2 className="h-4 w-4" />
             선택한 항목 삭제
           </Button>
-          <Button size="sm" onClick={handleOpenCreate}>
+          <Button size="md" onClick={handleOpenCreate}>
             <Plus className="h-4 w-4" />
             신규 등록
           </Button>
@@ -432,7 +432,7 @@ export default function BoardConfigPage() {
     >
       {/* 등록/수정 다이얼로그 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent size="sm" className="max-h-[90vh] flex flex-col">
+        <DialogContent size="md" className="max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? '게시판 설정 수정' : '게시판 설정 등록'}
@@ -464,7 +464,7 @@ export default function BoardConfigPage() {
                   <Button
                     type="button"
                     variant={idChecked ? 'default' : 'outline'}
-                    size="sm"
+                    size="md"
                     onClick={handleCheckDuplicate}
                     disabled={idChecking || idChecked}
                     className="shrink-0"
@@ -575,10 +575,10 @@ export default function BoardConfigPage() {
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" size="md" onClick={() => setDialogOpen(false)}>
               취소
             </Button>
-            <Button onClick={handleSave}>저장</Button>
+            <Button size="md" onClick={handleSave}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -2,38 +2,38 @@ import { gql } from '@apollo/client';
 
 /** 관리자 협력병의원 신청 목록 조회 */
 export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
-  query AdminPartnerApplications($pagination: PaginationInput, $status: PartnerStatus) {
-    adminPartnerApplications(pagination: $pagination, status: $status) {
+  query AdminPartnerApplications($status: PartnerStatus, $pagination: PaginationInput) {
+    adminPartnerApplications(status: $status, pagination: $pagination) {
       items {
         id
-        status
-        hospitalCode
         hospitalId
+        hospitalCode
+        status
+        applicantId
+        rejectReason
+        reviewedAt
+        reviewedById
+        directorName
+        directorPhone
         staffName
         staffPhone
         staffEmail
-        directorName
-        directorPhone
         approvedAt
-        reviewedAt
-        reviewedById
-        rejectReason
+        terminatedAt
         createdAt
         updatedAt
         hospital {
           id
           name
-          representative
-          phone
-          faxNumber
+          phisCode
           address
           addressDetail
+          phone
           zipCode
+          faxNumber
           website
-          specialties
+          representative
           partnerType
-          classificationCode
-          phisCode
         }
       }
       totalCount
@@ -47,12 +47,13 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
   query AdminPartnerApplicationById($id: String!) {
     adminPartnerApplicationById(id: $id) {
       id
-      status
-      hospitalCode
       hospitalId
-      staffName
-      staffPhone
-      staffEmail
+      hospitalCode
+      status
+      applicantId
+      rejectReason
+      reviewedAt
+      reviewedById
       directorName
       directorPhone
       directorLicenseNo
@@ -70,16 +71,18 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       directorReplyConsent
       isDirector
       institutionType
+      staffName
+      staffPhone
+      staffEmail
       staffPosition
       staffTel
       staffDeptType
       staffDeptValue
       remarks
       attachments
+      attachmentRows
       approvedAt
-      reviewedAt
-      reviewedById
-      rejectReason
+      terminatedAt
       createdAt
       updatedAt
       # 체크리스트 항목
@@ -118,20 +121,24 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       majorEquipment
       availableTreatments
       departmentSpecialists
+      # 협력의원 체크리스트 항목
+      clinicHasExcimerLaser
+      clinicHasHemodialysis
+      clinicHasPeritoneal
+      clinicHasPhototherapy
+      clinicMedicationType
       hospital {
         id
         name
-        representative
-        phone
-        faxNumber
+        phisCode
         address
         addressDetail
+        phone
         zipCode
+        faxNumber
         website
-        specialties
+        representative
         partnerType
-        classificationCode
-        phisCode
       }
     }
   }

@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { Code, Eye, FolderOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Code, Eye, FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react';
 
 // ── 에디터 타입 판별 유틸 ──
 type EditorMode = 'richtext' | 'pageeditor';
@@ -607,7 +607,7 @@ export default function ContentsPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline-red"
-                size="sm"
+                size="md"
                 onClick={() => setConfirmOpen(true)}
                 disabled={selectedRows.length === 0}
               >
@@ -615,7 +615,7 @@ export default function ContentsPage() {
                 삭제
               </Button>
               <Button
-                size="sm"
+                size="md"
                 onClick={handleOpenDialog}
                 disabled={!selectedGroup}
               >
@@ -645,10 +645,6 @@ export default function ContentsPage() {
                     placeholder="제목 검색"
                   />
                 </div>
-                <Button type="submit" size="md">
-                  <Search className="h-4 w-4" />
-                  조회
-                </Button>
               </form>
             </div>
           )}
@@ -773,7 +769,7 @@ export default function ContentsPage() {
                   <Button
                     type="button"
                     variant={editorMode === 'richtext' ? 'default' : 'outline'}
-                    size="sm"
+                    size="md"
                     onClick={() => handleEditorModeChange('richtext')}
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -782,7 +778,7 @@ export default function ContentsPage() {
                   <Button
                     type="button"
                     variant={editorMode === 'pageeditor' ? 'default' : 'outline'}
-                    size="sm"
+                    size="md"
                     onClick={() => handleEditorModeChange('pageeditor')}
                   >
                     <Code className="h-3.5 w-3.5" />
@@ -791,7 +787,7 @@ export default function ContentsPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="md"
                     onClick={handlePreview}
                     disabled={!formData.CONTENTS_BODY}
                   >
@@ -816,7 +812,7 @@ export default function ContentsPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="md"
                     className="mt-3"
                     onClick={() => {
                       setPageEditorKey((k) => k + 1);
@@ -846,10 +842,10 @@ export default function ContentsPage() {
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" size="md" onClick={() => setDialogOpen(false)}>
               취소
             </Button>
-            <Button onClick={handleSave}>저장</Button>
+            <Button size="md" onClick={handleSave}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -894,7 +890,7 @@ export default function ContentsPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
+                size="md"
                 onClick={handlePreview}
                 disabled={!formData.CONTENTS_BODY}
               >
@@ -902,7 +898,7 @@ export default function ContentsPage() {
                 미리보기
               </Button>
               <Button
-                size="sm"
+                size="md"
                 onClick={() => {
                   // 닫기 전에 에디터에서 최신 HTML을 명시적으로 가져옴
                   if (pageEditorRef.current) {

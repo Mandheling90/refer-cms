@@ -914,19 +914,19 @@ export function CooperationListPage({ title, partnerType, mode }: CooperationLis
                         <div className="flex flex-col gap-1.5">
                           <label className="text-sm font-semibold text-foreground">투석</label>
                           <div className="flex items-center h-10 gap-4">
-                            <CheckItem label="혈액" checked={selectedItem.hasDialysisRoom} />
-                            <CheckItem label="복막" checked={selectedItem.hasRehabIsolation} />
+                            <CheckItem label="혈액" checked={selectedItem.clinicHasHemodialysis} />
+                            <CheckItem label="복막" checked={selectedItem.clinicHasPeritoneal} />
                           </div>
                         </div>
                         <div className="flex flex-col gap-1.5">
                           <label className="text-sm font-semibold text-foreground">투약</label>
                           <div className="flex items-center h-10 gap-4">
                             <label className="flex items-center gap-1.5 text-sm">
-                              <input type="radio" className="accent-primary" checked={selectedItem.clinicMedicationInjectable !== true} disabled />
+                              <input type="radio" className="accent-primary" checked={selectedItem.clinicMedicationType !== 'injectable'} disabled />
                               불가능
                             </label>
                             <label className="flex items-center gap-1.5 text-sm">
-                              <input type="radio" className="accent-primary" checked={selectedItem.clinicMedicationInjectable === true} disabled />
+                              <input type="radio" className="accent-primary" checked={selectedItem.clinicMedicationType === 'injectable'} disabled />
                               G-CSF 피하주사 투여 가능
                             </label>
                           </div>
@@ -938,26 +938,9 @@ export function CooperationListPage({ title, partnerType, mode }: CooperationLis
                         <div className="flex flex-col gap-1.5">
                           <label className="text-sm font-semibold text-foreground">피부과</label>
                           <div className="flex items-center h-10 gap-4">
-                            <CheckItem label="광선치료" checked={selectedItem.clinicLightTherapy} />
-                            <CheckItem label="엑시머레이저" checked={selectedItem.clinicExcimerLaser} />
+                            <CheckItem label="광선치료" checked={selectedItem.clinicHasPhototherapy} />
+                            <CheckItem label="엑시머레이저" checked={selectedItem.clinicHasExcimerLaser} />
                           </div>
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-sm font-semibold text-foreground">이비인후과</label>
-                          <div className="flex items-center h-10 gap-4">
-                            <CheckItem label="귀 수술환자 단순 소독" checked={selectedItem.clinicEarSurgeryDressing} />
-                            <CheckItem label="Betadine Soaking" checked={selectedItem.clinicBetadineSoaking} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 기타 */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-sm font-semibold text-foreground">기타</label>
-                        <div className="flex flex-wrap gap-x-6 gap-y-2">
-                          <CheckItem label="수술부위 단순 소독" checked={selectedItem.clinicSurgicalDressing} />
-                          <CheckItem label="stich out" checked={selectedItem.clinicStitchOut} />
-                          <CheckItem label="Chemoport needle out" checked={selectedItem.clinicWoundCare} />
                         </div>
                       </div>
                     </>

@@ -25,6 +25,7 @@ export interface PartnerApplicationModel {
   status: PartnerStatus;
   hospitalCode: string;
   hospitalId: string;
+  applicantId?: string;
   staffName?: string;
   staffPhone?: string;
   staffEmail?: string;
@@ -33,6 +34,7 @@ export interface PartnerApplicationModel {
   directorLicenseNo?: string;
   institutionType?: string;
   approvedAt?: string;
+  terminatedAt?: string;
   reviewedAt?: string;
   reviewedById?: string;
   rejectReason?: string;
@@ -106,21 +108,14 @@ export interface PartnerApplicationDetail extends PartnerApplicationModel {
   majorEquipment?: string;
   availableTreatments?: unknown;
   departmentSpecialists?: unknown;
-  /* 협력의원 체크리스트: 병원 세부 정보 */
-  clinicPhysicalTherapyRoom?: boolean;
-  clinicDialysisCount?: number | string;
-  clinicMedicationInjectable?: boolean;
-  clinicDermatologyCount?: number | string;
-  clinicLightTherapy?: boolean;
-  clinicExcimerLaser?: boolean;
-  clinicEntCount?: number | string;
-  clinicEarSurgeryDressing?: boolean;
-  clinicBetadineSoaking?: boolean;
-  clinicOtherCount?: number | string;
-  clinicSurgicalDressing?: boolean;
-  clinicStitchOut?: boolean;
-  clinicWoundCare?: boolean;
-  clinicEmail?: string;
+  /* 협력의원 체크리스트 (실제 API 스키마) */
+  clinicHasExcimerLaser?: boolean;
+  clinicHasHemodialysis?: boolean;
+  clinicHasPeritoneal?: boolean;
+  clinicHasPhototherapy?: boolean;
+  clinicMedicationType?: string;
+  /* 기타 */
+  attachmentRows?: unknown[];
 }
 
 /** 신청 목록 응답 */

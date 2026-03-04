@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -9,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search } from 'lucide-react';
 import { type FormEvent } from 'react';
 
 interface SearchField {
@@ -36,7 +34,7 @@ export function SearchBar({ fields, onSearch, className }: SearchBarProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className={`grid grid-cols-4 gap-6 items-end ${className ?? ''}`}
+      className={`grid grid-cols-3 gap-x-6 gap-y-4 items-end ${className ?? ''}`}
     >
       {fields.map((field) => (
         <div key={field.name} className="flex flex-col gap-1.5">
@@ -63,12 +61,6 @@ export function SearchBar({ fields, onSearch, className }: SearchBarProps) {
           )}
         </div>
       ))}
-      <div className="flex justify-end">
-        <Button type="submit" size="md">
-          <Search className="h-4 w-4" />
-          조회
-        </Button>
-      </div>
     </form>
   );
 }

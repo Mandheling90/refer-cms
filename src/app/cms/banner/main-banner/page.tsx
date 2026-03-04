@@ -1099,10 +1099,10 @@ function BannerFormDialog({
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" size="md" onClick={() => onOpenChange(false)}>
             닫기
           </Button>
-          <Button variant="dark" onClick={handleSave} disabled={saving}>
+          <Button variant="dark" size="md" onClick={handleSave} disabled={saving}>
             저장
           </Button>
         </DialogFooter>
@@ -1376,11 +1376,11 @@ export default function MainBannerPage() {
 
         {/* 조건초기화 / 검색 버튼 */}
         <div className="flex items-center justify-end gap-2 pt-1">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleReset}>
+          <Button variant="outline" size="md" className="gap-1.5" onClick={handleReset}>
             <RotateCcw className="h-3.5 w-3.5" />
             조건초기화
           </Button>
-          <Button variant="dark" size="sm" className="gap-1.5" onClick={handleSearch}>
+          <Button variant="dark" size="md" className="gap-1.5" onClick={handleSearch}>
             <Search className="h-3.5 w-3.5" />
             검색
           </Button>
@@ -1410,11 +1410,11 @@ export default function MainBannerPage() {
         <div className="flex items-center gap-2">
           {mode === 'normal' && (
             <>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleEnterSortMode}>
+              <Button variant="outline" size="md" className="gap-1.5" onClick={handleEnterSortMode}>
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 순서변경
               </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleEnterSelectMode}>
+              <Button variant="outline" size="md" className="gap-1.5" onClick={handleEnterSelectMode}>
                 <CheckSquare className="h-3.5 w-3.5" />
                 배너 선택
               </Button>
@@ -1422,11 +1422,11 @@ export default function MainBannerPage() {
           )}
           {mode === 'sort' && (
             <>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCancelSort}>
+              <Button variant="outline" size="md" className="gap-1.5" onClick={handleCancelSort}>
                 <X className="h-3.5 w-3.5" />
                 취소
               </Button>
-              <Button variant="dark" size="sm" className="gap-1.5" onClick={handleSaveSort}>
+              <Button variant="dark" size="md" className="gap-1.5" onClick={handleSaveSort}>
                 <Save className="h-3.5 w-3.5" />
                 순서저장
               </Button>
@@ -1434,17 +1434,17 @@ export default function MainBannerPage() {
           )}
           {mode === 'select' && (
             <>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCancelSelect}>
+              <Button variant="outline" size="md" className="gap-1.5" onClick={handleCancelSelect}>
                 <X className="h-3.5 w-3.5" />
                 선택취소
               </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleToggleSelectAll}>
+              <Button variant="outline" size="md" className="gap-1.5" onClick={handleToggleSelectAll}>
                 <CheckSquare className="h-3.5 w-3.5" />
                 {allSelected ? '선택 해제' : '전체 선택'}
               </Button>
               <Button
                 variant="dark"
-                size="sm"
+                size="md"
                 className="gap-1.5"
                 disabled={selectedIds.size === 0}
                 onClick={() => setDeleteSelectedOpen(true)}
