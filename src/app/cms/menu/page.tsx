@@ -1,6 +1,7 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -21,11 +22,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { Contents } from '@/lib/api/contents';
-import { menuApi } from '@/lib/api/menu';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
+import {
+  ADMIN_MENUS,
+  CREATE_MENU,
+  UPDATE_MENU,
+  DELETE_MENU,
+  REORDER_MENUS,
+  ADMIN_BOARD_SETTINGS,
+} from '@/lib/graphql/queries/menu';
+import { ADMIN_CONTENTS } from '@/lib/graphql/queries/content';
 import { cn } from '@/lib/utils';
-import type { Board } from '@/types/board';
-import type { Menu } from '@/types/menu';
+import { useAuthStore } from '@/stores/auth-store';
 import {
   closestCenter,
   DndContext,
@@ -42,36 +50,71 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronDown, ChevronRight, ChevronUp, GripVertical, Save, Plus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  GripVertical,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type MenuType = 'BOARD' | 'LINK' | 'CONTENTS';
-
-interface AddMenuFormData {
-  LANG_SET: string;
-  MENU_NAME: string;
-  MENU_TYPE: MenuType;
-  BOARD_ID: string;
-  LINK_URL: string;
-  CONTENT_ID: string;
-  GNB_YN: string;
-  USE_YN: string;
+interface MenuItem {
+  id: string;
+  name: string;
+  path: string | null;
+  sortOrder: number;
+  parentId: string | null;
+  isActive: boolean;
+  hospitalCode: string;
+  menuTargetType: string | null;
+  targetBoardId: string | null;
+  targetContentId: string | null;
+  externalUrl: string | null;
+  gnbExposure: boolean;
+  firstChildPath: string | null;
+  children?: MenuItem[];
 }
 
-const INITIAL_FORM: AddMenuFormData = {
-  LANG_SET: 'kr',
-  MENU_NAME: '',
-  MENU_TYPE: 'BOARD',
-  BOARD_ID: '',
-  LINK_URL: '',
-  CONTENT_ID: '',
-  GNB_YN: 'Y',
-  USE_YN: 'Y',
+interface BoardSetting {
+  id: string;
+  boardId: string;
+  name: string;
+}
+
+interface Content {
+  id: string;
+  title: string;
+  contentGroupName: string;
+}
+
+type MenuTargetType = 'BOARD' | 'CONTENT' | 'LINK' | 'PARENT';
+
+interface MenuFormData {
+  name: string;
+  menuTargetType: MenuTargetType;
+  targetBoardId: string;
+  targetContentId: string;
+  externalUrl: string;
+  gnbExposure: boolean;
+  isActive: boolean;
+}
+
+const INITIAL_FORM: MenuFormData = {
+  name: '',
+  menuTargetType: 'BOARD',
+  targetBoardId: '',
+  targetContentId: '',
+  externalUrl: '',
+  gnbExposure: false,
+  isActive: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -82,13 +125,19 @@ function SortableMenuRow({
   item,
   isSelected,
   onClick,
+  onEdit,
+  onDelete,
+  showChildCount,
 }: {
-  item: Menu;
+  item: MenuItem;
   isSelected: boolean;
   onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  showChildCount?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: item.MENU_ID,
+    id: item.id,
   });
 
   const style = {
@@ -96,20 +145,14 @@ function SortableMenuRow({
     transition,
   };
 
-  const isUsed = item.USE_YN !== 'N';
-  const isGnb = item.GNB_YN === 'Y';
+  const badgeLabel = item.gnbExposure ? 'GNB' : item.isActive ? '사용' : '미사용';
+  const badgeClass = item.gnbExposure
+    ? 'bg-[#DE4841] text-white'
+    : item.isActive
+      ? 'bg-[#9F1836] text-white'
+      : 'bg-[#8b8d98] text-white';
 
-  // 배지: GNB(빨강) > 사용(파랑) > 미사용(회색)
-  const badgeLabel = isGnb ? 'GNB' : isUsed ? '사용' : '미사용';
-  const badgeClass = isSelected
-    ? 'bg-white/20 text-white border-transparent'
-    : isGnb
-      ? 'bg-[#DE4841] text-white border-transparent'
-      : isUsed
-        ? 'bg-[#23B7E5] text-white border-transparent'
-        : 'bg-gray-500 text-white border-transparent';
-
-  const childCount = item.CHILD_COUNT ?? 0;
+  const childCount = item.children?.length ?? 0;
   const countStr = String(childCount).padStart(2, '0');
 
   return (
@@ -117,12 +160,15 @@ function SortableMenuRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-300 cursor-pointer select-none',
+        'grid items-center gap-0 p-3 rounded-xl border cursor-pointer select-none mt-1 transition-colors',
+        showChildCount
+          ? 'grid-cols-[36px_1fr_36px_36px_36px]'
+          : 'grid-cols-[36px_1fr_36px_36px]',
         isSelected
-          ? 'bg-[#23B7E5] text-white'
-          : isUsed
-            ? 'bg-white hover:bg-gray-100'
-            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          ? 'border-[#9F1836] bg-[rgba(159,24,54,0.05)]'
+          : item.isActive
+            ? 'border-gray-200 bg-white hover:border-[#9F1836]'
+            : 'border-gray-200 bg-gray-100 hover:border-[#9F1836]'
       )}
       onClick={onClick}
     >
@@ -130,39 +176,63 @@ function SortableMenuRow({
       <button
         {...attributes}
         {...listeners}
-        className={cn('cursor-grab p-0.5 shrink-0', isSelected ? 'text-white/70' : 'text-gray-400')}
+        className="cursor-grab flex items-center justify-center text-gray-600"
         onClick={(e) => e.stopPropagation()}
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="h-5 w-5" />
       </button>
 
-      {/* 배지 (GNB / 사용 / 미사용) */}
-      <Badge
-        className={cn(
-          'text-[10px] leading-none px-1.5 py-0.5 rounded shrink-0 font-medium border',
-          badgeClass
+      {/* 메뉴명 + 배지 + 카운트 */}
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span
+          className={cn(
+            'inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold shrink-0',
+            badgeClass
+          )}
+        >
+          {badgeLabel === 'GNB' ? 'G' : badgeLabel === '사용' ? 'Y' : '미'}
+        </span>
+        <span className={cn(
+          'text-sm font-semibold truncate',
+          !item.isActive && 'text-gray-400'
+        )}>
+          {item.name}
+        </span>
+        {showChildCount && (
+          <span className="ml-auto text-xs text-gray-500 tabular-nums shrink-0">
+            {countStr}건
+          </span>
         )}
+      </div>
+
+      {/* 수정 버튼 */}
+      <button
+        className="flex items-center justify-center text-gray-600 hover:text-[#9F1836] transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
       >
-        {badgeLabel}
-      </Badge>
+        <Pencil className="h-4 w-4" />
+      </button>
 
-      {/* 메뉴명 */}
-      <span className="flex-1 text-sm truncate">{item.MENU_NAME}</span>
-
-      {/* > 화살표 */}
-      <ChevronRight
-        className={cn('h-4 w-4 shrink-0', isSelected ? 'text-white/70' : 'text-gray-400')}
-      />
-
-      {/* 카운트 */}
-      <span
-        className={cn(
-          'text-sm font-medium tabular-nums w-6 text-right shrink-0',
-          isSelected ? 'text-white' : 'text-gray-700'
-        )}
+      {/* 삭제 버튼 */}
+      <button
+        className="flex items-center justify-center text-gray-600 hover:text-[#DE4841] transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
       >
-        {countStr}
-      </span>
+        <Trash2 className="h-4 w-4" />
+      </button>
+
+      {/* 하위 메뉴 화살표 (최상위 메뉴만) */}
+      {showChildCount && (
+        <div className="flex items-center justify-center text-gray-600 cursor-pointer">
+          <ChevronRight className="h-4 w-4" />
+        </div>
+      )}
     </div>
   );
 }
@@ -176,17 +246,23 @@ function MenuColumn({
   items,
   selectedId,
   onSelect,
+  onEdit,
+  onDelete,
   onReorder,
   onSaveOrders,
   onAddNew,
+  showChildCount,
 }: {
   title: string;
-  items: Menu[];
+  items: MenuItem[];
   selectedId: string | null;
-  onSelect: (item: Menu) => void;
-  onReorder: (items: Menu[]) => void;
+  onSelect: (item: MenuItem) => void;
+  onEdit: (item: MenuItem) => void;
+  onDelete: (item: MenuItem) => void;
+  onReorder: (items: MenuItem[]) => void;
   onSaveOrders: () => void;
   onAddNew: () => void;
+  showChildCount?: boolean;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -198,8 +274,8 @@ function MenuColumn({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((i) => i.MENU_ID === active.id);
-      const newIndex = items.findIndex((i) => i.MENU_ID === over.id);
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
       const newItems = [...items];
       const [removed] = newItems.splice(oldIndex, 1);
       newItems.splice(newIndex, 0, removed);
@@ -210,26 +286,29 @@ function MenuColumn({
   const countText = `${String(items.length).padStart(2, '0')} 건`;
 
   return (
-    <div className="flex flex-col border border-gray-300 rounded-lg bg-white min-w-[280px] flex-1">
+    <div className="flex flex-col border border-gray-200 rounded-xl bg-white flex-1 shadow-[0_0_12px_rgba(0,0,0,0.06)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300 bg-gray-100 rounded-t-lg">
-        <span className="text-sm font-bold text-gray-900">{title}</span>
-        <span className="text-sm font-bold text-gray-900">{countText}</span>
+      <div className="flex items-center justify-between px-4 py-3 bg-[rgba(159,24,54,0.1)] rounded-t-xl">
+        <h4 className="text-base font-semibold text-gray-900">{title}</h4>
+        <span className="text-sm font-semibold text-gray-700">{countText}</span>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto min-h-[300px] max-h-[calc(100vh-360px)]">
+      <div className="flex-1 overflow-y-auto min-h-[300px] max-h-[calc(100vh-360px)] px-3 py-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
-            items={items.map((i) => i.MENU_ID)}
+            items={items.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
             {items.map((item) => (
               <SortableMenuRow
-                key={item.MENU_ID}
+                key={item.id}
                 item={item}
-                isSelected={selectedId === item.MENU_ID}
+                isSelected={selectedId === item.id}
                 onClick={() => onSelect(item)}
+                onEdit={() => onEdit(item)}
+                onDelete={() => onDelete(item)}
+                showChildCount={showChildCount}
               />
             ))}
           </SortableContext>
@@ -240,13 +319,13 @@ function MenuColumn({
       </div>
 
       {/* Footer buttons */}
-      <div className="flex items-center justify-center gap-2 px-3 py-3 border-t border-gray-300">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onSaveOrders}>
-          <Save className="h-3.5 w-3.5" />
+      <div className="flex items-center justify-end gap-2 px-3 py-3 border-t border-gray-200">
+        <Button variant="outline" size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm" onClick={onSaveOrders}>
+          <Save className="h-4 w-4" />
           순서 저장
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onAddNew}>
-          <Plus className="h-3.5 w-3.5" />
+        <Button size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm bg-[#9F1836] hover:bg-[#8a1530] text-white" onClick={onAddNew}>
+          <Plus className="h-4 w-4" />
           신규 메뉴 추가
         </Button>
       </div>
@@ -255,7 +334,7 @@ function MenuColumn({
 }
 
 // ---------------------------------------------------------------------------
-// ToggleSwitch (inline)
+// ToggleSwitch
 // ---------------------------------------------------------------------------
 
 function ToggleSwitch({
@@ -274,29 +353,26 @@ function ToggleSwitch({
       aria-checked={checked}
       disabled={disabled}
       className={cn(
-        'relative inline-flex h-7 w-[60px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
-        checked ? 'bg-gray-300' : 'bg-gray-700',
+        'relative inline-flex h-7 w-[52px] shrink-0 cursor-pointer items-center rounded-[14px] transition-colors duration-200',
+        checked ? 'bg-[#9F1836]' : 'bg-[#e0e0e0]',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       onClick={() => !disabled && onChange(!checked)}
     >
-      {/* ON 텍스트 (체크 해제 시 우측에) */}
       {checked && (
-        <span className="absolute right-2 text-[10px] font-semibold text-gray-700 select-none">
+        <span className="absolute left-1.5 text-[10px] font-semibold text-white select-none">
           ON
         </span>
       )}
-      {/* OFF 텍스트 (체크 해제 시 좌측에) */}
       {!checked && (
-        <span className="absolute left-1.5 text-[10px] font-semibold text-white select-none">
+        <span className="absolute right-1.5 text-[10px] font-semibold text-gray-500 select-none">
           OFF
         </span>
       )}
-      {/* 토글 원형 */}
       <span
         className={cn(
-          'pointer-events-none inline-block h-5 w-5 rounded-full shadow transition-transform ml-0.5',
-          checked ? 'translate-x-0 bg-white' : 'translate-x-[34px] bg-gray-400'
+          'pointer-events-none absolute h-6 w-6 rounded-full bg-white shadow transition-[left] duration-200',
+          checked ? 'left-[26px]' : 'left-[2px]'
         )}
       />
     </button>
@@ -304,7 +380,7 @@ function ToggleSwitch({
 }
 
 // ---------------------------------------------------------------------------
-// SearchableSelect (Figma: 검색 가능한 드롭다운)
+// SearchableSelect
 // ---------------------------------------------------------------------------
 
 function SearchableSelect({
@@ -374,73 +450,87 @@ function SearchableSelect({
 }
 
 // ---------------------------------------------------------------------------
-// AddMenuDialog
+// MenuDialog (등록/수정 공용)
 // ---------------------------------------------------------------------------
 
-function AddMenuDialog({
+function MenuDialog({
   open,
   onOpenChange,
-  depth,
-  parentMenuId,
+  editItem,
+  parentId,
+  itemCount,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  depth: number;
-  parentMenuId?: string;
+  editItem?: MenuItem | null;
+  parentId?: string;
+  itemCount: number;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<AddMenuFormData>(INITIAL_FORM);
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [contents, setContents] = useState<Contents[]>([]);
-  const [saving, setSaving] = useState(false);
+  const isEditMode = !!editItem;
+  const isTopLevel = !parentId && !editItem?.parentId;
+
+  const [form, setForm] = useState<MenuFormData>(INITIAL_FORM);
   const [nameError, setNameError] = useState('');
 
-  // Load board/contents lists when dialog opens
+  const hospitalCode = useAuthStore((s) => s.hospitalCode);
+
+  // GraphQL
+  const { data: boardData } = useQuery<{ adminBoardSettings: BoardSetting[] }>(
+    ADMIN_BOARD_SETTINGS,
+    { skip: !open },
+  );
+  const { data: contentData } = useQuery<{ adminContents: Content[] }>(
+    ADMIN_CONTENTS,
+    { skip: !open },
+  );
+  const [createMenu, { loading: creating }] = useMutation(CREATE_MENU);
+  const [updateMenu, { loading: updating }] = useMutation(UPDATE_MENU);
+
+  const boards = boardData?.adminBoardSettings ?? [];
+  const contents = contentData?.adminContents ?? [];
+  const saving = creating || updating;
+
+  // 다이얼로그 열릴 때 폼 초기화
   useEffect(() => {
     if (!open) return;
-    setForm(INITIAL_FORM);
     setNameError('');
-
-    menuApi
-      .boardList({ SHOWN_ENTITY: 9999 })
-      .then((res) => {
-        setBoards(res.list && res.list.length > 0 ? res.list : MOCK_BOARDS);
-      })
-      .catch(() => {
-        setBoards(MOCK_BOARDS);
+    if (editItem) {
+      setForm({
+        name: editItem.name,
+        menuTargetType: (editItem.menuTargetType as MenuTargetType) || 'BOARD',
+        targetBoardId: editItem.targetBoardId || '',
+        targetContentId: editItem.targetContentId || '',
+        externalUrl: editItem.externalUrl || '',
+        gnbExposure: editItem.gnbExposure,
+        isActive: editItem.isActive,
       });
-
-    menuApi
-      .contentsList({ SHOWN_ENTITY: 9999 })
-      .then((res) => {
-        setContents(res.list && res.list.length > 0 ? res.list : MOCK_CONTENTS);
-      })
-      .catch(() => {
-        setContents(MOCK_CONTENTS);
+    } else {
+      setForm({
+        ...INITIAL_FORM,
+        menuTargetType: isTopLevel ? 'PARENT' : 'BOARD',
       });
-  }, [open]);
+    }
+  }, [open, editItem, isTopLevel]);
 
-  const depthLabel = depth === 1 ? '최상위' : '하위';
-
-  const updateField = <K extends keyof AddMenuFormData>(key: K, value: AddMenuFormData[K]) => {
+  const updateField = <K extends keyof MenuFormData>(key: K, value: MenuFormData[K]) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-      // USE_YN OFF → force GNB_YN OFF
-      if (key === 'USE_YN' && value === 'N') {
-        next.GNB_YN = 'N';
+      if (key === 'isActive' && value === false) {
+        next.gnbExposure = false;
       }
       return next;
     });
-    if (key === 'MENU_NAME') setNameError('');
+    if (key === 'name') setNameError('');
   };
 
   const validate = (): boolean => {
-    if (!form.MENU_NAME.trim()) {
+    if (!form.name.trim()) {
       setNameError('메뉴명을 입력해주세요.');
       return false;
     }
-    if (form.MENU_NAME.length > 20) {
+    if (form.name.length > 20) {
       setNameError('메뉴명은 최대 20자까지 입력 가능합니다.');
       return false;
     }
@@ -449,62 +539,68 @@ function AddMenuDialog({
 
   const handleSave = async () => {
     if (!validate()) return;
-    setSaving(true);
     try {
-      const payload: Partial<Menu> = {
-        MENU_NAME: form.MENU_NAME,
-        MENU_TYPE: form.MENU_TYPE,
-        LANG_SET: form.LANG_SET,
-        GNB_YN: form.GNB_YN,
-        USE_YN: form.USE_YN,
-      };
-      if (parentMenuId) {
-        payload.PARENT_MENU_ID = parentMenuId;
-      }
-      if (form.MENU_TYPE === 'BOARD') {
-        payload.BOARD_ID = form.BOARD_ID;
-      } else if (form.MENU_TYPE === 'LINK') {
-        payload.LINK_URL = form.LINK_URL;
-      } else if (form.MENU_TYPE === 'CONTENTS') {
-        payload.CONTENT_ID = form.CONTENT_ID;
-      }
-
-      const res = await menuApi.cmsSave(payload);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success(res.ServiceResult.MESSAGE_TEXT || '저장되었습니다.');
-        onOpenChange(false);
-        onSaved();
+      if (isEditMode && editItem) {
+        await updateMenu({
+          variables: {
+            id: editItem.id,
+            input: {
+              name: form.name.trim(),
+              menuTargetType: form.menuTargetType,
+              targetBoardId: form.menuTargetType === 'BOARD' ? form.targetBoardId || null : null,
+              targetContentId: form.menuTargetType === 'CONTENT' ? form.targetContentId || null : null,
+              externalUrl: form.menuTargetType === 'LINK' ? form.externalUrl || null : null,
+              gnbExposure: form.gnbExposure,
+              isActive: form.isActive,
+            },
+          },
+        });
       } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '저장에 실패했습니다.');
+        await createMenu({
+          variables: {
+            input: {
+              name: form.name.trim(),
+              menuType: 'USER',
+              hospitalCode: hospitalCode?.toUpperCase(),
+              parentId: parentId || undefined,
+              menuTargetType: form.menuTargetType,
+              targetBoardId: form.menuTargetType === 'BOARD' ? form.targetBoardId || undefined : undefined,
+              targetContentId: form.menuTargetType === 'CONTENT' ? form.targetContentId || undefined : undefined,
+              externalUrl: form.menuTargetType === 'LINK' ? form.externalUrl || undefined : undefined,
+              gnbExposure: form.gnbExposure,
+              sortOrder: itemCount + 1,
+            },
+          },
+        });
       }
+      toast.success('저장되었습니다.');
+      onOpenChange(false);
+      onSaved();
     } catch {
       toast.error('저장에 실패했습니다.');
-    } finally {
-      setSaving(false);
     }
   };
 
+  // 메뉴 타입 옵션
+  const targetTypeOptions: [MenuTargetType, string][] = isTopLevel
+    ? [['PARENT', '상위 메뉴'], ['BOARD', '게시판(목록)'], ['CONTENT', '콘텐츠'], ['LINK', '링크']]
+    : [['BOARD', '게시판(목록)'], ['CONTENT', '콘텐츠'], ['LINK', '링크']];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="sm">
+      <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>신규 메뉴 추가</DialogTitle>
+          <DialogTitle>{isEditMode ? '메뉴 수정' : '신규 메뉴 추가'}</DialogTitle>
         </DialogHeader>
         <DialogBody className="space-y-4">
-          {/* 언어셋 */}
-          <div className="space-y-1.5">
-            <Label>언어셋</Label>
-            <Input value="kr" disabled />
-          </div>
-
           {/* 메뉴명 */}
           <div className="space-y-1.5">
             <Label>
               메뉴명 <span className="text-destructive">*</span>
             </Label>
             <Input
-              value={form.MENU_NAME}
-              onChange={(e) => updateField('MENU_NAME', e.target.value)}
+              value={form.name}
+              onChange={(e) => updateField('name', e.target.value)}
               placeholder="메뉴명을 입력해주세요"
               maxLength={20}
               aria-invalid={!!nameError}
@@ -516,26 +612,20 @@ function AddMenuDialog({
           <div className="space-y-1.5">
             <Label>메뉴 타입</Label>
             <div className="flex gap-4">
-              {(
-                [
-                  ['BOARD', '게시판(목록)'],
-                  ['LINK', '링크'],
-                  ['CONTENTS', '콘텐츠'],
-                ] as [MenuType, string][]
-              ).map(([value, label]) => (
+              {targetTypeOptions.map(([value, label]) => (
                 <label
                   key={value}
                   className="flex items-center gap-1.5 cursor-pointer text-sm"
-                  onClick={() => updateField('MENU_TYPE', value)}
+                  onClick={() => updateField('menuTargetType', value)}
                 >
                   <span
                     className={cn(
                       'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
-                      form.MENU_TYPE === value ? 'border-primary' : 'border-gray-400'
+                      form.menuTargetType === value ? 'border-[#9F1836]' : 'border-gray-400'
                     )}
                   >
-                    {form.MENU_TYPE === value && (
-                      <span className="size-2 rounded-full bg-primary" />
+                    {form.menuTargetType === value && (
+                      <span className="size-2 rounded-full bg-[#9F1836]" />
                     )}
                   </span>
                   {label}
@@ -544,62 +634,64 @@ function AddMenuDialog({
             </div>
           </div>
 
-          {/* 조건부 필드 */}
-          {form.MENU_TYPE === 'BOARD' && (
+          {/* 게시판 선택 */}
+          {form.menuTargetType === 'BOARD' && (
             <div className="space-y-1.5">
               <Label>
                 연결할 게시판 <span className="text-destructive">*</span>
               </Label>
               <SearchableSelect
-                value={form.BOARD_ID}
-                onChange={(v) => updateField('BOARD_ID', v)}
+                value={form.targetBoardId}
+                onChange={(v) => updateField('targetBoardId', v)}
                 options={boards.map((b) => ({
-                  value: b.BOARD_ID,
-                  label: b.BOARD_NAME,
+                  value: b.id,
+                  label: b.name,
                 }))}
                 placeholder="게시판 이름을 검색하세요."
               />
             </div>
           )}
 
-          {form.MENU_TYPE === 'LINK' && (
+          {/* 링크 입력 */}
+          {form.menuTargetType === 'LINK' && (
             <div className="space-y-1.5">
               <Label>연결할 링크 주소</Label>
               <Input
-                value={form.LINK_URL}
-                onChange={(e) => updateField('LINK_URL', e.target.value)}
+                value={form.externalUrl}
+                onChange={(e) => updateField('externalUrl', e.target.value)}
                 placeholder="https://"
               />
             </div>
           )}
 
-          {form.MENU_TYPE === 'CONTENTS' && (
+          {/* 콘텐츠 선택 */}
+          {form.menuTargetType === 'CONTENT' && (
             <div className="space-y-1.5">
               <Label>
                 연결할 콘텐츠 <span className="text-destructive">*</span>
               </Label>
               <SearchableSelect
-                value={form.CONTENT_ID}
-                onChange={(v) => updateField('CONTENT_ID', v)}
+                value={form.targetContentId}
+                onChange={(v) => updateField('targetContentId', v)}
                 options={contents.map((c) => ({
-                  value: c.CONTENTS_ID,
-                  label: c.CONTENTS_NAME,
+                  value: c.id,
+                  label: c.contentGroupName ? `[${c.contentGroupName}] ${c.title}` : c.title,
                 }))}
                 placeholder="콘텐츠 이름을 검색하세요."
               />
             </div>
           )}
 
-          {/* GNB 노출여부 + 메뉴 사용여부 (한 줄) */}
+          {/* GNB 노출여부 + 메뉴 사용여부 */}
           <div className="flex gap-6">
             <div className="flex-1 space-y-1.5">
               <Label>
                 GNB 노출여부 <span className="text-destructive">*</span>
               </Label>
               <ToggleSwitch
-                checked={form.GNB_YN === 'Y'}
-                onChange={(v) => updateField('GNB_YN', v ? 'Y' : 'N')}
-                disabled={form.USE_YN === 'N'}
+                checked={form.gnbExposure}
+                onChange={(v) => updateField('gnbExposure', v)}
+                disabled={!form.isActive}
               />
             </div>
             <div className="flex-1 space-y-1.5">
@@ -607,8 +699,8 @@ function AddMenuDialog({
                 메뉴 사용여부 <span className="text-destructive">*</span>
               </Label>
               <ToggleSwitch
-                checked={form.USE_YN === 'Y'}
-                onChange={(v) => updateField('USE_YN', v ? 'Y' : 'N')}
+                checked={form.isActive}
+                onChange={(v) => updateField('isActive', v)}
               />
             </div>
           </div>
@@ -617,7 +709,7 @@ function AddMenuDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button variant="dark" onClick={handleSave} disabled={saving}>
+          <Button className="bg-[#9F1836] hover:bg-[#8a1530] text-white" onClick={handleSave} disabled={saving}>
             저장
           </Button>
         </DialogFooter>
@@ -627,448 +719,219 @@ function AddMenuDialog({
 }
 
 // ---------------------------------------------------------------------------
-// Mock data (TODO: API 연동 완료 후 제거)
-// ---------------------------------------------------------------------------
-
-const MOCK_1DEPTH: Menu[] = [
-  {
-    MENU_ID: 'M001',
-    MENU_CODE: 'HOME',
-    MENU_NAME: '홈',
-    MENU_TYPE: 'LINK',
-    GNB_YN: 'Y',
-    USE_YN: 'Y',
-    CHILD_COUNT: 3,
-  },
-  {
-    MENU_ID: 'M002',
-    MENU_CODE: 'ABOUT',
-    MENU_NAME: '학교소개',
-    MENU_TYPE: 'CONTENTS',
-    GNB_YN: 'Y',
-    USE_YN: 'Y',
-    CHILD_COUNT: 5,
-  },
-  {
-    MENU_ID: 'M003',
-    MENU_CODE: 'ADMISSION',
-    MENU_NAME: '입학안내',
-    MENU_TYPE: 'BOARD',
-    GNB_YN: 'Y',
-    USE_YN: 'Y',
-    CHILD_COUNT: 4,
-  },
-  {
-    MENU_ID: 'M004',
-    MENU_CODE: 'ACADEMICS',
-    MENU_NAME: '학사정보',
-    MENU_TYPE: 'BOARD',
-    GNB_YN: 'Y',
-    USE_YN: 'Y',
-    CHILD_COUNT: 6,
-  },
-  {
-    MENU_ID: 'M005',
-    MENU_CODE: 'COMMUNITY',
-    MENU_NAME: '커뮤니티',
-    MENU_TYPE: 'BOARD',
-    GNB_YN: 'Y',
-    USE_YN: 'Y',
-    CHILD_COUNT: 3,
-  },
-  {
-    MENU_ID: 'M006',
-    MENU_CODE: 'ARCHIVE',
-    MENU_NAME: '자료실',
-    MENU_TYPE: 'BOARD',
-    GNB_YN: 'N',
-    USE_YN: 'N',
-    CHILD_COUNT: 0,
-  },
-];
-
-const MOCK_2DEPTH: Record<string, Menu[]> = {
-  M001: [
-    {
-      MENU_ID: 'M101',
-      MENU_CODE: 'MAIN_BANNER',
-      MENU_NAME: '메인 배너 관리',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M001',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M102',
-      MENU_CODE: 'POPUP',
-      MENU_NAME: '팝업 관리',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M001',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M103',
-      MENU_CODE: 'QUICK_MENU',
-      MENU_NAME: '퀵메뉴',
-      MENU_TYPE: 'LINK',
-      PARENT_MENU_ID: 'M001',
-      GNB_YN: 'N',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-  ],
-  M002: [
-    {
-      MENU_ID: 'M201',
-      MENU_CODE: 'GREETING',
-      MENU_NAME: '인사말',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M002',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M202',
-      MENU_CODE: 'HISTORY',
-      MENU_NAME: '연혁',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M002',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M203',
-      MENU_CODE: 'ORGANIZATION',
-      MENU_NAME: '조직도',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M002',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M204',
-      MENU_CODE: 'LOCATION',
-      MENU_NAME: '오시는 길',
-      MENU_TYPE: 'LINK',
-      PARENT_MENU_ID: 'M002',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M205',
-      MENU_CODE: 'CI',
-      MENU_NAME: 'CI 소개',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M002',
-      GNB_YN: 'N',
-      USE_YN: 'N',
-      CHILD_COUNT: 0,
-    },
-  ],
-  M003: [
-    {
-      MENU_ID: 'M301',
-      MENU_CODE: 'GUIDE',
-      MENU_NAME: '모집요강',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M003',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M302',
-      MENU_CODE: 'SCHEDULE',
-      MENU_NAME: '입학일정',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M003',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M303',
-      MENU_CODE: 'FAQ',
-      MENU_NAME: '자주 묻는 질문',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M003',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M304',
-      MENU_CODE: 'CONSULT',
-      MENU_NAME: '입학상담',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M003',
-      GNB_YN: 'N',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-  ],
-  M004: [
-    {
-      MENU_ID: 'M401',
-      MENU_CODE: 'CURRICULUM',
-      MENU_NAME: '교육과정',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M004',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M402',
-      MENU_CODE: 'CALENDAR',
-      MENU_NAME: '학사일정',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M004',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M403',
-      MENU_CODE: 'PROFESSOR',
-      MENU_NAME: '교수진 소개',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M004',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M404',
-      MENU_CODE: 'SCHOLARSHIP',
-      MENU_NAME: '장학제도',
-      MENU_TYPE: 'CONTENTS',
-      PARENT_MENU_ID: 'M004',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M405',
-      MENU_CODE: 'REGULATION',
-      MENU_NAME: '학칙/규정',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M004',
-      GNB_YN: 'N',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M406',
-      MENU_CODE: 'FORM_DOWNLOAD',
-      MENU_NAME: '서식 다운로드',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M004',
-      GNB_YN: 'N',
-      USE_YN: 'N',
-      CHILD_COUNT: 0,
-    },
-  ],
-  M005: [
-    {
-      MENU_ID: 'M501',
-      MENU_CODE: 'NOTICE',
-      MENU_NAME: '공지사항',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M005',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M502',
-      MENU_CODE: 'NEWS',
-      MENU_NAME: '학교 소식',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M005',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-    {
-      MENU_ID: 'M503',
-      MENU_CODE: 'GALLERY',
-      MENU_NAME: '갤러리',
-      MENU_TYPE: 'BOARD',
-      PARENT_MENU_ID: 'M005',
-      GNB_YN: 'Y',
-      USE_YN: 'Y',
-      CHILD_COUNT: 0,
-    },
-  ],
-};
-
-const MOCK_BOARDS: Board[] = [
-  { BOARD_ID: 'B001', BOARD_NAME: '공지사항' },
-  { BOARD_ID: 'B002', BOARD_NAME: '교육/행사' },
-  { BOARD_ID: 'B003', BOARD_NAME: '병원뉴스' },
-  { BOARD_ID: 'B004', BOARD_NAME: '건강정보' },
-  { BOARD_ID: 'B005', BOARD_NAME: '채용공고' },
-  { BOARD_ID: 'B006', BOARD_NAME: '자료실' },
-];
-
-const MOCK_CONTENTS: Contents[] = [
-  { CONTENTS_ID: 'C001', CONTENTS_GRP_ID: 'G01', CONTENTS_NAME: '인사말' },
-  { CONTENTS_ID: 'C002', CONTENTS_GRP_ID: 'G01', CONTENTS_NAME: '병원소개' },
-  { CONTENTS_ID: 'C003', CONTENTS_GRP_ID: 'G01', CONTENTS_NAME: '연혁' },
-  { CONTENTS_ID: 'C004', CONTENTS_GRP_ID: 'G02', CONTENTS_NAME: '진료안내' },
-  { CONTENTS_ID: 'C005', CONTENTS_GRP_ID: 'G02', CONTENTS_NAME: '오시는 길' },
-];
-
-// ---------------------------------------------------------------------------
 // MenuPage (main)
 // ---------------------------------------------------------------------------
 
 export default function MenuPage() {
-  const [items1, setItems1] = useState<Menu[]>([]);
-  const [items2, setItems2] = useState<Menu[]>([]);
+  // ── 로컬 상태 (드래그 순서를 위한 로컬 복사본) ──
+  const [items1, setItems1] = useState<MenuItem[]>([]);
+  const [items2, setItems2] = useState<MenuItem[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
-  const [selected1, setSelected1] = useState<Menu | null>(null);
-
+  // ── 다이얼로그 상태 ──
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogDepth, setDialogDepth] = useState(1);
   const [dialogParentId, setDialogParentId] = useState<string | undefined>();
+  const [dialogEditItem, setDialogEditItem] = useState<MenuItem | null>(null);
+  const [dialogItemCount, setDialogItemCount] = useState(0);
 
-  // Load 1depth on mount
-  const load1depth = useCallback(async () => {
-    try {
-      const res = await menuApi.list1depth({ SHOWN_ENTITY: 9999 });
-      if (res.list && res.list.length > 0) {
-        setItems1(res.list);
-      } else {
-        setItems1(MOCK_1DEPTH);
-      }
-    } catch {
-      setItems1(MOCK_1DEPTH);
-    }
-  }, []);
+  // ── 삭제 확인 상태 ──
+  const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
+  // ── GraphQL ──
+  const { data, refetch } = useQuery<{ adminMenus: MenuItem[] }>(ADMIN_MENUS, {
+    variables: { menuType: 'USER' },
+  });
+
+  const [reorderMenus] = useMutation(REORDER_MENUS);
+  const [deleteMenu] = useMutation(DELETE_MENU);
+
+  // 선택된 상위 메뉴 ID를 ref로 보관 (useEffect 의존성 이슈 방지)
+  const selectedIdRef = useRef<string | null>(null);
+
+  // ── 쿼리 데이터 → 로컬 상태 동기화 ──
   useEffect(() => {
-    load1depth();
-  }, [load1depth]);
-
-  // Load 2depth when 1depth selected
-  const load2depth = useCallback(async (parentId: string) => {
-    try {
-      const res = await menuApi.list2depth({
-        PARENT_MENU_ID: parentId,
-        SHOWN_ENTITY: 9999,
-      });
-      if (res.list && res.list.length > 0) {
-        setItems2(res.list);
-      } else {
-        setItems2(MOCK_2DEPTH[parentId] || []);
+    if (data?.adminMenus) {
+      setItems1(data.adminMenus);
+      if (selectedIdRef.current) {
+        const parent = data.adminMenus.find((m) => m.id === selectedIdRef.current);
+        if (parent) {
+          setItems2(parent.children ?? []);
+        } else {
+          selectedIdRef.current = null;
+          setSelectedId(null);
+          setItems2([]);
+        }
       }
-    } catch {
-      setItems2(MOCK_2DEPTH[parentId] || []);
     }
-  }, []);
+  }, [data]);
 
-  const handleSelect1 = (item: Menu) => {
-    setSelected1(item);
-    load2depth(item.MENU_ID);
+  // ── 상위 메뉴 선택 ──
+  const handleSelect1 = (item: MenuItem) => {
+    selectedIdRef.current = item.id;
+    setSelectedId(item.id);
+    const children = item.children ?? [];
+    setItems2(children);
+    setSelectedChildId(children.length > 0 ? children[0].id : null);
   };
 
-  // Save orders
-  const handleSaveOrders = async (items: Menu[]) => {
-    const list = items.map((m, idx) => ({
-      MENU_ID: m.MENU_ID,
-      SORT_ORDER: idx + 1,
-    }));
+  // ── 순서 저장 ──
+  const handleSaveOrders = async (items: MenuItem[]) => {
     try {
-      const res = await menuApi.saveOrders(list);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('순서가 저장되었습니다.');
-      } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '순서 저장에 실패했습니다.');
-      }
+      await reorderMenus({
+        variables: {
+          input: {
+            items: items.map((m, idx) => ({ id: m.id, sortOrder: idx + 1 })),
+          },
+        },
+      });
+      toast.success('순서가 저장되었습니다.');
+      refetch();
     } catch {
       toast.error('순서 저장에 실패했습니다.');
     }
   };
 
-  // Open add dialog for specific depth
-  const openAddDialog = (depth: number) => {
-    if (depth === 2 && !selected1) {
+  // ── 삭제 ──
+  const handleDeleteRequest = (item: MenuItem) => {
+    setDeleteTarget(item);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteMenu({ variables: { id: deleteTarget.id } });
+      toast.success('삭제되었습니다.');
+      refetch();
+    } catch {
+      toast.error('삭제에 실패했습니다.');
+    }
+    setDeleteConfirmOpen(false);
+    setDeleteTarget(null);
+  };
+
+  // ── 신규 등록 다이얼로그 열기 ──
+  const openAddDialog = (parentId?: string) => {
+    if (parentId && !selectedId) {
       toast.error('최상위 메뉴를 먼저 선택해주세요.');
       return;
     }
-    setDialogDepth(depth);
-    setDialogParentId(depth === 1 ? undefined : selected1?.MENU_ID);
+    setDialogEditItem(null);
+    setDialogParentId(parentId);
+    setDialogItemCount(parentId ? items2.length : items1.length);
     setDialogOpen(true);
   };
 
-  // Refresh after save
-  const handleDialogSaved = () => {
-    if (dialogDepth === 1) {
-      load1depth();
-    } else if (dialogDepth === 2 && selected1) {
-      load2depth(selected1.MENU_ID);
-    }
+  // ── 수정 다이얼로그 열기 ──
+  const openEditDialog = (item: MenuItem) => {
+    setDialogEditItem(item);
+    setDialogParentId(undefined);
+    setDialogItemCount(0);
+    setDialogOpen(true);
   };
 
+  // ── 저장 후 새로고침 ──
+  const handleDialogSaved = () => {
+    refetch();
+  };
+
+  const selected1 = items1.find((i) => i.id === selectedId);
   const subMenuTitle = selected1
-    ? `${selected1.MENU_NAME} > 하위 메뉴`
+    ? `${selected1.name} > 하위 메뉴`
     : '하위 메뉴';
 
+  const deleteDescription = deleteTarget
+    ? deleteTarget.children && deleteTarget.children.length > 0
+      ? `"${deleteTarget.name}" 메뉴에 하위 메뉴 ${deleteTarget.children.length}건이 포함되어 있습니다. 삭제하시겠습니까?`
+      : `"${deleteTarget.name}" 메뉴를 삭제하시겠습니까?`
+    : '';
+
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">메뉴관리</h1>
       </div>
 
-      {/* Guide text */}
-      <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3">
-        <p className="text-sm text-gray-700">
+      {/* Guide text + Legend */}
+      <div className="bg-white border border-gray-300 rounded-xl px-4 py-3 space-y-2">
+        <p className="text-sm text-gray-600">
           각 항목의 아이콘을 드래그 &amp; 드롭 하시면 순서를 변경하실 수 있습니다.
         </p>
+        <div className="flex items-center gap-5 flex-wrap text-sm text-gray-600">
+          <span className="inline-flex items-center gap-1.5">
+            <Pencil className="h-4 w-4 text-gray-400" />
+            <span>= 설정하기</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span>= 하위메뉴 보기</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-[#DE4841] text-white">G</span>
+            <span>= GNB 사용</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-[#9F1836] text-white">Y</span>
+            <span>= 사용</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-[#8b8d98] text-white">미</span>
+            <span>= 미사용</span>
+          </span>
+        </div>
       </div>
 
       {/* 2-column layout */}
-      <div className="flex gap-4">
+      <div className="flex gap-6">
         {/* 최상위 메뉴 */}
         <MenuColumn
           title="최상위 메뉴"
           items={items1}
-          selectedId={selected1?.MENU_ID ?? null}
+          selectedId={selectedId}
           onSelect={handleSelect1}
+          onEdit={openEditDialog}
+          onDelete={handleDeleteRequest}
           onReorder={setItems1}
           onSaveOrders={() => handleSaveOrders(items1)}
-          onAddNew={() => openAddDialog(1)}
+          onAddNew={() => openAddDialog()}
+          showChildCount
         />
 
         {/* 하위 메뉴 */}
         <MenuColumn
           title={subMenuTitle}
           items={items2}
-          selectedId={null}
-          onSelect={() => {}}
+          selectedId={selectedChildId}
+          onSelect={(item) => setSelectedChildId(item.id)}
+          onEdit={openEditDialog}
+          onDelete={handleDeleteRequest}
           onReorder={setItems2}
           onSaveOrders={() => handleSaveOrders(items2)}
-          onAddNew={() => openAddDialog(2)}
+          onAddNew={() => openAddDialog(selectedId ?? undefined)}
         />
       </div>
 
-      {/* Add menu dialog */}
-      <AddMenuDialog
+      {/* 등록/수정 다이얼로그 */}
+      <MenuDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        depth={dialogDepth}
-        parentMenuId={dialogParentId}
+        editItem={dialogEditItem}
+        parentId={dialogParentId}
+        itemCount={dialogItemCount}
         onSaved={handleDialogSaved}
+      />
+
+      {/* 삭제 확인 */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="메뉴 삭제"
+        description={deleteDescription}
+        onConfirm={handleDeleteConfirm}
+        destructive
       />
     </div>
   );
