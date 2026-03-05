@@ -177,13 +177,6 @@ export default function ContentsConfigPage() {
 
   // ── 선택 삭제 ──
   const handleDelete = async () => {
-    const hasContents = selectedRows.filter((row) => row.contentCount > 0);
-    if (hasContents.length > 0) {
-      const names = hasContents.map((r) => r.name).join(', ');
-      toast.error(`하위 콘텐츠가 존재하는 그룹은 삭제할 수 없습니다. (${names})`);
-      setConfirmOpen(false);
-      return;
-    }
     try {
       await Promise.all(
         selectedRows.map((row) =>
@@ -210,7 +203,15 @@ export default function ContentsConfigPage() {
           <Button
             variant="outline-red"
             size="md"
-            onClick={() => setConfirmOpen(true)}
+            onClick={() => {
+              const hasContents = selectedRows.filter((row) => row.contentCount > 0);
+              if (hasContents.length > 0) {
+                const names = hasContents.map((r) => r.name).join(', ');
+                toast.error(`하위 콘텐츠가 존재하는 그룹은 삭제할 수 없습니다. (${names})`);
+                return;
+              }
+              setConfirmOpen(true);
+            }}
             disabled={selectedRows.length === 0}
           >
             <Trash2 className="h-4 w-4" />

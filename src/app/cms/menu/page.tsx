@@ -795,6 +795,10 @@ export default function MenuPage() {
 
   // ── 삭제 ──
   const handleDeleteRequest = (item: MenuItem) => {
+    if (item.children && item.children.length > 0) {
+      toast.error(`하위 메뉴가 존재하는 메뉴는 삭제할 수 없습니다. (${item.name})`);
+      return;
+    }
     setDeleteTarget(item);
     setDeleteConfirmOpen(true);
   };

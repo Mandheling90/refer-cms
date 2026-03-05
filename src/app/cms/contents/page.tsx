@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { Code, Eye, FolderOpen, Pencil, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Code, Eye, FolderOpen, Pencil, Plus, Search } from 'lucide-react';
 
 // ── 타입 ──
 interface ContentGroup {
@@ -95,6 +95,9 @@ const columns: ColumnDef<Content, unknown>[] = [
 export default function ContentsPage() {
   // 그룹 상태
   const [selectedGroup, setSelectedGroup] = useState<ContentGroup | null>(null);
+  const [groupSearchName, setGroupSearchName] = useState('');
+  const [groupPage, setGroupPage] = useState(1);
+  const [groupPageSize, setGroupPageSize] = useState(10);
 
   // 콘텐츠 리스트 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -131,15 +134,28 @@ export default function ContentsPage() {
   const [updateContent] = useMutation(UPDATE_CONTENT);
 
   // ── 데이터 ──
-  const groups = groupsData?.adminContentGroups ?? [];
+  const allGroups = groupsData?.adminContentGroups ?? [];
   const allContents = contentsData?.adminContents ?? [];
+
+  // 그룹 필터링 + 페이징
+  const filteredGroups = useMemo(() => {
+    if (!groupSearchName) return allGroups;
+    return allGroups.filter((g) => g.name.includes(groupSearchName));
+  }, [allGroups, groupSearchName]);
+
+  const groupTotalItems = filteredGroups.length;
+  const groupTotalPages = Math.ceil(groupTotalItems / groupPageSize) || 1;
+  const pagedGroups = useMemo(() => {
+    const start = (groupPage - 1) * groupPageSize;
+    return filteredGroups.slice(start, start + groupPageSize);
+  }, [filteredGroups, groupPage, groupPageSize]);
 
   // 첫 번째 그룹 자동 선택
   useEffect(() => {
-    if (groups.length > 0 && !selectedGroup) {
-      setSelectedGroup(groups[0]);
+    if (allGroups.length > 0 && !selectedGroup) {
+      setSelectedGroup(allGroups[0]);
     }
-  }, [groups, selectedGroup]);
+  }, [allGroups, selectedGroup]);
 
   // ── 클라이언트 필터링 + 페이징 ──
   const filtered = useMemo(() => {
@@ -273,27 +289,45 @@ export default function ContentsPage() {
 
       <div className="flex gap-6">
         {/* 좌측: 콘텐츠 그룹 영역 */}
-        <section className="w-[260px] shrink-0 rounded-xl bg-card shadow-[0_0_12px_rgba(0,0,0,0.1)]">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-500">
+        <section className="w-[280px] shrink-0 rounded-xl bg-card shadow-[0_0_12px_rgba(0,0,0,0.1)] flex flex-col">
+          <div className="flex items-center justify-between px-6 border-b border-gray-500 min-h-[72px]">
             <b className="text-base">콘텐츠 그룹</b>
             <span className="text-sm text-muted-foreground">
-              총 <span className="text-primary font-semibold">{groups.length}</span>건
+              총 <span className="text-primary font-semibold">{groupTotalItems}</span>건
             </span>
           </div>
-          <nav className="p-3 space-y-1 max-h-[calc(100vh-260px)] overflow-y-auto">
-            {groups.length === 0 ? (
+
+          {/* 그룹명 검색 */}
+          <div className="px-3 pt-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                value={groupSearchName}
+                onChange={(e) => {
+                  setGroupSearchName(e.target.value);
+                  setGroupPage(1);
+                }}
+                placeholder="그룹명 검색"
+                className="pl-9 h-9 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* 그룹 리스트 */}
+          <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
+            {pagedGroups.length === 0 ? (
               <p className="text-sm text-center text-muted-foreground py-8">
-                등록된 그룹이 없습니다.
+                {groupSearchName ? '검색 결과가 없습니다.' : '등록된 그룹이 없습니다.'}
               </p>
             ) : (
-              groups.map((group) => {
+              pagedGroups.map((group) => {
                 const isSelected = selectedGroup?.id === group.id;
                 return (
                   <button
                     key={group.id}
                     onClick={() => handleGroupSelect(group)}
                     className={cn(
-                      'flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left text-sm transition-colors',
+                      'flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left text-sm transition-colors cursor-pointer',
                       isSelected
                         ? 'bg-primary text-white font-semibold'
                         : 'hover:bg-gray-300 text-foreground',
@@ -318,6 +352,43 @@ export default function ContentsPage() {
               })
             )}
           </nav>
+
+          {/* 그룹 페이징 */}
+          <div className="border-t border-gray-300 px-3 py-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <select
+                value={groupPageSize}
+                onChange={(e) => {
+                  setGroupPageSize(Number(e.target.value));
+                  setGroupPage(1);
+                }}
+                className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-white"
+              >
+                {[5, 10, 20, 50].map((n) => (
+                  <option key={n} value={n}>{n}건</option>
+                ))}
+              </select>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setGroupPage((p) => Math.max(1, p - 1))}
+                  disabled={groupPage <= 1}
+                  className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-xs text-gray-600 min-w-[60px] text-center">
+                  {groupPage} / {groupTotalPages}
+                </span>
+                <button
+                  onClick={() => setGroupPage((p) => Math.min(groupTotalPages, p + 1))}
+                  disabled={groupPage >= groupTotalPages}
+                  className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 우측: 그룹 별 콘텐츠 */}
