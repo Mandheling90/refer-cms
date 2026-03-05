@@ -30,7 +30,9 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { ChevronLeft, ChevronRight, Code, Eye, FolderOpen, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { uploadFile } from '@/lib/api/graphql';
+import { Switch } from '@/components/ui/switch';
+import { ChevronLeft, ChevronRight, Code, Eye, FileText, FolderOpen, Link as LinkIcon, Pencil, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react';
 
 // ── 타입 ──
 interface BoardSetting {
@@ -57,10 +59,24 @@ interface BoardPost {
   viewCount: number;
   startDate: string | null;
   endDate: string | null;
+  linkUrl: string | null;
+  linkTarget: string | null;
   hospitalCode: string;
   parentId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface AttachmentFile {
+  name: string;
+  size: string;
+  url: string;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
 // ── 에디터 타입 판별 ──
@@ -76,21 +92,9 @@ function detectEditorMode(html: string | undefined): EditorMode {
 // ── 날짜 포맷 ──
 function formatDateTime(iso: string) {
   if (!iso) return '-';
-  return new Date(iso).toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-// ── ISO → datetime-local 변환 ──
-function toLocalDatetime(iso: string | null): string {
-  if (!iso) return '';
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 // ── 템플릿 타입 라벨 ──
@@ -128,11 +132,21 @@ export default function BoardPage() {
   const [detectedEditorMode, setDetectedEditorMode] = useState<EditorMode | null>(null);
   const [editorSwitchConfirmOpen, setEditorSwitchConfirmOpen] = useState(false);
   const [pendingEditorMode, setPendingEditorMode] = useState<EditorMode | null>(null);
-  const [formStartDate, setFormStartDate] = useState('');
-  const [formEndDate, setFormEndDate] = useState('');
+  const [formCreatedAt, setFormCreatedAt] = useState('');
+  const [formUpdatedAt, setFormUpdatedAt] = useState('');
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
   const [pageEditorKey, setPageEditorKey] = useState(0);
   const pageEditorRef = useRef<PageEditorHandle>(null);
+
+  // ── 첨부파일 관련 상태 ──
+  const [formAttachments, setFormAttachments] = useState<AttachmentFile[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+
+  // ── 연결 URL / 연결 방식 (첨부파일 미허용 시) ──
+  const [formLinkUrl, setFormLinkUrl] = useState('');
+  const [formLinkTarget, setFormLinkTarget] = useState<'_self' | '_blank'>('_self');
 
   // ── 삭제 확인 ──
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -237,6 +251,67 @@ export default function BoardPage() {
     setEditorSwitchConfirmOpen(false);
   };
 
+  // ── 첨부파일 업로드 ──
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      const result = await uploadFile(file);
+      setFormAttachments((prev) => [
+        ...prev,
+        { name: result.originalName, size: formatFileSize(result.fileSize), url: result.url },
+      ]);
+      toast.success('파일이 업로드되었습니다.');
+    } catch {
+      toast.error('파일 업로드에 실패했습니다.');
+    } finally {
+      setUploadingFile(false);
+      e.target.value = '';
+    }
+  };
+
+  // ── 첨부파일 삭제 ──
+  const handleAttachmentDelete = (index: number) => {
+    setFormAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── 썸네일 이미지 사이즈 검증 ──
+  const validateImageSize = (file: File, width: number, height: number): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        resolve(img.width === width && img.height === height);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        resolve(false);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // ── 썸네일 파일 업로드 ──
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const isValid = await validateImageSize(file, 380, 380);
+      if (!isValid) {
+        toast.error('썸네일 이미지 사이즈는 가로 380px, 세로 380px이어야 합니다.');
+        return;
+      }
+      const result = await uploadFile(file);
+      setFormThumbnailUrl(result.url);
+      toast.success('썸네일이 업로드되었습니다.');
+    } catch {
+      toast.error('썸네일 업로드에 실패했습니다.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   // ── 신규 등록 ──
   const handleOpenDialog = () => {
     setIsEditMode(false);
@@ -245,8 +320,11 @@ export default function BoardPage() {
     setFormContent('');
     setFormThumbnailUrl('');
     setFormIsPinned(false);
-    setFormStartDate('');
-    setFormEndDate('');
+    setFormCreatedAt('');
+    setFormUpdatedAt('');
+    setFormAttachments([]);
+    setFormLinkUrl('');
+    setFormLinkTarget('_self');
     setEditorMode('richtext');
     setDetectedEditorMode(null);
     setDialogOpen(true);
@@ -260,8 +338,11 @@ export default function BoardPage() {
     setFormContent(row.content || '');
     setFormThumbnailUrl(row.thumbnailUrl || '');
     setFormIsPinned(row.isPinned);
-    setFormStartDate(toLocalDatetime(row.startDate));
-    setFormEndDate(toLocalDatetime(row.endDate));
+    setFormCreatedAt(row.createdAt || '');
+    setFormUpdatedAt(row.updatedAt || '');
+    setFormAttachments([]);
+    setFormLinkUrl(row.linkUrl || '');
+    setFormLinkTarget((row.linkTarget as '_self' | '_blank') || '_self');
     const detected = detectEditorMode(row.content);
     setEditorMode(detected);
     setDetectedEditorMode(detected);
@@ -275,32 +356,24 @@ export default function BoardPage() {
       return;
     }
     try {
+      const commonInput = {
+        title: formTitle.trim(),
+        content: formContent,
+        thumbnailUrl: formThumbnailUrl || undefined,
+        isPinned: formIsPinned,
+      };
+
       if (isEditMode) {
         await updatePost({
-          variables: {
-            id: editingId,
-            input: {
-              title: formTitle.trim(),
-              content: formContent,
-              thumbnailUrl: formThumbnailUrl || undefined,
-              isPinned: formIsPinned,
-              startDate: formStartDate ? new Date(formStartDate).toISOString() : undefined,
-              endDate: formEndDate ? new Date(formEndDate).toISOString() : undefined,
-            },
-          },
+          variables: { id: editingId, input: commonInput },
         });
       } else {
         await createPost({
           variables: {
             input: {
+              ...commonInput,
               boardId: selectedBoard?.boardId,
               hospitalCode: hospitalCode?.toUpperCase(),
-              title: formTitle.trim(),
-              content: formContent,
-              thumbnailUrl: formThumbnailUrl || undefined,
-              isPinned: formIsPinned,
-              startDate: formStartDate ? new Date(formStartDate).toISOString() : undefined,
-              endDate: formEndDate ? new Date(formEndDate).toISOString() : undefined,
             },
           },
         });
@@ -626,45 +699,56 @@ export default function BoardPage() {
               </label>
             </div>
 
-            {/* 썸네일 URL (썸네일형 게시판) */}
-            {selectedBoard?.templateType === 'THUMBNAIL' && (
+            {/* 썸네일 (첨부파일 허용 + 썸네일형 게시판) */}
+            {selectedBoard?.allowAttachments && selectedBoard?.templateType === 'THUMBNAIL' && (
               <div className="space-y-1.5">
-                <Label>썸네일 URL</Label>
-                <Input
-                  value={formThumbnailUrl}
-                  onChange={(e) => setFormThumbnailUrl(e.target.value)}
-                  placeholder="썸네일 이미지 URL을 입력하세요"
-                />
-                {formThumbnailUrl && (
-                  <img
-                    src={formThumbnailUrl}
-                    alt="썸네일 미리보기"
-                    className="w-24 h-24 object-cover rounded border mt-2"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
+                <div className="flex items-center justify-between">
+                  <Label>썸네일 (사이즈 : 가로 380px, 세로 380px / 확장자 : jpg)</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    onClick={() => thumbnailInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" />
+                    업로드
+                  </Button>
+                </div>
+                {formThumbnailUrl ? (
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={formThumbnailUrl}
+                      alt="썸네일 미리보기"
+                      className="w-24 h-24 object-cover rounded border"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm truncate">
+                        {decodeURIComponent(formThumbnailUrl.split('/').pop() || '')}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline-red"
+                        size="sm"
+                        onClick={() => setFormThumbnailUrl('')}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        삭제
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">등록된 썸네일이 없습니다.</p>
                 )}
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png"
+                  className="hidden"
+                  onChange={handleThumbnailUpload}
+                />
               </div>
             )}
-
-            {/* 시작일시 / 종료일시 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>시작일시</Label>
-                <Input
-                  type="datetime-local"
-                  value={formStartDate}
-                  onChange={(e) => setFormStartDate(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>종료일시</Label>
-                <Input
-                  type="datetime-local"
-                  value={formEndDate}
-                  onChange={(e) => setFormEndDate(e.target.value)}
-                />
-              </div>
-            </div>
 
             {/* 에디터 (본문) */}
             <div className="space-y-1.5">
@@ -727,6 +811,121 @@ export default function BoardPage() {
                 </div>
               )}
             </div>
+
+            {/* ── 첨부파일 허용 시: 첨부파일 섹션 ── */}
+            {selectedBoard?.allowAttachments && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>첨부파일</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    onClick={() => attachmentInputRef.current?.click()}
+                    disabled={uploadingFile}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadingFile ? '업로드 중...' : '업로드'}
+                  </Button>
+                </div>
+                {formAttachments.length > 0 ? (
+                  <div className="space-y-2">
+                    {formAttachments.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-300 bg-gray-50"
+                      >
+                        <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-primary truncate underline">
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">({file.size})</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline-red"
+                          size="sm"
+                          onClick={() => handleAttachmentDelete(idx)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          삭제
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">등록된 첨부파일이 없습니다.</p>
+                )}
+                <div className="border-t border-gray-200" />
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleAttachmentUpload}
+                />
+              </div>
+            )}
+
+            {/* ── 첨부파일 미허용 시: 연결 URL + 연결 방식 ── */}
+            {!selectedBoard?.allowAttachments && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>
+                    <span className="flex items-center gap-1">
+                      <LinkIcon className="h-4 w-4" />
+                      연결 URL 주소
+                    </span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    입력하신 주소가 있으면 게시물 클릭 시 해당 주소로 이동됩니다.
+                  </p>
+                  <Input
+                    value={formLinkUrl}
+                    onChange={(e) => setFormLinkUrl(e.target.value)}
+                    placeholder="연결할 링크 주소를 입력해주세요. ex) www.youtube.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>
+                    연결 방식 <span className="text-muted-foreground text-xs font-normal">(현재 창 / 새 창)</span>
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={formLinkTarget === '_blank'}
+                      onCheckedChange={(checked) =>
+                        setFormLinkTarget(checked ? '_blank' : '_self')
+                      }
+                    />
+                    <span className="text-sm">
+                      {formLinkTarget === '_blank' ? '새 창' : '현재 창'}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* 등록일시 / 수정일시 (읽기 전용) */}
+            {isEditMode && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>등록일시</Label>
+                  <Input
+                    value={formCreatedAt ? formatDateTime(formCreatedAt) : '-'}
+                    readOnly
+                    disabled
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>수정일시</Label>
+                  <Input
+                    value={formUpdatedAt ? formatDateTime(formUpdatedAt) : '-'}
+                    readOnly
+                    disabled
+                  />
+                </div>
+              </div>
+            )}
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" size="md" onClick={() => setDialogOpen(false)}>
