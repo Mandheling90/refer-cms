@@ -541,18 +541,23 @@ function MenuDialog({
     if (!validate()) return;
     try {
       if (isEditMode && editItem) {
+        const input: Record<string, unknown> = {
+              name: form.name.trim(),
+              menuTargetType: form.menuTargetType,
+              gnbExposure: form.gnbExposure,
+              isActive: form.isActive,
+            };
+            if (form.menuTargetType === 'BOARD') {
+              input.targetBoardId = form.targetBoardId || null;
+            } else if (form.menuTargetType === 'CONTENT') {
+              input.targetContentId = form.targetContentId || null;
+            } else if (form.menuTargetType === 'LINK') {
+              input.externalUrl = form.externalUrl || null;
+            }
         await updateMenu({
           variables: {
             id: editItem.id,
-            input: {
-              name: form.name.trim(),
-              menuTargetType: form.menuTargetType,
-              targetBoardId: form.menuTargetType === 'BOARD' ? form.targetBoardId || null : null,
-              targetContentId: form.menuTargetType === 'CONTENT' ? form.targetContentId || null : null,
-              externalUrl: form.menuTargetType === 'LINK' ? form.externalUrl || null : null,
-              gnbExposure: form.gnbExposure,
-              isActive: form.isActive,
-            },
+            input,
           },
         });
       } else {

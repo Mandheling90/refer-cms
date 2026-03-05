@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { useQuery, useMutation } from '@apollo/client/react';
+import { useQuery, useMutation, useLazyQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
 import { RichEditor } from '@/components/organisms/RichEditor';
@@ -25,6 +25,8 @@ import {
   CREATE_BOARD_POST,
   UPDATE_BOARD_POST,
   DELETE_BOARD_POST,
+  ATTACHMENTS,
+  PRESIGNED_DOWNLOAD_URL,
 } from '@/lib/graphql/queries/board';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
@@ -68,9 +70,12 @@ interface BoardPost {
 }
 
 interface AttachmentFile {
+  id?: string;
   name: string;
   size: string;
   url: string;
+  mimeType?: string;
+  fileSize?: number;
 }
 
 function formatFileSize(bytes: number): string {
@@ -174,6 +179,10 @@ export default function BoardPage() {
   const [createPost] = useMutation(CREATE_BOARD_POST);
   const [updatePost] = useMutation(UPDATE_BOARD_POST);
   const [deletePost] = useMutation(DELETE_BOARD_POST);
+  const [fetchAttachments] = useLazyQuery<{
+    attachments: { id: string; originalName: string; mimeType: string; fileSize: number; storedPath: string }[];
+  }>(ATTACHMENTS, { fetchPolicy: 'network-only' });
+  const [fetchDownloadUrl] = useLazyQuery<{ presignedDownloadUrl: string }>(PRESIGNED_DOWNLOAD_URL);
 
   // ── 데이터 ──
   const allBoards = settingsData?.adminBoardSettings ?? [];
@@ -260,7 +269,13 @@ export default function BoardPage() {
       const result = await uploadFile(file);
       setFormAttachments((prev) => [
         ...prev,
-        { name: result.originalName, size: formatFileSize(result.fileSize), url: result.url },
+        {
+          name: result.originalName,
+          size: formatFileSize(result.fileSize),
+          url: result.url,
+          mimeType: result.mimeType,
+          fileSize: result.fileSize,
+        },
       ]);
       toast.success('파일이 업로드되었습니다.');
     } catch {
@@ -331,7 +346,7 @@ export default function BoardPage() {
   };
 
   // ── 수정 (행 클릭) ──
-  const handleRowClick = (row: BoardPost) => {
+  const handleRowClick = async (row: BoardPost) => {
     setIsEditMode(true);
     setEditingId(row.id);
     setFormTitle(row.title);
@@ -347,6 +362,43 @@ export default function BoardPage() {
     setEditorMode(detected);
     setDetectedEditorMode(detected);
     setDialogOpen(true);
+
+    // 첨부파일 불러오기
+    if (selectedBoard?.allowAttachments) {
+      try {
+        const { data } = await fetchAttachments({
+          variables: { entityId: row.id, entityType: 'BOARD' },
+        });
+        if (data?.attachments?.length) {
+          const attachments: AttachmentFile[] = await Promise.all(
+            data.attachments.map(async (att) => {
+              let downloadUrl = att.storedPath;
+              try {
+                const { data: urlData } = await fetchDownloadUrl({
+                  variables: { attachmentId: att.id },
+                });
+                if (urlData?.presignedDownloadUrl) {
+                  downloadUrl = urlData.presignedDownloadUrl;
+                }
+              } catch {
+                // presigned URL 실패 시 storedPath 사용
+              }
+              return {
+                id: att.id,
+                name: att.originalName,
+                size: formatFileSize(att.fileSize),
+                url: downloadUrl,
+                mimeType: att.mimeType,
+                fileSize: att.fileSize,
+              };
+            }),
+          );
+          setFormAttachments(attachments);
+        }
+      } catch {
+        // 첨부파일 조회 실패 시 무시
+      }
+    }
   };
 
   // ── 저장 ──
@@ -356,11 +408,21 @@ export default function BoardPage() {
       return;
     }
     try {
+      const attachmentsInput = formAttachments
+        .filter((f) => !f.id) // 새로 업로드된 파일만 (기존 첨부파일은 id가 있음)
+        .map((f) => ({
+          url: f.url,
+          name: f.name,
+          mimeType: f.mimeType,
+          size: f.fileSize,
+        }));
+
       const commonInput = {
         title: formTitle.trim(),
         content: formContent,
         thumbnailUrl: formThumbnailUrl || undefined,
         isPinned: formIsPinned,
+        ...(attachmentsInput.length > 0 ? { attachments: attachmentsInput } : {}),
       };
 
       if (isEditMode) {

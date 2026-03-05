@@ -103,3 +103,24 @@ export const DELETE_BOARD_POST = gql`
     deleteBoardPost(id: $id)
   }
 `;
+
+/** 첨부파일 목록 조회 */
+export const ATTACHMENTS = gql`
+  query Attachments($entityId: ID!, $entityType: AttachmentEntityType!) {
+    attachments(entityId: $entityId, entityType: $entityType) {
+      id
+      originalName
+      mimeType
+      fileSize
+      storedPath
+      createdAt
+    }
+  }
+`;
+
+/** 첨부파일 다운로드 URL */
+export const PRESIGNED_DOWNLOAD_URL = gql`
+  query PresignedDownloadUrl($attachmentId: ID!) {
+    presignedDownloadUrl(attachmentId: $attachmentId)
+  }
+`;
