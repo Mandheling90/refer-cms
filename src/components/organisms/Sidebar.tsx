@@ -7,6 +7,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Building2,
   ChevronDown,
+  ClipboardList,
   Columns3,
   FileImage,
   FileText,
@@ -112,11 +113,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/cms/board/config',
     icon: Settings2,
   },
-  // {
-  //   title: '게시판 관리',
-  //   href: '/cms/board',
-  //   icon: ClipboardList,
-  // },
+  {
+    title: '게시판 관리',
+    href: '/cms/board',
+    icon: ClipboardList,
+  },
   // {
   //   title: 'e-Consult',
   //   href: '/cms/e-consult',

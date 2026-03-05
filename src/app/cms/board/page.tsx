@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { ChevronLeft, ChevronRight, Code, Eye, FolderOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Code, Eye, FolderOpen, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 
 // ── 타입 ──
 interface BoardSetting {
@@ -85,6 +85,14 @@ function formatDateTime(iso: string) {
   });
 }
 
+// ── ISO → datetime-local 변환 ──
+function toLocalDatetime(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // ── 템플릿 타입 라벨 ──
 function templateLabel(type: string) {
   switch (type) {
@@ -120,6 +128,8 @@ export default function BoardPage() {
   const [detectedEditorMode, setDetectedEditorMode] = useState<EditorMode | null>(null);
   const [editorSwitchConfirmOpen, setEditorSwitchConfirmOpen] = useState(false);
   const [pendingEditorMode, setPendingEditorMode] = useState<EditorMode | null>(null);
+  const [formStartDate, setFormStartDate] = useState('');
+  const [formEndDate, setFormEndDate] = useState('');
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
   const [pageEditorKey, setPageEditorKey] = useState(0);
   const pageEditorRef = useRef<PageEditorHandle>(null);
@@ -235,6 +245,8 @@ export default function BoardPage() {
     setFormContent('');
     setFormThumbnailUrl('');
     setFormIsPinned(false);
+    setFormStartDate('');
+    setFormEndDate('');
     setEditorMode('richtext');
     setDetectedEditorMode(null);
     setDialogOpen(true);
@@ -248,6 +260,8 @@ export default function BoardPage() {
     setFormContent(row.content || '');
     setFormThumbnailUrl(row.thumbnailUrl || '');
     setFormIsPinned(row.isPinned);
+    setFormStartDate(toLocalDatetime(row.startDate));
+    setFormEndDate(toLocalDatetime(row.endDate));
     const detected = detectEditorMode(row.content);
     setEditorMode(detected);
     setDetectedEditorMode(detected);
@@ -270,6 +284,8 @@ export default function BoardPage() {
               content: formContent,
               thumbnailUrl: formThumbnailUrl || undefined,
               isPinned: formIsPinned,
+              startDate: formStartDate ? new Date(formStartDate).toISOString() : undefined,
+              endDate: formEndDate ? new Date(formEndDate).toISOString() : undefined,
             },
           },
         });
@@ -283,6 +299,8 @@ export default function BoardPage() {
               content: formContent,
               thumbnailUrl: formThumbnailUrl || undefined,
               isPinned: formIsPinned,
+              startDate: formStartDate ? new Date(formStartDate).toISOString() : undefined,
+              endDate: formEndDate ? new Date(formEndDate).toISOString() : undefined,
             },
           },
         });
@@ -311,51 +329,42 @@ export default function BoardPage() {
   };
 
   // ── 컬럼 정의 ──
-  const columns: ColumnDef<BoardPost, unknown>[] = useMemo(() => {
-    const cols: ColumnDef<BoardPost, unknown>[] = [
-      {
-        accessorKey: 'ROW_NUM',
-        header: '번호',
-        size: 70,
-        cell: ({ row }) => (currentPage - 1) * pageSize + row.index + 1,
+  const columns: ColumnDef<BoardPost, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'ROW_NUM',
+      header: '번호',
+      size: 70,
+      cell: ({ row }) => (currentPage - 1) * pageSize + row.index + 1,
+    },
+    {
+      accessorKey: 'thumbnailUrl',
+      header: '썸네일',
+      size: 100,
+      cell: ({ getValue }) => {
+        const url = getValue() as string | null;
+        return url ? (
+          <img src={url} alt="썸네일" className="w-12 h-12 object-cover rounded" />
+        ) : (
+          <span className="text-muted-foreground text-xs">-</span>
+        );
       },
-    ];
-
-    // 썸네일형 게시판이면 썸네일 컬럼 추가
-    if (selectedBoard?.templateType === 'THUMBNAIL') {
-      cols.push({
-        accessorKey: 'thumbnailUrl',
-        header: '썸네일',
-        size: 100,
-        cell: ({ getValue }) => {
-          const url = getValue() as string | null;
-          return url ? (
-            <img src={url} alt="썸네일" className="w-12 h-12 object-cover rounded" />
-          ) : (
-            <span className="text-muted-foreground text-xs">-</span>
-          );
-        },
-      });
-    }
-
-    cols.push(
-      { accessorKey: 'title', header: '게시물 제목', size: 300 },
-      {
-        accessorKey: 'isPinned',
-        header: '공지',
-        size: 80,
-        cell: ({ getValue }) => (getValue() as boolean) ? '✓' : '-',
-      },
-      {
-        accessorKey: 'createdAt',
-        header: '등록일시',
-        size: 180,
-        cell: ({ getValue }) => formatDateTime(getValue() as string),
-      },
-    );
-
-    return cols;
-  }, [selectedBoard?.templateType, currentPage, pageSize]);
+    },
+    { accessorKey: 'title', header: '게시물 제목', size: 300 },
+    {
+      accessorKey: 'isPinned',
+      header: '공지',
+      size: 80,
+      cell: ({ getValue }) => (getValue() as boolean)
+        ? <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-primary text-white text-xs font-bold">공</span>
+        : '-',
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '등록일시',
+      size: 180,
+      cell: ({ getValue }) => formatDateTime(getValue() as string),
+    },
+  ], [currentPage, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -527,6 +536,23 @@ export default function BoardPage() {
                     placeholder="제목 검색"
                   />
                 </div>
+                <Button type="submit" size="md">
+                  <Search className="h-4 w-4" />
+                  검색
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    setSearchTitle('');
+                    setAppliedSearch('');
+                    setCurrentPage(1);
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  조건초기화
+                </Button>
               </form>
             </div>
           )}
@@ -619,6 +645,26 @@ export default function BoardPage() {
                 )}
               </div>
             )}
+
+            {/* 시작일시 / 종료일시 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>시작일시</Label>
+                <Input
+                  type="datetime-local"
+                  value={formStartDate}
+                  onChange={(e) => setFormStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>종료일시</Label>
+                <Input
+                  type="datetime-local"
+                  value={formEndDate}
+                  onChange={(e) => setFormEndDate(e.target.value)}
+                />
+              </div>
+            </div>
 
             {/* 에디터 (본문) */}
             <div className="space-y-1.5">

@@ -644,7 +644,7 @@ function MenuDialog({
                 value={form.targetBoardId}
                 onChange={(v) => updateField('targetBoardId', v)}
                 options={boards.map((b) => ({
-                  value: b.id,
+                  value: b.boardId,
                   label: b.name,
                 }))}
                 placeholder="게시판 이름을 검색하세요."
