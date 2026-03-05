@@ -181,7 +181,7 @@ export function Sidebar() {
                 <button
                   onClick={() => handleDepth1Click(item, idx)}
                   className={cn(
-                    'flex items-center gap-[10px] w-full px-5 py-[15px] text-[18px] text-foreground transition-colors rounded-[5px]',
+                    'flex items-center gap-[10px] w-full px-5 py-[15px] text-[18px] text-foreground transition-colors rounded-[5px] cursor-pointer',
                     'border-b border-white/10',
                     'hover:bg-primary hover:font-bold hover:text-white [&:hover_svg]:text-white',
                     active && 'bg-primary font-bold text-white',
@@ -218,7 +218,7 @@ export function Sidebar() {
                         <button
                           onClick={() => router.push(child.href)}
                           className={cn(
-                            'w-full text-left px-[30px] py-[12px] text-[16px] text-white rounded-[5px] transition-colors',
+                            'w-full text-left px-[30px] py-[12px] text-[16px] text-white rounded-[5px] transition-colors cursor-pointer',
                             pathname === child.href
                               ? 'bg-primary/50 font-medium'
                               : 'hover:bg-primary/50'
