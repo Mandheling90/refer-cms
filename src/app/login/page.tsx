@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useMutation } from '@apollo/client/react';
 import { useAuthStore } from '@/stores/auth-store';
 import { LOGIN } from '@/lib/graphql/queries/auth';
@@ -67,18 +68,14 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center bg-gray-100">
         <div className="w-full max-w-[480px] px-5">
           {/* 로고 영역 */}
-          <div className="mb-10 flex items-center justify-center gap-4">
-            <div className="flex h-[56px] w-[56px] items-center justify-center rounded-lg bg-black">
-              <span className="text-lg font-bold text-white">EHR</span>
-            </div>
-            <div>
-              <p className="text-[22px] font-bold text-foreground leading-tight">
-                EHR CMS 관리자
-              </p>
-              <p className="text-sm tracking-wider text-gray-900 uppercase">
-                EHR CMS ADMIN SYSTEM
-              </p>
-            </div>
+          <div className="mb-10 flex justify-center">
+            <Image
+              src="/images/logo-cms-anam.png"
+              alt="고려대학교 안암병원 진료협력센터"
+              width={460}
+              height={60}
+              priority
+            />
           </div>
 
           {/* 로그인 폼 */}
@@ -96,7 +93,7 @@ export default function LoginPage() {
                 }}
                 className={`h-[50px] w-full appearance-none rounded-lg border bg-background px-4 text-base outline-none focus:border-primary ${
                   institution ? 'text-foreground' : 'text-gray-800'
-                } ${errors.institution ? 'border-src-red' : 'border-gray-600'}`}
+                } ${errors.institution ? 'border-src-red' : 'border-gray-400'}`}
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8d98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
@@ -105,7 +102,7 @@ export default function LoginPage() {
                 }}
               >
                 <option value="" disabled>선택하세요</option>
-                <option value="all">통합로그인</option>
+                <option value="all">통합관리자</option>
                 <option value="anam">진료협력센터 안암병원</option>
                 <option value="guro">진료협력센터 구로병원</option>
                 <option value="ansan">진료협력센터 안산병원</option>
@@ -127,8 +124,8 @@ export default function LoginPage() {
                   setUserId(e.target.value);
                   if (errors.userId) setErrors((p) => ({ ...p, userId: undefined }));
                 }}
-                placeholder="아이디"
-                className="h-[50px] w-full rounded-lg border border-gray-600 bg-background px-4 text-base outline-none placeholder:text-gray-800 focus:border-primary"
+                placeholder="아이디를 입력해 주세요"
+                className="h-[50px] w-full rounded-lg border border-gray-400 bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
                 autoFocus
               />
               {errors.userId && (
@@ -148,8 +145,8 @@ export default function LoginPage() {
                   setPassword(e.target.value);
                   if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
                 }}
-                placeholder="비밀번호 입력"
-                className="h-[50px] w-full rounded-lg border border-gray-600 bg-background px-4 text-base outline-none placeholder:text-gray-800 focus:border-primary"
+                placeholder="비밀번호를 입력해 주세요"
+                className="h-[50px] w-full rounded-lg border border-gray-400 bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
               />
               {errors.password && (
                 <p className="mt-1.5 text-sm text-src-red">{errors.password}</p>

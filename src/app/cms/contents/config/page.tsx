@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
 import { SearchBar } from '@/components/molecules/SearchBar';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
-import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -21,273 +19,157 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  contentsGroupApi,
-  type ContentsGroup,
-} from '@/lib/api/contents';
+  ADMIN_CONTENT_GROUPS,
+  CREATE_CONTENT_GROUP,
+  UPDATE_CONTENT_GROUP,
+  DELETE_CONTENT_GROUP,
+} from '@/lib/graphql/queries/content';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
-import { useAuthStore } from '@/stores/auth-store';
 import { Plus, Trash2 } from 'lucide-react';
 
-// ── Mock 모드 (API 연동 전까지 true) ──
-const USE_MOCK = true;
-const STORAGE_KEY = 'cms_contents_group_config';
+// ── 타입 ──
+interface ContentGroup {
+  id: string;
+  hospitalCode: string;
+  name: string;
+  sortOrder: number;
+  contentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const MOCK_DATA: ContentsGroup[] = [
-  { CONTENTS_GRP_ID: 'Interior', CONTENTS_GRP_NAME: '진료협력센터소개', USE_YN: 'Y', CONTENTS_GRP_DESC: '진료협력센터 소개 페이지 콘텐츠 그룹', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-29 09:17:24' },
-  { CONTENTS_GRP_ID: 'contents02', CONTENTS_GRP_NAME: '협력네트워크', USE_YN: 'Y', CONTENTS_GRP_DESC: '협력네트워크 관련 콘텐츠', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-21 09:00:00' },
-  { CONTENTS_GRP_ID: 'contents03', CONTENTS_GRP_NAME: '진료의뢰', USE_YN: 'Y', CONTENTS_GRP_DESC: '진료의뢰 안내 콘텐츠', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-21 09:00:00' },
-  { CONTENTS_GRP_ID: 'contents04', CONTENTS_GRP_NAME: '검사결과조회', USE_YN: 'Y', CONTENTS_GRP_DESC: '검사결과 조회 페이지 콘텐츠', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-18 14:30:00' },
-  { CONTENTS_GRP_ID: 'contents05', CONTENTS_GRP_NAME: '교육/행사', USE_YN: 'N', CONTENTS_GRP_DESC: '교육 및 행사 안내', INSERT_USER: '김주환', INSERT_DTTM: '2025-04-15 11:20:00' },
-  { CONTENTS_GRP_ID: 'contents06', CONTENTS_GRP_NAME: 'e-Consult 안내', USE_YN: 'Y', CONTENTS_GRP_DESC: 'e-Consult 서비스 안내 콘텐츠', INSERT_USER: '이준용', INSERT_DTTM: '2025-04-10 08:45:00' },
-];
-
-// ── 사용여부 검색 옵션 ──
-const USE_YN_SEARCH_OPTIONS = [
-  { value: '_all', label: '전체' },
-  { value: 'Y', label: '사용' },
-  { value: 'N', label: '미사용' },
-];
-
-// ── 콘텐츠(그룹) 아이디 유효성 검사 (영문자+숫자 조합, 12자 이내) ──
-const GRP_ID_REGEX = /^[a-zA-Z0-9]{1,12}$/;
+// ── 날짜 포맷 ──
+function formatDateTime(iso: string) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 // ── 컬럼 정의 ──
-const columns: ColumnDef<ContentsGroup, unknown>[] = [
+const columns: ColumnDef<ContentGroup, unknown>[] = [
   {
     accessorKey: 'ROW_NUM',
     header: '번호',
     size: 70,
     cell: ({ row }) => row.index + 1,
   },
-  { accessorKey: 'CONTENTS_GRP_ID', header: '아이디', size: 160 },
-  { accessorKey: 'CONTENTS_GRP_NAME', header: '콘텐츠(그룹)명', size: 240 },
+  { accessorKey: 'id', header: '아이디', size: 200 },
+  { accessorKey: 'name', header: '콘텐츠(그룹)명', size: 240 },
+  { accessorKey: 'sortOrder', header: '정렬순서', size: 100 },
   {
-    accessorKey: 'USE_YN',
-    header: '사용여부',
+    accessorKey: 'contentCount',
+    header: '콘텐츠 수',
     size: 100,
-    cell: ({ getValue }) => (
-      <StatusBadge status={(getValue() as string) || 'N'} />
-    ),
+    cell: ({ getValue }) => `${getValue()}건`,
   },
-  { accessorKey: 'INSERT_DTTM', header: '등록일시', size: 180 },
+  {
+    accessorKey: 'createdAt',
+    header: '등록일시',
+    size: 180,
+    cell: ({ getValue }) => formatDateTime(getValue() as string),
+  },
 ];
 
 export default function ContentsConfigPage() {
   // ── 리스트 상태 ──
-  const [data, setData] = useState<ContentsGroup[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [selectedRows, setSelectedRows] = useState<ContentsGroup[]>([]);
+  const [selectedRows, setSelectedRows] = useState<ContentGroup[]>([]);
 
   // ── 검색 상태 ──
-  const [searchGrpName, setSearchGrpName] = useState('');
-  const [searchGrpId, setSearchGrpId] = useState('');
-  const [searchUseYn, setSearchUseYn] = useState('_all');
+  const [searchName, setSearchName] = useState('');
 
   // ── 다이얼로그 상태 ──
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState<Partial<ContentsGroup>>({});
+  const [editingId, setEditingId] = useState('');
+  const [formName, setFormName] = useState('');
+  const [formSortOrder, setFormSortOrder] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // ── 중복확인 상태 ──
-  const [idChecked, setIdChecked] = useState(false);
-  const [idChecking, setIdChecking] = useState(false);
+  // ── GraphQL ──
+  const { data: queryData, loading, refetch } = useQuery<{
+    adminContentGroups: ContentGroup[];
+  }>(ADMIN_CONTENT_GROUPS);
 
-  // ── Mock 데이터 저장소 (localStorage 연동) ──
-  const mockDataRef = useRef<ContentsGroup[]>(null!);
-  if (mockDataRef.current === null) {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-      mockDataRef.current = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(MOCK_DATA));
-    } catch {
-      mockDataRef.current = JSON.parse(JSON.stringify(MOCK_DATA));
+  const [createGroup] = useMutation(CREATE_CONTENT_GROUP);
+  const [updateGroup] = useMutation(UPDATE_CONTENT_GROUP);
+  const [deleteGroup] = useMutation(DELETE_CONTENT_GROUP);
+
+  // ── 클라이언트 필터링 + 페이징 ──
+  const allItems = queryData?.adminContentGroups ?? [];
+
+  const filtered = useMemo(() => {
+    let items = allItems;
+    if (searchName) {
+      items = items.filter((i) => i.name.includes(searchName));
     }
-  }
+    return items;
+  }, [allItems, searchName]);
 
-  const syncToStorage = useCallback(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockDataRef.current));
-    } catch (e) {
-      console.error('localStorage 저장 실패:', e);
-    }
-  }, []);
-
-  const user = useAuthStore((s) => s.user);
-  const currentUserName = user?.USER_NM || '관리자';
-
-  // ── 목록 조회 ──
-  const retrieveList = useCallback(
-    async (page = 1, size = pageSize) => {
-      setLoading(true);
-      if (USE_MOCK) {
-        let items = [...mockDataRef.current];
-        if (searchGrpName) items = items.filter((i) => i.CONTENTS_GRP_NAME.includes(searchGrpName));
-        if (searchGrpId) items = items.filter((i) => i.CONTENTS_GRP_ID.includes(searchGrpId));
-        if (searchUseYn !== '_all') items = items.filter((i) => i.USE_YN === searchUseYn);
-        const total = items.length;
-        const start = (page - 1) * size;
-        const paged = items.slice(start, start + size);
-        setData(paged);
-        setTotalItems(total);
-        setLoading(false);
-        return;
-      }
-      try {
-        const params: Record<string, unknown> = {
-          CURRENT_PAGE: page,
-          SHOWN_ENTITY: size,
-        };
-        if (searchGrpName) params.CONTENTS_GRP_NAME = searchGrpName;
-        if (searchGrpId) params.CONTENTS_GRP_ID = searchGrpId;
-        if (searchUseYn !== '_all') params.USE_YN = searchUseYn;
-
-        const res = await contentsGroupApi.list(params);
-        setData(res.list || []);
-        setTotalItems(res.TOTAL_ENTITY || 0);
-      } catch {
-        toast.error('목록 조회에 실패했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pageSize, searchGrpName, searchGrpId, searchUseYn],
-  );
-
-  // ── 초기 로딩 ──
-  useEffect(() => {
-    retrieveList(1, pageSize);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const pagedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   // ── 검색 ──
-  const handleSearch = () => {
-    setCurrentPage(1);
-    retrieveList(1, pageSize);
-  };
+  const handleSearch = () => setCurrentPage(1);
 
-  // ── 검색 조건 초기화 ──
   const handleReset = () => {
-    setSearchGrpName('');
-    setSearchGrpId('');
-    setSearchUseYn('_all');
+    setSearchName('');
     setCurrentPage(1);
-    retrieveList(1, pageSize);
   };
 
   // ── 신규 등록 다이얼로그 ──
   const handleOpenCreate = () => {
     setIsEditMode(false);
-    setFormData({ USE_YN: 'N' });
-    setIdChecked(false);
+    setEditingId('');
+    setFormName('');
+    setFormSortOrder(allItems.length + 1);
     setDialogOpen(true);
   };
 
   // ── 수정 다이얼로그 (행 클릭) ──
-  const handleRowClick = (row: ContentsGroup) => {
+  const handleRowClick = (row: ContentGroup) => {
     setIsEditMode(true);
-    setFormData({ ...row });
-    setIdChecked(true);
+    setEditingId(row.id);
+    setFormName(row.name);
+    setFormSortOrder(row.sortOrder);
     setDialogOpen(true);
-  };
-
-  // ── 중복확인 ──
-  const handleCheckDuplicate = async () => {
-    const grpId = formData.CONTENTS_GRP_ID?.trim();
-    if (!grpId) {
-      toast.error('콘텐츠(그룹) 아이디를 입력해 주세요.');
-      return;
-    }
-    if (!GRP_ID_REGEX.test(grpId)) {
-      toast.error('영문자+숫자 조합 12자 이내로 입력해 주세요.');
-      return;
-    }
-    setIdChecking(true);
-    if (USE_MOCK) {
-      const exists = mockDataRef.current.some((i) => i.CONTENTS_GRP_ID === grpId);
-      if (exists) {
-        toast.error('이미 사용 중인 아이디입니다.');
-        setIdChecked(false);
-      } else {
-        toast.success('사용 가능한 아이디입니다.');
-        setIdChecked(true);
-      }
-      setIdChecking(false);
-      return;
-    }
-    try {
-      const res = await contentsGroupApi.list({
-        CONTENTS_GRP_ID: grpId,
-        CURRENT_PAGE: 1,
-        SHOWN_ENTITY: 1,
-      });
-      const exists = (res.list || []).length > 0;
-      if (exists) {
-        toast.error('이미 사용 중인 아이디입니다.');
-        setIdChecked(false);
-      } else {
-        toast.success('사용 가능한 아이디입니다.');
-        setIdChecked(true);
-      }
-    } catch {
-      toast.error('중복확인에 실패했습니다.');
-    } finally {
-      setIdChecking(false);
-    }
   };
 
   // ── 저장 ──
   const handleSave = async () => {
-    if (!formData.CONTENTS_GRP_ID?.trim()) {
-      toast.error('콘텐츠(그룹) 아이디는 필수 입력입니다.');
-      return;
-    }
-    if (!isEditMode && !idChecked) {
-      toast.error('콘텐츠(그룹) 아이디 중복확인을 해주세요.');
-      return;
-    }
-    if (!formData.CONTENTS_GRP_NAME?.trim()) {
+    if (!formName.trim()) {
       toast.error('콘텐츠(그룹) 명은 필수 입력입니다.');
       return;
     }
-    if (USE_MOCK) {
-      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    try {
       if (isEditMode) {
-        mockDataRef.current = mockDataRef.current.map((i) =>
-          i.CONTENTS_GRP_ID === formData.CONTENTS_GRP_ID
-            ? { ...i, ...formData, UPDATE_USER: currentUserName, UPDATE_DTTM: now }
-            : i,
-        );
+        await updateGroup({
+          variables: {
+            id: editingId,
+            input: { name: formName.trim(), sortOrder: formSortOrder },
+          },
+        });
       } else {
-        const newItem: ContentsGroup = {
-          CONTENTS_GRP_ID: formData.CONTENTS_GRP_ID!,
-          CONTENTS_GRP_NAME: formData.CONTENTS_GRP_NAME!,
-          CONTENTS_GRP_DESC: formData.CONTENTS_GRP_DESC,
-          USE_YN: formData.USE_YN || 'N',
-          INSERT_USER: currentUserName,
-          INSERT_DTTM: now,
-        };
-        mockDataRef.current = [...mockDataRef.current, newItem];
+        await createGroup({
+          variables: {
+            input: { name: formName.trim(), sortOrder: formSortOrder },
+          },
+        });
       }
-      syncToStorage();
       toast.success('저장되었습니다.');
       setDialogOpen(false);
-      setFormData({});
-      retrieveList(currentPage, pageSize);
-      return;
-    }
-    try {
-      const res = await contentsGroupApi.save(formData);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('저장되었습니다.');
-        setDialogOpen(false);
-        setFormData({});
-        retrieveList(currentPage, pageSize);
-      } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '저장에 실패했습니다.');
-      }
+      refetch();
     } catch {
       toast.error('저장에 실패했습니다.');
     }
@@ -295,25 +177,22 @@ export default function ContentsConfigPage() {
 
   // ── 선택 삭제 ──
   const handleDelete = async () => {
-    if (USE_MOCK) {
-      const deleteIds = new Set(selectedRows.map((r) => r.CONTENTS_GRP_ID));
-      mockDataRef.current = mockDataRef.current.filter((i) => !deleteIds.has(i.CONTENTS_GRP_ID));
-      syncToStorage();
-      toast.success('삭제되었습니다.');
-      setSelectedRows([]);
+    const hasContents = selectedRows.filter((row) => row.contentCount > 0);
+    if (hasContents.length > 0) {
+      const names = hasContents.map((r) => r.name).join(', ');
+      toast.error(`하위 콘텐츠가 존재하는 그룹은 삭제할 수 없습니다. (${names})`);
       setConfirmOpen(false);
-      retrieveList(1, pageSize);
       return;
     }
     try {
-      const res = await contentsGroupApi.remove(selectedRows);
-      if (res.ServiceResult.IS_SUCCESS) {
-        toast.success('삭제되었습니다.');
-        setSelectedRows([]);
-        retrieveList(1, pageSize);
-      } else {
-        toast.error(res.ServiceResult.MESSAGE_TEXT || '삭제에 실패했습니다.');
-      }
+      await Promise.all(
+        selectedRows.map((row) =>
+          deleteGroup({ variables: { id: row.id } }),
+        ),
+      );
+      toast.success('삭제되었습니다.');
+      setSelectedRows([]);
+      refetch();
     } catch {
       toast.error('삭제에 실패했습니다.');
     }
@@ -347,24 +226,10 @@ export default function ContentsConfigPage() {
         <SearchBar
           fields={[
             {
-              name: 'CONTENTS_GRP_NAME',
+              name: 'name',
               label: '콘텐츠(그룹) 명',
-              value: searchGrpName,
-              onChange: setSearchGrpName,
-            },
-            {
-              name: 'CONTENTS_GRP_ID',
-              label: '콘텐츠(그룹) 아이디',
-              value: searchGrpId,
-              onChange: setSearchGrpId,
-            },
-            {
-              name: 'USE_YN',
-              label: '사용여부',
-              value: searchUseYn,
-              onChange: setSearchUseYn,
-              type: 'select',
-              options: USE_YN_SEARCH_OPTIONS,
+              value: searchName,
+              onChange: setSearchName,
             },
           ]}
           onSearch={handleSearch}
@@ -373,21 +238,17 @@ export default function ContentsConfigPage() {
       listContent={
         <DataTable
           columns={columns}
-          data={data}
+          data={pagedData}
           loading={loading}
           totalItems={totalItems}
           currentPage={currentPage}
           pageSize={pageSize}
-          totalPages={Math.ceil(totalItems / pageSize) || 1}
+          totalPages={totalPages}
           enableSelection
-          onPageChange={(page) => {
-            setCurrentPage(page);
-            retrieveList(page, pageSize);
-          }}
+          onPageChange={setCurrentPage}
           onPageSizeChange={(size) => {
             setPageSize(size);
             setCurrentPage(1);
-            retrieveList(1, size);
           }}
           onRowClick={handleRowClick}
           onSelectionChange={setSelectedRows}
@@ -405,56 +266,17 @@ export default function ContentsConfigPage() {
             </DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-5 overflow-y-auto flex-1">
-            {/* 콘텐츠(그룹) 아이디 */}
-            <div className="space-y-1.5">
-              <Label>
-                콘텐츠(그룹) 아이디{' '}
-                <span className="text-destructive">*</span>
-              </Label>
-              {isEditMode ? (
+            {/* 아이디 (수정 시만 표시) */}
+            {isEditMode && (
+              <div className="space-y-1.5">
+                <Label>콘텐츠(그룹) 아이디</Label>
                 <Input
-                  value={formData.CONTENTS_GRP_ID || ''}
+                  value={editingId}
                   readOnly
                   className="bg-gray-200 text-muted-foreground"
                 />
-              ) : (
-                <>
-                  <div className="flex gap-2">
-                    <Input
-                      value={formData.CONTENTS_GRP_ID || ''}
-                      onChange={(e) => {
-                        setFormData({
-                          ...formData,
-                          CONTENTS_GRP_ID: e.target.value,
-                        });
-                        setIdChecked(false);
-                      }}
-                      placeholder="영문자+숫자 조합 12자 이내"
-                      className="flex-1"
-                      maxLength={12}
-                    />
-                    <Button
-                      type="button"
-                      variant={idChecked ? 'default' : 'outline'}
-                      size="md"
-                      onClick={handleCheckDuplicate}
-                      disabled={idChecking || idChecked}
-                      className="shrink-0"
-                    >
-                      {idChecking
-                        ? '확인 중...'
-                        : idChecked
-                          ? '중복확인 완료'
-                          : '중복확인'}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    45자 이하로 띄어쓰기 없이 영문 대소문자와 숫자, 언더바만
-                    입력해 주세요.
-                  </p>
-                </>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* 콘텐츠(그룹) 명 */}
             <div className="space-y-1.5">
@@ -463,63 +285,24 @@ export default function ContentsConfigPage() {
                 <span className="text-destructive">*</span>
               </Label>
               <Input
-                value={formData.CONTENTS_GRP_NAME || ''}
+                value={formName}
                 onChange={(e) => {
-                  if (e.target.value.length <= 20) {
-                    setFormData({
-                      ...formData,
-                      CONTENTS_GRP_NAME: e.target.value,
-                    });
-                  }
+                  if (e.target.value.length <= 20) setFormName(e.target.value);
                 }}
                 placeholder="20자 이내로 입력해 주세요"
                 maxLength={20}
               />
             </div>
 
-            {/* 사용여부 */}
+            {/* 정렬순서 */}
             <div className="space-y-1.5">
-              <Label>
-                사용여부 <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={formData.USE_YN === 'Y'}
-                  onCheckedChange={(checked) =>
-                    setFormData({
-                      ...formData,
-                      USE_YN: checked ? 'Y' : 'N',
-                    })
-                  }
-                />
-                <span className="text-sm text-muted-foreground">
-                  {formData.USE_YN === 'Y' ? 'ON' : 'OFF'}
-                </span>
-              </div>
-            </div>
-
-            {/* 콘텐츠(그룹) 설명 */}
-            <div className="space-y-1.5">
-              <Label>
-                콘텐츠(그룹) 설명 (200자 이내) (관리자 메모용){' '}
-                <span className="text-destructive">*</span>
-              </Label>
-              <Textarea
-                value={formData.CONTENTS_GRP_DESC || ''}
-                onChange={(e) => {
-                  if (e.target.value.length <= 200) {
-                    setFormData({
-                      ...formData,
-                      CONTENTS_GRP_DESC: e.target.value,
-                    });
-                  }
-                }}
-                placeholder="200자 이내로 입력해 주세요"
-                rows={4}
+              <Label>정렬순서</Label>
+              <Input
+                type="number"
+                value={formSortOrder}
+                onChange={(e) => setFormSortOrder(Number(e.target.value))}
+                min={0}
               />
-              <p className="text-xs text-muted-foreground text-right">
-                {formData.CONTENTS_GRP_DESC?.length || 0} / 200
-              </p>
             </div>
           </DialogBody>
           <DialogFooter>

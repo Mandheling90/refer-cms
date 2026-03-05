@@ -49,7 +49,10 @@
       "WebFetch(domain:grapesjs.com)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(node:*)",
+      "Bash(rm:*)",
+      "Bash(wmic process:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
