@@ -475,7 +475,7 @@ function MenuDialog({
   const [form, setForm] = useState<MenuFormData>(INITIAL_FORM);
   const [nameError, setNameError] = useState('');
 
-  const hospitalCode = useAuthStore((s) => s.hospitalCode);
+  const hospitalCode = useAuthStore((s: { hospitalCode: string | null }) => s.hospitalCode);
 
   // GraphQL
   const { data: boardData } = useQuery<{ adminBoardSettings: BoardSetting[] }>(

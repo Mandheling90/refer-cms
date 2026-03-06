@@ -24,7 +24,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -58,7 +58,7 @@ export const useAuthStore = create<AuthState>()(
       setHospitalCode: (code: string) => set({ hospitalCode: code }),
       setActiveHospitalCode: (code: string) => set({ activeHospitalCode: code }),
       getEffectiveHospitalCode: () => {
-        const state = useAuthStore.getState();
+        const state = get();
         if (state.hospitalCode === 'ALL') {
           return state.activeHospitalCode ?? 'ANAM';
         }

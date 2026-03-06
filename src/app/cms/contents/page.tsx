@@ -120,7 +120,7 @@ export default function ContentsPage() {
   const pageEditorRef = useRef<PageEditorHandle>(null);
 
   // 인증 정보
-  const hospitalCode = useAuthStore((s) => s.hospitalCode);
+  const hospitalCode = useAuthStore((s: { hospitalCode: string | null }) => s.hospitalCode);
 
   // ── GraphQL ──
   const { data: groupsData, refetch: refetchGroups } = useQuery<{
