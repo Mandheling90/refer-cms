@@ -70,8 +70,8 @@ export default function LoginPage() {
           {/* 로고 영역 */}
           <div className="mb-10 flex justify-center">
             <Image
-              src="/images/logo-cms-anam.png"
-              alt="고려대학교 안암병원 진료협력센터"
+              src="/images/logo_pc_orgin.png"
+              alt="고려대학교 진료협력센터"
               width={460}
               height={60}
               priority
