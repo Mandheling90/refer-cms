@@ -919,7 +919,13 @@ export default function MenuPage() {
           onDelete={handleDeleteRequest}
           onReorder={setItems2}
           onSaveOrders={() => handleSaveOrders(items2)}
-          onAddNew={() => openAddDialog(selectedId ?? undefined)}
+          onAddNew={() => {
+            if (selected1 && selected1.menuTargetType !== 'PARENT') {
+              toast.error('상위 메뉴 타입이 "상위메뉴"인 경우에만 하위 메뉴를 추가할 수 있습니다.');
+              return;
+            }
+            openAddDialog(selectedId ?? undefined);
+          }}
         />
       </div>
 
