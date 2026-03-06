@@ -31,7 +31,12 @@ function getAccessToken(): string | null {
 }
 
 function getHospitalCode(): string | null {
-  return getAuthState()?.hospitalCode ?? null;
+  const state = getAuthState();
+  const code = state?.hospitalCode ?? null;
+  if (code === 'ALL') {
+    return state?.activeHospitalCode ?? 'ANAM';
+  }
+  return code;
 }
 
 /** 외부에서 현재 hospitalCode를 읽을 수 있도록 노출 */
@@ -162,7 +167,12 @@ async function executeRequest<T>(
   const response = await fetch(GRAPHQL_URL, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({
+      query,
+      variables: hospitalCode
+        ? { ...variables, hospitalCode }
+        : variables,
+    }),
   });
 
   if (!response.ok) {

@@ -60,6 +60,7 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
@@ -860,8 +861,9 @@ export default function MenuPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Page header */}
-      <div>
+      <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">메뉴관리</h1>
+        <HospitalSelector />
       </div>
 
       {/* Guide text + Legend */}

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth-store';
 import { Users, FileText, Settings, LayoutGrid } from 'lucide-react';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import Link from 'next/link';
 
 const DASHBOARD_ITEMS = [
@@ -42,7 +43,10 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">대시보드</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">대시보드</h1>
+          <HospitalSelector />
+        </div>
         <p className="text-muted-foreground mt-1">
           환영합니다, {user?.USER_NM || user?.USER_ID}님
         </p>

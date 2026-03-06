@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { uploadFile } from '@/lib/api/graphql';
 import { Switch } from '@/components/ui/switch';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { ChevronLeft, ChevronRight, Code, Eye, FileText, FolderOpen, Link as LinkIcon, Pencil, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react';
 
 // ── 타입 ──
@@ -503,7 +504,10 @@ export default function BoardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">게시판 관리</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">게시판 관리</h1>
+        <HospitalSelector />
+      </div>
 
       <div className="flex gap-6">
         {/* 좌측: 게시판 그룹 */}

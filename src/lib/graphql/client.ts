@@ -94,17 +94,44 @@ async function refreshAccessToken(): Promise<boolean> {
 }
 
 /* ─── Links ─── */
-const httpLink = createHttpLink({ uri: GRAPHQL_URI });
+function getEffectiveHospitalCode(): string | null {
+  const state = getAuthState();
+  const hospitalCode = state?.hospitalCode ?? null;
+  if (hospitalCode === 'ALL') {
+    return state?.activeHospitalCode ?? 'ANAM';
+  }
+  return hospitalCode;
+}
+
+/** httpLink: fetch를 래핑하여 variables에 hospitalCode 자동 주입 */
+const httpLink = createHttpLink({
+  uri: GRAPHQL_URI,
+  fetch: (uri, options) => {
+    if (options?.body && typeof options.body === 'string') {
+      try {
+        const body = JSON.parse(options.body);
+        const effectiveCode = getEffectiveHospitalCode();
+        if (effectiveCode && body.variables) {
+          body.variables.hospitalCode = effectiveCode;
+          return fetch(uri, { ...options, body: JSON.stringify(body) });
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return fetch(uri, options);
+  },
+});
 
 const authLink = setContext((_, { headers }) => {
   const state = getAuthState();
   const token = state?.accessToken ?? null;
-  const hospitalCode = state?.hospitalCode ?? null;
+  const effectiveCode = getEffectiveHospitalCode();
   return {
     headers: {
       ...headers,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(hospitalCode ? { 'x-hospital-code': hospitalCode } : {}),
+      ...(effectiveCode ? { 'x-hospital-code': effectiveCode } : {}),
     },
   };
 });

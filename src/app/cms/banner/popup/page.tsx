@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import {
   DndContext,
   closestCenter,
@@ -64,14 +65,6 @@ import { CSS } from '@dnd-kit/utilities';
 
 const PAGE_SIZE = 12;
 const MAX_ACTIVE_COUNT = 12;
-
-const SITE_OPTIONS = [
-  { value: 'anam', label: '안암' },
-  { value: 'guro', label: '구로' },
-  { value: 'ansan', label: '안산' },
-] as const;
-
-type SiteCode = (typeof SITE_OPTIONS)[number]['value'];
 
 // ---------------------------------------------------------------------------
 // ToggleSwitch (ON/OFF 텍스트 포함)
@@ -473,7 +466,7 @@ function BannerFormDialog({
   editBanner: Banner | null;
   onSaved: () => void;
   activeCount: number;
-  siteCd: SiteCode;
+  siteCd: string;
 }) {
   const [form, setForm] = useState<BannerFormData>(INITIAL_FORM);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -813,19 +806,16 @@ function BannerFormDialog({
 // ---------------------------------------------------------------------------
 
 export default function PopupBannerPage() {
-  const { hospitalCode } = useAuthStore();
+  const { hospitalCode, activeHospitalCode } = useAuthStore();
   const isAllHospital = hospitalCode === 'ALL';
-  const defaultSite = (hospitalCode?.toLowerCase() || 'anam') as SiteCode;
   const [allBanners, setAllBanners] = useState<Banner[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(PAGE_SIZE);
 
   // 필터 UI 상태
-  const [selectedSite, setSelectedSite] = useState<SiteCode>(defaultSite);
   const [useFilter, setUseFilter] = useState('ALL');
 
   // 적용된 검색 파라미터
-  const [appliedSite, setAppliedSite] = useState<SiteCode>(defaultSite);
   const [appliedUseFilter, setAppliedUseFilter] = useState('ALL');
 
   // 모드: normal | sort | select
@@ -857,16 +847,13 @@ export default function PopupBannerPage() {
 
   // 검색 버튼 클릭
   const handleSearch = () => {
-    setAppliedSite(selectedSite);
     setAppliedUseFilter(useFilter);
     setCurrentPage(1);
   };
 
   // 조건 초기화 버튼 클릭
   const handleReset = () => {
-    setSelectedSite(defaultSite);
     setUseFilter('ALL');
-    setAppliedSite(defaultSite);
     setAppliedUseFilter('ALL');
     setCurrentPage(1);
   };
@@ -876,13 +863,13 @@ export default function PopupBannerPage() {
     try {
       const res = await bannerApi.list({
         popupType: 'POPUP',
-        hospitalCode: isAllHospital ? appliedSite.toUpperCase() : undefined,
+        hospitalCode: isAllHospital ? (activeHospitalCode || 'ANAM') : undefined,
       });
       setAllBanners(res.list);
     } catch {
       toast.error('데이터를 불러오는데 실패했습니다.');
     }
-  }, [appliedSite, isAllHospital]);
+  }, [activeHospitalCode, isAllHospital]);
 
   useEffect(() => {
     loadBanners();
@@ -934,7 +921,7 @@ export default function PopupBannerPage() {
       const res = await bannerApi.reorder({
         popupType: 'POPUP',
         orderedIds,
-        hospitalCode: isAllHospital ? appliedSite.toUpperCase() : undefined,
+        hospitalCode: isAllHospital ? (activeHospitalCode || 'ANAM') : undefined,
       });
       if (res.success) {
         toast.success(res.message || '순서가 저장되었습니다.');
@@ -1025,36 +1012,13 @@ export default function PopupBannerPage() {
   return (
     <div className="p-6 space-y-5">
       {/* 페이지 헤더 */}
-      <h1 className="text-2xl font-bold text-gray-900">팝업</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">팝업</h1>
+        <HospitalSelector />
+      </div>
 
       {/* 검색 필터 영역 */}
       <div className="rounded-lg border border-gray-300 bg-gray-50 p-5 space-y-4">
-        {/* 기관 선택 — 통합관리자(ALL)만 표시 */}
-        {isAllHospital && (
-        <div className="flex items-center gap-4">
-          <Label className="text-sm font-bold whitespace-nowrap w-[90px]">기관 선택</Label>
-          <div className="flex">
-            {SITE_OPTIONS.map((site) => (
-              <button
-                key={site.value}
-                type="button"
-                onClick={() => setSelectedSite(site.value)}
-                className={cn(
-                  'px-6 py-2 text-sm font-medium border transition-colors',
-                  'first:rounded-l-md last:rounded-r-md',
-                  '-ml-px first:ml-0',
-                  selectedSite === site.value
-                    ? 'bg-gray-900 text-white border-gray-900 relative z-10'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                )}
-              >
-                {site.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        )}
-
         {/* 사용여부 선택 */}
         <div className="flex items-center gap-4">
           <Label className="text-sm font-bold whitespace-nowrap w-[90px]">사용여부</Label>
@@ -1218,7 +1182,7 @@ export default function PopupBannerPage() {
         editBanner={editBanner}
         onSaved={() => loadBanners()}
         activeCount={activeCount}
-        siteCd={appliedSite}
+        siteCd={(activeHospitalCode || hospitalCode || 'ANAM').toLowerCase()}
       />
 
       {/* 개별 삭제 확인 */}

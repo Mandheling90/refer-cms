@@ -2,6 +2,7 @@
 
 import { type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { Search, RotateCcw } from 'lucide-react';
 
 interface ListPageTemplateProps {
@@ -29,7 +30,10 @@ export function ListPageTemplate({
 }: ListPageTemplateProps) {
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">{title}</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">{title}</h1>
+        <HospitalSelector />
+      </div>
 
       <section className="rounded-xl bg-card shadow-[0_0_12px_rgba(0,0,0,0.1)]">
         {/* 상단 헤더: 전체건수 (좌) + 재검색/조건초기화 (우) */}

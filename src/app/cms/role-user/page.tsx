@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { roleApi, roleUserApi } from '@/lib/api/role';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Role, RoleUser } from '@/types/role';
 import { toast } from 'sonner';
 import { Save } from 'lucide-react';
@@ -18,6 +20,7 @@ const roleColumns: ColumnDef<Role, unknown>[] = [
 ];
 
 export default function RoleUserPage() {
+  const { activeHospitalCode } = useAuthStore();
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<RoleUser[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -35,7 +38,8 @@ export default function RoleUserPage() {
     } finally {
       setRolesLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeHospitalCode]);
 
   const loadUsersByRole = useCallback(async (roleId: string) => {
     setUsersLoading(true);
@@ -89,7 +93,12 @@ export default function RoleUserPage() {
     }
   };
 
-  useState(() => { loadRoles(); });
+  useEffect(() => {
+    loadRoles();
+    setSelectedRole(null);
+    setUsers([]);
+    setCheckedUsers(new Set());
+  }, [loadRoles]);
 
   const userColumns: ColumnDef<RoleUser, unknown>[] = [
     {
@@ -110,7 +119,10 @@ export default function RoleUserPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">역할-사용자 매핑</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">역할-사용자 매핑</h1>
+        <HospitalSelector />
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <Card>

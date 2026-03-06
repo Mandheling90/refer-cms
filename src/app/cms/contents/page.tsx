@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { ChevronLeft, ChevronRight, Code, Eye, FolderOpen, Pencil, Plus, Search } from 'lucide-react';
 
 // ── 타입 ──
@@ -285,7 +286,10 @@ export default function ContentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">콘텐츠 관리</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">콘텐츠 관리</h1>
+        <HospitalSelector />
+      </div>
 
       <div className="flex gap-6">
         {/* 좌측: 콘텐츠 그룹 영역 */}

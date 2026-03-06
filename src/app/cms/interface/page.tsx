@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { Play, RefreshCw } from 'lucide-react';
 import apiClient from '@/lib/api/client';
 import type { ApiResponse } from '@/types/api';
@@ -41,7 +42,10 @@ export default function InterfacePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">HCM 데이터 인터페이스</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">HCM 데이터 인터페이스</h1>
+        <HospitalSelector />
+      </div>
 
       <Card>
         <CardHeader className="py-3 px-4">

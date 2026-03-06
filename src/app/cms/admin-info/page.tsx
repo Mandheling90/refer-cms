@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
+import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { Save } from 'lucide-react';
 import apiClient from '@/lib/api/client';
 import type { ApiResponse } from '@/types/api';
@@ -50,7 +51,10 @@ export default function AdminInfoPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">관리자 정보</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-bold">관리자 정보</h1>
+        <HospitalSelector />
+      </div>
 
       <Card>
         <CardHeader className="py-3 px-4">
