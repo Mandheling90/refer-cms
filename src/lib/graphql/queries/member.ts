@@ -2,8 +2,8 @@ import { gql } from '@apollo/client';
 
 /** 회원 목록 조회 (adminUsers 재사용) */
 export const GET_ADMIN_USERS_MEMBERS = gql`
-  query AdminUsersMembers($filter: AdminUserFilterInput, $pagination: PaginationInput) {
-    adminUsers(filter: $filter, pagination: $pagination) {
+  query AdminUsersMembers($filter: AdminUserFilterInput, $hospitalCode: HospitalCode, $pagination: PaginationInput) {
+    adminUsers(filter: $filter, hospitalCode: $hospitalCode, pagination: $pagination) {
       items {
         id
         userId
@@ -27,8 +27,8 @@ export const GET_ADMIN_USERS_MEMBERS = gql`
 
 /** 회원 상세 조회 */
 export const GET_ADMIN_USER_BY_ID = gql`
-  query AdminUserById($id: String!) {
-    adminUserById(id: $id) {
+  query AdminUserById($id: String!, $hospitalCode: HospitalCode) {
+    adminUserById(id: $id, hospitalCode: $hospitalCode) {
       id
       userId
       userName

@@ -26,8 +26,8 @@ const POPUP_FIELDS = `
 
 /** 배너/팝업 관리자 목록 조회 (hospitalCode는 x-hospital-code 헤더로 전달) */
 export const ADMIN_POPUPS = gql`
-  query AdminPopups($popupType: PopupType, $pagination: PaginationInput) {
-    adminPopups(popupType: $popupType, pagination: $pagination) {
+  query AdminPopups($popupType: PopupType, $hospitalCode: HospitalCode, $pagination: PaginationInput) {
+    adminPopups(popupType: $popupType, hospitalCode: $hospitalCode, pagination: $pagination) {
       items { ${POPUP_FIELDS} }
       totalCount
       hasNextPage

@@ -60,8 +60,8 @@ export const ADMIN_CONTENTS = gql`
 
 /** 콘텐츠 단건 조회 */
 export const CONTENT_BY_ID = gql`
-  query ContentById($id: String!) {
-    contentById(id: $id) { ${CONTENT_FIELDS} }
+  query ContentById($id: String!, $hospitalCode: HospitalCode) {
+    contentById(id: $id, hospitalCode: $hospitalCode) { ${CONTENT_FIELDS} }
   }
 `;
 

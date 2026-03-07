@@ -4,9 +4,10 @@ import { gql } from '@apollo/client';
 export const GET_ADMIN_EXAM_IMAGES = gql`
   query AdminExamImages(
     $filter: ExamImageFilterInput
+    $hospitalCode: HospitalCode
     $pagination: PaginationInput
   ) {
-    adminExamImages(filter: $filter, pagination: $pagination) {
+    adminExamImages(filter: $filter, hospitalCode: $hospitalCode, pagination: $pagination) {
       items {
         id
         no
@@ -30,8 +31,8 @@ export const GET_ADMIN_EXAM_IMAGES = gql`
 
 /** 검사이미지 상세 조회 */
 export const GET_ADMIN_EXAM_IMAGE_BY_ID = gql`
-  query AdminExamImageById($id: String!) {
-    adminExamImageById(id: $id) {
+  query AdminExamImageById($id: String!, $hospitalCode: HospitalCode) {
+    adminExamImageById(id: $id, hospitalCode: $hospitalCode) {
       id
       no
       patientName

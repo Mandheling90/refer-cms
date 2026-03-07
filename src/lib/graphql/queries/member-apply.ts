@@ -2,8 +2,8 @@ import { gql } from '@apollo/client';
 
 /** 가입신청 목록 조회 (adminUsers) */
 export const GET_ADMIN_USERS = gql`
-  query AdminUsers($filter: AdminUserFilterInput, $pagination: PaginationInput) {
-    adminUsers(filter: $filter, pagination: $pagination) {
+  query AdminUsers($filter: AdminUserFilterInput, $hospitalCode: HospitalCode, $pagination: PaginationInput) {
+    adminUsers(filter: $filter, hospitalCode: $hospitalCode, pagination: $pagination) {
       items {
         id
         userId

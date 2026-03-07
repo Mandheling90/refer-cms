@@ -476,6 +476,9 @@ function MenuDialog({
   const [nameError, setNameError] = useState('');
 
   const hospitalCode = useAuthStore((s: { hospitalCode: string | null }) => s.hospitalCode);
+  const activeHospitalCode = useAuthStore((s: { activeHospitalCode: string | null }) => s.activeHospitalCode);
+  const isAllHospital = hospitalCode === 'ALL';
+  const effectiveHospitalCode = isAllHospital ? (activeHospitalCode || 'ANAM') : hospitalCode?.toUpperCase();
 
   // GraphQL
   const { data: boardData } = useQuery<{ adminBoardSettings: BoardSetting[] }>(
@@ -567,7 +570,7 @@ function MenuDialog({
             input: {
               name: form.name.trim(),
               menuType: 'USER',
-              hospitalCode: hospitalCode?.toUpperCase(),
+              hospitalCode: effectiveHospitalCode,
               parentId: parentId || undefined,
               menuTargetType: form.menuTargetType,
               targetBoardId: form.menuTargetType === 'BOARD' ? form.targetBoardId || undefined : undefined,

@@ -34,8 +34,8 @@ const BOARD_SETTING_FIELDS = `
 
 /** 게시판 설정 목록 조회 */
 export const ADMIN_BOARD_SETTINGS_FULL = gql`
-  query AdminBoardSettingsFull {
-    adminBoardSettings {
+  query AdminBoardSettingsFull($hospitalCode: HospitalCode) {
+    adminBoardSettings(hospitalCode: $hospitalCode) {
       ${BOARD_SETTING_FIELDS}
     }
   }
@@ -68,8 +68,8 @@ export const DELETE_BOARD_SETTING = gql`
 
 /** 게시물 목록 조회 (페이징) */
 export const BOARD_POSTS = gql`
-  query BoardPosts($boardId: String!, $pagination: PaginationInput, $search: String) {
-    boardPosts(boardId: $boardId, pagination: $pagination, search: $search) {
+  query BoardPosts($boardId: String!, $hospitalCode: HospitalCode, $pagination: PaginationInput, $search: String) {
+    boardPosts(boardId: $boardId, hospitalCode: $hospitalCode, pagination: $pagination, search: $search) {
       items {
         ${BOARD_POST_FIELDS}
       }
@@ -106,8 +106,8 @@ export const DELETE_BOARD_POST = gql`
 
 /** 첨부파일 목록 조회 */
 export const ATTACHMENTS = gql`
-  query Attachments($entityId: ID!, $entityType: AttachmentEntityType!) {
-    attachments(entityId: $entityId, entityType: $entityType) {
+  query Attachments($entityId: ID!, $entityType: AttachmentEntityType!, $hospitalCode: HospitalCode) {
+    attachments(entityId: $entityId, entityType: $entityType, hospitalCode: $hospitalCode) {
       id
       originalName
       mimeType
@@ -120,7 +120,7 @@ export const ATTACHMENTS = gql`
 
 /** 첨부파일 다운로드 URL */
 export const PRESIGNED_DOWNLOAD_URL = gql`
-  query PresignedDownloadUrl($attachmentId: ID!) {
-    presignedDownloadUrl(attachmentId: $attachmentId)
+  query PresignedDownloadUrl($attachmentId: ID!, $hospitalCode: HospitalCode) {
+    presignedDownloadUrl(attachmentId: $attachmentId, hospitalCode: $hospitalCode)
   }
 `;

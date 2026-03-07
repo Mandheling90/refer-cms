@@ -19,8 +19,8 @@ const MENU_FIELDS = `
 
 /** 메뉴 목록 조회 (트리 구조) */
 export const ADMIN_MENUS = gql`
-  query AdminMenus($menuType: MenuType!) {
-    adminMenus(menuType: $menuType) {
+  query AdminMenus($menuType: MenuType!, $hospitalCode: HospitalCode) {
+    adminMenus(menuType: $menuType, hospitalCode: $hospitalCode) {
       ${MENU_FIELDS}
       children {
         ${MENU_FIELDS}
@@ -63,8 +63,8 @@ export const REORDER_MENUS = gql`
 
 /** 게시판 설정 목록 조회 */
 export const ADMIN_BOARD_SETTINGS = gql`
-  query AdminBoardSettings {
-    adminBoardSettings {
+  query AdminBoardSettings($hospitalCode: HospitalCode) {
+    adminBoardSettings(hospitalCode: $hospitalCode) {
       id
       boardId
       name

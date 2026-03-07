@@ -4,9 +4,10 @@ import { gql } from '@apollo/client';
 export const GET_ADMIN_MEDICAL_STAFFS = gql`
   query AdminMedicalStaffs(
     $filter: MedicalStaffFilterInput
+    $hospitalCode: HospitalCode
     $pagination: PaginationInput
   ) {
-    adminMedicalStaffs(filter: $filter, pagination: $pagination) {
+    adminMedicalStaffs(filter: $filter, hospitalCode: $hospitalCode, pagination: $pagination) {
       items {
         id
         staffNo
@@ -27,8 +28,8 @@ export const GET_ADMIN_MEDICAL_STAFFS = gql`
 
 /** 의료진 상세 조회 */
 export const GET_ADMIN_MEDICAL_STAFF_BY_ID = gql`
-  query AdminMedicalStaffById($id: String!) {
-    adminMedicalStaffById(id: $id) {
+  query AdminMedicalStaffById($id: String!, $hospitalCode: HospitalCode) {
+    adminMedicalStaffById(id: $id, hospitalCode: $hospitalCode) {
       id
       staffNo
       name
