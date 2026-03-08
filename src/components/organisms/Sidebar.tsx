@@ -11,6 +11,7 @@ import {
   Columns3,
   FileImage,
   FileText,
+  History,
   Image,
   LayoutDashboard,
   PenLine,
@@ -133,11 +134,11 @@ const NAV_ITEMS: NavItem[] = [
   //     { title: '권한그룹 수정 이력', href: '/cms/system/history' },
   //   ],
   // },
-  // {
-  //   title: '로그내역',
-  //   href: '/cms/log',
-  //   icon: History,
-  // },
+  {
+    title: '로그내역',
+    href: '/cms/log',
+    icon: History,
+  },
 ];
 
 export function Sidebar() {
