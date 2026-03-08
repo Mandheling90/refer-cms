@@ -2,6 +2,7 @@
 
 import { Logo } from '@/components/atoms/Logo';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth-store';
 import { useMenuStore } from '@/stores/menu-store';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -32,6 +33,8 @@ interface NavItem {
   href?: string;
   icon: LucideIcon;
   children?: NavChild[];
+  /** true이면 통합관리자(ALL)만 노출 */
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -138,13 +141,18 @@ const NAV_ITEMS: NavItem[] = [
     title: '로그내역',
     href: '/cms/log',
     icon: History,
+    adminOnly: true,
   },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { hospitalCode } = useAuthStore();
   const { expandedGroups, toggleGroup, sidebarOpen } = useMenuStore();
+
+  const isAllAdmin = hospitalCode === 'ALL';
+  const visibleNavItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAllAdmin);
 
   const isItemActive = (item: NavItem) => {
     if (item.href) return pathname === item.href;
@@ -171,7 +179,7 @@ export function Sidebar() {
       <Logo />
       <nav className="flex-1 overflow-y-auto">
         <ul>
-          {NAV_ITEMS.map((item, idx) => {
+          {visibleNavItems.map((item, idx) => {
             const active = isItemActive(item);
             const expanded = expandedGroups.includes(idx);
             const Icon = item.icon;
