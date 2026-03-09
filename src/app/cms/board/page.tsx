@@ -163,7 +163,9 @@ export default function BoardPage() {
   // ── GraphQL: 게시판 설정 ──
   const { data: settingsData } = useQuery<{
     adminBoardSettings: BoardSetting[];
-  }>(ADMIN_BOARD_SETTINGS_FULL);
+  }>(ADMIN_BOARD_SETTINGS_FULL, {
+    variables: { hospitalCode: hospitalCode || undefined },
+  });
 
   // ── GraphQL: 게시물 ──
   const { data: postsData, loading, refetch: refetchPosts } = useQuery<{

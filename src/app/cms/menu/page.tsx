@@ -483,7 +483,7 @@ function MenuDialog({
   // GraphQL
   const { data: boardData } = useQuery<{ adminBoardSettings: BoardSetting[] }>(
     ADMIN_BOARD_SETTINGS,
-    { skip: !open },
+    { variables: { hospitalCode: effectiveHospitalCode || undefined }, skip: !open },
   );
   const { data: contentData } = useQuery<{ adminContents: Content[] }>(
     ADMIN_CONTENTS,

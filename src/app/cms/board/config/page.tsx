@@ -146,7 +146,9 @@ export default function BoardConfigPage() {
   // ── GraphQL ──
   const { data, loading, refetch } = useQuery<{
     adminBoardSettings: BoardSetting[];
-  }>(ADMIN_BOARD_SETTINGS_FULL);
+  }>(ADMIN_BOARD_SETTINGS_FULL, {
+    variables: { hospitalCode: hospitalCode || undefined },
+  });
 
   const [createSetting] = useMutation(CREATE_BOARD_SETTING);
   const [updateSetting] = useMutation(UPDATE_BOARD_SETTING);

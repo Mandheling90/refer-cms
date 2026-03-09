@@ -74,8 +74,9 @@ interface MenuItem {
 interface CmsMenuFormData {
   name: string;
   hospitalCode: string;
+  menuTargetType: 'PARENT' | 'LINK';
   externalUrl: string;
-  isExternalLink: boolean;
+  linkTarget: '_self' | '_blank';
   iconClass: string;
   isActive: boolean;
 }
@@ -83,11 +84,17 @@ interface CmsMenuFormData {
 const INITIAL_FORM: CmsMenuFormData = {
   name: '',
   hospitalCode: '',
+  menuTargetType: 'PARENT',
   externalUrl: '',
-  isExternalLink: false,
+  linkTarget: '_blank',
   iconClass: '',
   isActive: false,
 };
+
+const MENU_TARGET_OPTIONS = [
+  { value: 'PARENT' as const, label: '상위메뉴' },
+  { value: 'LINK' as const, label: '링크' },
+];
 
 const HOSPITAL_OPTIONS = [
   { value: 'ANAM', label: '안암' },
@@ -317,10 +324,14 @@ function ToggleSwitch({
   checked,
   onChange,
   disabled,
+  onLabel = 'ON',
+  offLabel = 'OFF',
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  onLabel?: string;
+  offLabel?: string;
 }) {
   return (
     <button
@@ -329,7 +340,7 @@ function ToggleSwitch({
       aria-checked={checked}
       disabled={disabled}
       className={cn(
-        'relative inline-flex h-7 w-[52px] shrink-0 cursor-pointer items-center rounded-[14px] transition-colors duration-200',
+        'relative inline-flex h-7 w-[64px] shrink-0 cursor-pointer items-center rounded-[14px] transition-colors duration-200',
         checked ? 'bg-[#9F1836]' : 'bg-[#e0e0e0]',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
@@ -337,18 +348,18 @@ function ToggleSwitch({
     >
       {checked && (
         <span className="absolute left-1.5 text-[10px] font-semibold text-white select-none">
-          ON
+          {onLabel}
         </span>
       )}
       {!checked && (
         <span className="absolute right-1.5 text-[10px] font-semibold text-gray-500 select-none">
-          OFF
+          {offLabel}
         </span>
       )}
       <span
         className={cn(
           'pointer-events-none absolute h-6 w-6 rounded-full bg-white shadow transition-[left] duration-200',
-          checked ? 'left-[26px]' : 'left-[2px]'
+          checked ? 'left-[38px]' : 'left-[2px]'
         )}
       />
     </button>
@@ -396,8 +407,9 @@ function CmsMenuDialog({
       setForm({
         name: editItem.name,
         hospitalCode: editItem.hospitalCode || effectiveHospitalCode || 'ANAM',
+        menuTargetType: (editItem.menuTargetType as 'PARENT' | 'LINK') || 'PARENT',
         externalUrl: editItem.externalUrl || '',
-        isExternalLink: editItem.menuTargetType === 'LINK',
+        linkTarget: editItem.gnbExposure ? '_blank' : '_self',
         iconClass: editItem.path || '',
         isActive: editItem.isActive,
       });
@@ -429,13 +441,16 @@ function CmsMenuDialog({
   const handleSave = async () => {
     if (!validate()) return;
     try {
+      const isParent = form.menuTargetType === 'PARENT';
       if (isEditMode && editItem) {
         const input: Record<string, unknown> = {
           name: form.name.trim(),
-          menuTargetType: isTopLevel ? 'PARENT' : form.isExternalLink ? 'LINK' : 'LINK',
+          menuTargetType: form.menuTargetType,
           isActive: form.isActive,
-          externalUrl: form.externalUrl || null,
-          gnbExposure: false,
+          ...(!isParent ? {
+            externalUrl: form.externalUrl || null,
+            gnbExposure: form.linkTarget === '_blank',
+          } : {}),
         };
         await updateMenu({
           variables: { id: editItem.id, input },
@@ -444,14 +459,15 @@ function CmsMenuDialog({
         await createMenu({
           variables: {
             input: {
-              name: form.name.trim(),
-              menuType: 'CMS',
+              menuType: 'ADMIN',
               hospitalCode: form.hospitalCode,
-              parentId: parentId || undefined,
-              menuTargetType: isTopLevel ? 'PARENT' : 'LINK',
-              externalUrl: form.externalUrl || undefined,
-              gnbExposure: false,
-              sortOrder: itemCount + 1,
+              name: form.name.trim(),
+              menuTargetType: form.menuTargetType,
+              ...(parentId ? { parentId } : {}),
+              ...(!isParent ? {
+                gnbExposure: form.linkTarget === '_blank',
+                ...(form.externalUrl ? { externalUrl: form.externalUrl } : {}),
+              } : {}),
             },
           },
         });
@@ -514,28 +530,58 @@ function CmsMenuDialog({
             {nameError && <p className="text-destructive text-xs">{nameError}</p>}
           </div>
 
-          {/* 연결 URL 주소 */}
+          {/* 메뉴 타입 */}
           <div className="space-y-1.5">
-            <Label>연결 URL 주소</Label>
-            <Input
-              value={form.externalUrl}
-              onChange={(e) => updateField('externalUrl', e.target.value)}
-              placeholder="/cms/example 또는 https://..."
-            />
-          </div>
-
-          {/* 연결 방식 */}
-          <div className="space-y-1.5">
-            <Label>연결 방식</Label>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">내장</span>
-              <ToggleSwitch
-                checked={form.isExternalLink}
-                onChange={(v) => updateField('isExternalLink', v)}
-              />
-              <span className="text-sm text-gray-600">외부링크</span>
+            <Label>
+              메뉴 타입 <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex gap-4">
+              {MENU_TARGET_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-1.5 cursor-pointer text-sm"
+                  onClick={() => updateField('menuTargetType', opt.value)}
+                >
+                  <span
+                    className={cn(
+                      'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
+                      form.menuTargetType === opt.value ? 'border-[#9F1836]' : 'border-gray-400'
+                    )}
+                  >
+                    {form.menuTargetType === opt.value && (
+                      <span className="size-2 rounded-full bg-[#9F1836]" />
+                    )}
+                  </span>
+                  {opt.label}
+                </label>
+              ))}
             </div>
           </div>
+
+          {/* 연결 URL 주소 (링크일 때만) */}
+          {form.menuTargetType === 'LINK' && (
+            <div className="space-y-1.5">
+              <Label>연결 URL 주소</Label>
+              <Input
+                value={form.externalUrl}
+                onChange={(e) => updateField('externalUrl', e.target.value)}
+                placeholder="/cms/example 또는 https://..."
+              />
+            </div>
+          )}
+
+          {/* 연결 방식 (링크일 때만) */}
+          {form.menuTargetType === 'LINK' && (
+            <div className="space-y-1.5">
+              <Label>연결 방식</Label>
+              <ToggleSwitch
+                checked={form.linkTarget === '_blank'}
+                onChange={(v) => updateField('linkTarget', v ? '_blank' : '_self')}
+                onLabel="새창"
+                offLabel="현재창"
+              />
+            </div>
+          )}
 
           {/* 아이콘 클래스 */}
           <div className="space-y-1.5">
@@ -597,7 +643,7 @@ export default function CmsMenuPage() {
 
   // ── GraphQL ──
   const { data, refetch } = useQuery<{ adminMenus: MenuItem[] }>(ADMIN_MENUS, {
-    variables: { menuType: 'CMS' },
+    variables: { menuType: 'ADMIN' },
   });
 
   const [reorderMenus] = useMutation(REORDER_MENUS);
