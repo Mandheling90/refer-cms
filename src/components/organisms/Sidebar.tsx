@@ -134,6 +134,7 @@ const NAV_ITEMS: NavItem[] = [
     adminOnly: true,
     children: [
       { title: '관리자 관리', href: '/cms/admin-management' },
+      { title: 'CMS 메뉴', href: '/cms/cms-menu' },
     ],
   },
   {

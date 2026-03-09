@@ -53,7 +53,8 @@
       "Bash(node:*)",
       "Bash(rm:*)",
       "Bash(wmic process:*)",
-      "mcp__claude_ai_Figma__get_metadata"
+      "mcp__claude_ai_Figma__get_metadata",
+      "Bash(echo EXIT:$?:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
