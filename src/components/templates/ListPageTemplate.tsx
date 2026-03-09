@@ -15,6 +15,8 @@ interface ListPageTemplateProps {
   children?: ReactNode;
   onSearch?: () => void;
   onReset?: () => void;
+  /** 타이틀 옆 기관선택 영역을 커스텀할 때 사용 */
+  hospitalSelector?: ReactNode;
 }
 
 export function ListPageTemplate({
@@ -27,12 +29,13 @@ export function ListPageTemplate({
   children,
   onSearch,
   onReset,
+  hospitalSelector,
 }: ListPageTemplateProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-bold">{title}</h1>
-        <HospitalSelector />
+        {hospitalSelector !== undefined ? hospitalSelector : <HospitalSelector />}
       </div>
 
       <section className="rounded-xl bg-card shadow-[0_0_12px_rgba(0,0,0,0.1)]">

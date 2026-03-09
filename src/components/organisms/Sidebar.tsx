@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   PenLine,
   Settings2,
+  ShieldCheck,
   Stethoscope,
   UserPlus,
   Users
@@ -127,16 +128,14 @@ const NAV_ITEMS: NavItem[] = [
   //   href: '/cms/e-consult',
   //   icon: Mail,
   // },
-  // {
-  //   title: '시스템 관리',
-  //   icon: ShieldCheck,
-  //   children: [
-  //     { title: '관리자 관리', href: '/cms/system/manager' },
-  //     { title: 'CMS 메뉴', href: '/cms/system/menu' },
-  //     { title: '권한 관리', href: '/cms/system/authority' },
-  //     { title: '권한그룹 수정 이력', href: '/cms/system/history' },
-  //   ],
-  // },
+  {
+    title: '시스템 관리',
+    icon: ShieldCheck,
+    adminOnly: true,
+    children: [
+      { title: '관리자 관리', href: '/cms/admin-management' },
+    ],
+  },
   {
     title: '로그내역',
     href: '/cms/log',

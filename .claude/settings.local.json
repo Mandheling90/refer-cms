@@ -52,7 +52,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(node:*)",
       "Bash(rm:*)",
-      "Bash(wmic process:*)"
+      "Bash(wmic process:*)",
+      "mcp__claude_ai_Figma__get_metadata"
     ]
   },
   "enableAllProjectMcpServers": true,

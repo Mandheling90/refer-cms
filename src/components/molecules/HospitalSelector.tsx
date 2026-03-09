@@ -10,17 +10,28 @@ const HOSPITAL_OPTIONS = [
   { value: 'ANSAN', label: '안산' },
 ] as const;
 
+const HOSPITAL_OPTIONS_WITH_ALL = [
+  { value: 'ALL', label: '전체' },
+  ...HOSPITAL_OPTIONS,
+] as const;
+
+interface HospitalSelectorProps {
+  /** true이면 '전체(ALL)' 옵션을 포함합니다 */
+  showAll?: boolean;
+}
+
 /**
  * 통합관리자(ALL)일 때만 표시되는 기관 선택 탭.
  * 선택 시 activeHospitalCode가 변경되고 Apollo 캐시를 초기화하여
  * 모든 쿼리가 새 기관 코드로 다시 실행됩니다.
  */
-export function HospitalSelector() {
+export function HospitalSelector({ showAll = false }: HospitalSelectorProps) {
   const client = useApolloClient();
   const { hospitalCode, activeHospitalCode, setActiveHospitalCode } = useAuthStore();
 
   if (hospitalCode !== 'ALL') return null;
 
+  const options = showAll ? HOSPITAL_OPTIONS_WITH_ALL : HOSPITAL_OPTIONS;
   const current = activeHospitalCode ?? 'ANAM';
 
   const handleChange = (code: string) => {
@@ -32,7 +43,7 @@ export function HospitalSelector() {
   return (
     <div className="inline-flex items-center rounded-full bg-primary p-1">
       <span className="px-4 text-base font-medium text-white">기관 선택</span>
-      {HOSPITAL_OPTIONS.map((opt) => (
+      {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
