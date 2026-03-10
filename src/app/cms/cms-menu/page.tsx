@@ -375,6 +375,7 @@ function CmsMenuDialog({
   onOpenChange,
   editItem,
   parentId,
+  parentItem,
   itemCount,
   onSaved,
 }: {
@@ -382,11 +383,13 @@ function CmsMenuDialog({
   onOpenChange: (open: boolean) => void;
   editItem?: MenuItem | null;
   parentId?: string;
+  parentItem?: MenuItem | null;
   itemCount: number;
   onSaved: () => void;
 }) {
   const isEditMode = !!editItem;
   const isTopLevel = !parentId && !editItem?.parentId;
+  const isChildMenu = !!parentId || !!editItem?.parentId;
 
   const [form, setForm] = useState<CmsMenuFormData>(INITIAL_FORM);
   const [nameError, setNameError] = useState('');
@@ -416,10 +419,11 @@ function CmsMenuDialog({
     } else {
       setForm({
         ...INITIAL_FORM,
-        hospitalCode: effectiveHospitalCode || 'ANAM',
+        hospitalCode: isChildMenu && parentItem ? parentItem.hospitalCode : (effectiveHospitalCode || 'ANAM'),
+        menuTargetType: isChildMenu ? 'LINK' : 'PARENT',
       });
     }
-  }, [open, editItem, effectiveHospitalCode]);
+  }, [open, editItem, effectiveHospitalCode, isChildMenu, parentItem]);
 
   const updateField = <K extends keyof CmsMenuFormData>(key: K, value: CmsMenuFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -492,12 +496,12 @@ function CmsMenuDialog({
             <Label>
               사용하는 기관 <span className="text-destructive">*</span>
             </Label>
-            <div className="flex gap-4">
+            <div className={cn('flex gap-4', isChildMenu && 'opacity-50 pointer-events-none')}>
               {HOSPITAL_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
                   className="flex items-center gap-1.5 cursor-pointer text-sm"
-                  onClick={() => updateField('hospitalCode', opt.value)}
+                  onClick={() => !isChildMenu && updateField('hospitalCode', opt.value)}
                 >
                   <span
                     className={cn(
@@ -513,6 +517,9 @@ function CmsMenuDialog({
                 </label>
               ))}
             </div>
+            {isChildMenu && (
+              <p className="text-xs text-gray-500">하위메뉴는 상위메뉴의 기관을 따릅니다.</p>
+            )}
           </div>
 
           {/* CMS 메뉴명 */}
@@ -535,12 +542,12 @@ function CmsMenuDialog({
             <Label>
               메뉴 타입 <span className="text-destructive">*</span>
             </Label>
-            <div className="flex gap-4">
+            <div className={cn('flex gap-4', isChildMenu && 'opacity-50 pointer-events-none')}>
               {MENU_TARGET_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
                   className="flex items-center gap-1.5 cursor-pointer text-sm"
-                  onClick={() => updateField('menuTargetType', opt.value)}
+                  onClick={() => !isChildMenu && updateField('menuTargetType', opt.value)}
                 >
                   <span
                     className={cn(
@@ -556,6 +563,9 @@ function CmsMenuDialog({
                 </label>
               ))}
             </div>
+            {isChildMenu && (
+              <p className="text-xs text-gray-500">하위메뉴는 항상 링크 타입입니다.</p>
+            )}
           </div>
 
           {/* 연결 URL 주소 (링크일 때만) */}
@@ -837,6 +847,7 @@ export default function CmsMenuPage() {
         onOpenChange={setDialogOpen}
         editItem={dialogEditItem}
         parentId={dialogParentId}
+        parentItem={dialogParentId ? selected1 ?? null : null}
         itemCount={dialogItemCount}
         onSaved={handleDialogSaved}
       />
