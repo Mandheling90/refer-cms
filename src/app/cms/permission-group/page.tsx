@@ -275,11 +275,11 @@ function PermissionGroupContent() {
   });
 
   /* ─── GraphQL mutations ─── */
-  const [createGroup] = useMutation(CREATE_PERMISSION_GROUP);
-  const [updateGroup] = useMutation(UPDATE_PERMISSION_GROUP);
-  const [deleteGroup] = useMutation(DELETE_PERMISSION_GROUP);
-  const [setMenuPermission] = useMutation(SET_MENU_PERMISSION);
-  const [assignPermissionGroup] = useMutation(ASSIGN_PERMISSION_GROUP);
+  const [createGroup] = useMutation<{ createMenuPermissionGroup: { id: string; name: string; hospitalCode: string } }>(CREATE_PERMISSION_GROUP);
+  const [updateGroup] = useMutation<{ updateMenuPermissionGroup: { id: string; name: string; hospitalCode: string } }>(UPDATE_PERMISSION_GROUP);
+  const [deleteGroup] = useMutation<{ deleteMenuPermissionGroup: boolean }>(DELETE_PERMISSION_GROUP);
+  const [setMenuPermission] = useMutation<{ setMenuPermission: boolean }>(SET_MENU_PERMISSION);
+  const [assignPermissionGroup] = useMutation<{ assignPermissionGroup: boolean }>(ASSIGN_PERMISSION_GROUP);
 
   /* ─── 메뉴 목록 조회 (CMS 메뉴와 동일한 ADMIN 타입, 기관코드 포함) ─── */
   const { data: menuData } = useQuery<{ adminMenus: MenuTreeNode[] }>(ADMIN_MENUS, {
@@ -418,7 +418,7 @@ function PermissionGroupContent() {
             input: { name: formGroupName },
           },
         });
-        groupId = createData?.createMenuPermissionGroup?.id;
+        groupId = createData?.createMenuPermissionGroup?.id ?? null;
       }
 
       // 2) 메뉴별 권한 설정 (하위 메뉴에만 setMenuPermission 호출)
