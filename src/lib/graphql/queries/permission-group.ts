@@ -73,3 +73,23 @@ export const ASSIGN_PERMISSION_GROUP = gql`
     assignPermissionGroup(userId: $userId, groupId: $groupId, hospitalCode: $hospitalCode)
   }
 `;
+
+/** 권한 그룹 수정 이력 조회 */
+export const GET_PERMISSION_AUDIT_LOGS = gql`
+  query AdminPermissionAuditLogs($hospitalCode: HospitalCode, $pagination: PaginationInput) {
+    adminPermissionAuditLogs(hospitalCode: $hospitalCode, pagination: $pagination) {
+      items {
+        id
+        action
+        target
+        detail
+        hospitalCode
+        adminNumber
+        adminName
+        createdAt
+      }
+      totalCount
+      hasNextPage
+    }
+  }
+`;

@@ -20,9 +20,15 @@ export default function LoginPage() {
   const [loginMutation, { loading }] = useMutation<LoginResponse>(LOGIN);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/cms/home');
-    }
+    // persist rehydration 완료 후에만 redirect
+    const check = () => {
+      if (useAuthStore.persist.hasHydrated() && isAuthenticated) {
+        router.replace('/cms/home');
+      }
+    };
+    check();
+    const unsub = useAuthStore.persist.onFinishHydration(check);
+    return unsub;
   }, [isAuthenticated, router]);
 
   const validate = () => {

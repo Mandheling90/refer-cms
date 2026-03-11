@@ -136,6 +136,7 @@ const NAV_ITEMS: NavItem[] = [
       { title: '관리자 관리', href: '/cms/admin-management' },
       { title: 'CMS 메뉴', href: '/cms/cms-menu' },
       { title: '권한 그룹 관리', href: '/cms/permission-group' },
+      { title: '권한 수정 이력', href: '/cms/permission-group-history' },
     ],
   },
   {
