@@ -10,6 +10,7 @@ export interface AdminUser {
   userType: string;
   status: string;
   hospitalCode?: string;
+  allowedIp?: string;
   createdAt?: string;
   updatedAt?: string;
   profile?: {

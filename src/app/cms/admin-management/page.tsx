@@ -16,21 +16,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { GET_ADMIN_USERS, GET_ADMIN_USER_DETAIL, ADMIN_CREATE_USER } from '@/lib/graphql/queries/admin';
+import { GET_ADMIN_USERS, GET_ADMIN_USER_DETAIL, ADMIN_CREATE_USER, CHECK_USER_ID_AVAILABLE } from '@/lib/graphql/queries/admin';
 import { ADMIN_UPDATE_USER } from '@/lib/graphql/queries/member';
 import type { AdminUser, AdminUsersResponse, AdminUserByIdResponse, AdminUserDetail } from '@/types/member';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
-import { ChevronDown, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -50,7 +44,8 @@ const formatDateTime = (val?: string | null) => {
 const statusLabel = (val?: string) => {
   switch (val) {
     case 'ACTIVE': return '사용';
-    case 'INACTIVE': return '미사용';
+    case 'PENDING': return '승인대기';
+    case 'REJECTED': return '사용중지';
     case 'WITHDRAWN': return '탈퇴';
     default: return val ?? '-';
   }
@@ -212,8 +207,9 @@ function AdminManagementContent() {
     fetchPolicy: 'network-only',
   });
 
-  const items = data?.adminUsers?.items ?? [];
-  const totalItems = data?.adminUsers?.totalCount ?? 0;
+  const allItems = data?.adminUsers?.items ?? [];
+  const items = allItems.filter((item) => item.status !== 'WITHDRAWN');
+  const totalItems = items.length;
 
   /* ─── GraphQL 상세 조회 ─── */
   const [fetchDetail] = useLazyQuery<AdminUserByIdResponse>(GET_ADMIN_USER_DETAIL, {
@@ -225,6 +221,11 @@ function AdminManagementContent() {
 
   /* ─── GraphQL 등록 ─── */
   const [createUser] = useMutation(ADMIN_CREATE_USER);
+
+  /* ─── GraphQL 아이디 중복 확인 ─── */
+  const [checkUserId] = useLazyQuery(CHECK_USER_ID_AVAILABLE, {
+    fetchPolicy: 'network-only',
+  });
 
   /* ─── 검색 ─── */
   const handleSearch = useCallback(() => {
@@ -258,10 +259,28 @@ function AdminManagementContent() {
     setCurrentPage(1);
   };
 
-  /* ─── 삭제 (TODO: 뮤테이션 연결 필요) ─── */
+  /* ─── 삭제 (탈퇴 처리) ─── */
   const handleDelete = async () => {
-    toast.info('삭제 기능은 API 연결 후 동작합니다.');
-    setDeleteConfirmOpen(false);
+    try {
+      await Promise.all(
+        selectedRows.map((row) =>
+          updateUser({
+            variables: {
+              id: row.id,
+              input: { status: 'WITHDRAWN' },
+            },
+          })
+        )
+      );
+      toast.success(`${selectedRows.length}건의 관리자가 탈퇴 처리되었습니다.`);
+      setDeleteConfirmOpen(false);
+      setSelectedRows([]);
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
+      toast.error(message);
+      setDeleteConfirmOpen(false);
+    }
   };
 
   /* ─── 등록 폼 초기화 ─── */
@@ -278,14 +297,35 @@ function AdminManagementContent() {
     setRegisterOpen(true);
   };
 
-  /* ─── 아이디 중복 확인 (TODO: API 연결) ─── */
-  const handleCheckDuplicate = () => {
+  /* ─── 아이디 중복 확인 ─── */
+  const handleCheckDuplicate = async () => {
     if (!regUserId.trim()) {
       toast.error('아이디를 입력해 주세요.');
       return;
     }
-    toast.info('중복 확인 기능은 API 연결 후 동작합니다.');
-    setRegIdChecked(true);
+    try {
+      const { data: checkData } = await checkUserId({
+        variables: { userId: regUserId },
+      });
+      const result = checkData?.checkUserIdAvailable;
+      if (result?.available) {
+        toast.success('사용 가능한 아이디입니다.');
+        setRegIdChecked(true);
+      } else {
+        const reasons: string[] = [];
+        if (result?.existsInDb) reasons.push('CMS');
+        if (result?.existsInEhr) reasons.push('EHR');
+        toast.error(
+          reasons.length > 0
+            ? `이미 ${reasons.join(', ')}에 등록된 아이디입니다.`
+            : '이미 사용 중인 아이디입니다.'
+        );
+        setRegIdChecked(false);
+      }
+    } catch {
+      toast.error('중복 확인 중 오류가 발생했습니다.');
+      setRegIdChecked(false);
+    }
   };
 
   /* ─── 등록 저장 ─── */
@@ -310,6 +350,11 @@ function AdminManagementContent() {
       setRegSaveConfirmOpen(false);
       return;
     }
+    if (!regIdChecked) {
+      toast.error('아이디 중복 확인을 해주세요.');
+      setRegSaveConfirmOpen(false);
+      return;
+    }
     if (!regHospitalCode) {
       toast.error('소속 기관을 선택해 주세요.');
       setRegSaveConfirmOpen(false);
@@ -325,6 +370,7 @@ function AdminManagementContent() {
             passwordConfirm: regPasswordConfirm,
             hospitalCode: regHospitalCode,
             ...(regEmail.trim() ? { email: regEmail } : {}),
+            ...(regIpAddress.trim() ? { ipAddress: regIpAddress } : {}),
           },
         },
       });
@@ -351,9 +397,9 @@ function AdminManagementContent() {
         setFormUserName(u.userName || '');
         setFormPassword('');
         setFormPasswordConfirm('');
-        setFormIpAddress('');
+        setFormIpAddress(u.allowedIp || '');
         setFormEmail(u.email || '');
-        setFormIsActive(u.status === 'ACTIVE');
+        setFormIsActive(u.status !== 'REJECTED');
       }
     } catch {
       toast.error('관리자 상세 정보를 불러오지 못했습니다.');
@@ -382,7 +428,8 @@ function AdminManagementContent() {
           input: {
             userName: formUserName,
             email: formEmail,
-            status: formIsActive ? 'ACTIVE' : 'INACTIVE',
+            ipAddress: formIpAddress || null,
+            status: formIsActive ? 'ACTIVE' : 'REJECTED',
           },
         },
       });
@@ -469,31 +516,24 @@ function AdminManagementContent() {
           </div>
         }
         listHeaderActions={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="md">
-                작업 선택
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleOpenRegister}>
-                신규 관리자 등록
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  if (!selectedRows.length) {
-                    toast.error('삭제할 관리자를 선택하세요.');
-                    return;
-                  }
-                  setDeleteConfirmOpen(true);
-                }}
-                className="text-destructive"
-              >
-                선택한 항목 삭제
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <Button variant="dark" size="md" onClick={handleOpenRegister}>
+              신규 등록
+            </Button>
+            <Button
+              variant="outline-red"
+              size="md"
+              onClick={() => {
+                if (!selectedRows.length) {
+                  toast.error('삭제할 관리자를 선택하세요.');
+                  return;
+                }
+                setDeleteConfirmOpen(true);
+              }}
+            >
+              선택한 항목 삭제
+            </Button>
+          </div>
         }
         listContent={
           <DataTable

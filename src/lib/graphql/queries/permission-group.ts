@@ -74,6 +74,27 @@ export const ASSIGN_PERMISSION_GROUP = gql`
   }
 `;
 
+/** 권한 그룹 멤버 조회 */
+export const GET_PERMISSION_GROUP_MEMBERS = gql`
+  query PermissionGroupMembers($groupId: String!, $hospitalCode: HospitalCode) {
+    permissionGroupMembers(groupId: $groupId, hospitalCode: $hospitalCode) {
+      id
+      userId
+      userName
+      email
+      status
+      hospitalCode
+    }
+  }
+`;
+
+/** 권한 그룹 멤버 일괄 배정 */
+export const SET_PERMISSION_GROUP_MEMBERS = gql`
+  mutation SetPermissionGroupMembers($groupId: String!, $userIds: [String!]!, $hospitalCode: HospitalCode) {
+    setPermissionGroupMembers(groupId: $groupId, userIds: $userIds, hospitalCode: $hospitalCode)
+  }
+`;
+
 /** 권한 그룹 수정 이력 조회 */
 export const GET_PERMISSION_AUDIT_LOGS = gql`
   query AdminPermissionAuditLogs($hospitalCode: HospitalCode, $pagination: PaginationInput) {

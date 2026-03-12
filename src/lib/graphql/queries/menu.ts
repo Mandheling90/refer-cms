@@ -9,12 +9,18 @@ const MENU_FIELDS = `
   parentId
   isActive
   hospitalCode
+  menuType
   menuTargetType
   targetBoardId
+  targetBoardType
   targetContentId
   externalUrl
   gnbExposure
   firstChildPath
+  iconName
+  accessLevel
+  createdAt
+  updatedAt
 `;
 
 /** 메뉴 목록 조회 (트리 구조) */

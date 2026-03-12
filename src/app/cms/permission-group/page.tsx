@@ -29,11 +29,13 @@ import { useAuthStore } from '@/stores/auth-store';
 import {
   GET_PERMISSION_GROUPS,
   GET_PERMISSION_GROUP_DETAIL,
+  GET_PERMISSION_GROUP_MEMBERS,
   CREATE_PERMISSION_GROUP,
   UPDATE_PERMISSION_GROUP,
   DELETE_PERMISSION_GROUP,
   SET_MENU_PERMISSION,
   ASSIGN_PERMISSION_GROUP,
+  SET_PERMISSION_GROUP_MEMBERS,
 } from '@/lib/graphql/queries/permission-group';
 import { GET_ADMIN_USERS } from '@/lib/graphql/queries/admin';
 import { ADMIN_MENUS } from '@/lib/graphql/queries/menu';
@@ -204,6 +206,8 @@ export default function PermissionGroupPage() {
 }
 
 function PermissionGroupContent() {
+  const hospitalCode = useAuthStore((s) => s.hospitalCode);
+
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -249,6 +253,9 @@ function PermissionGroupContent() {
   const { data, loading, refetch } = useQuery<{
     menuPermissionGroups: PermissionGroupItem[];
   }>(GET_PERMISSION_GROUPS, {
+    variables: {
+      hospitalCode: hospitalCode === 'ALL' ? undefined : hospitalCode,
+    },
     fetchPolicy: 'network-only',
   });
 
@@ -274,17 +281,30 @@ function PermissionGroupContent() {
     fetchPolicy: 'network-only',
   });
 
+  /* ─── GraphQL 그룹 멤버 조회 ─── */
+  const [fetchMembers] = useLazyQuery<{
+    permissionGroupMembers: { id: string; userId: string; userName: string }[];
+  }>(GET_PERMISSION_GROUP_MEMBERS, {
+    fetchPolicy: 'network-only',
+  });
+
   /* ─── GraphQL mutations ─── */
   const [createGroup] = useMutation<{ createMenuPermissionGroup: { id: string; name: string; hospitalCode: string } }>(CREATE_PERMISSION_GROUP);
   const [updateGroup] = useMutation<{ updateMenuPermissionGroup: { id: string; name: string; hospitalCode: string } }>(UPDATE_PERMISSION_GROUP);
   const [deleteGroup] = useMutation<{ deleteMenuPermissionGroup: boolean }>(DELETE_PERMISSION_GROUP);
   const [setMenuPermission] = useMutation<{ setMenuPermission: boolean }>(SET_MENU_PERMISSION);
   const [assignPermissionGroup] = useMutation<{ assignPermissionGroup: boolean }>(ASSIGN_PERMISSION_GROUP);
+  const [setPermissionGroupMembers] = useMutation<{ setPermissionGroupMembers: boolean }>(SET_PERMISSION_GROUP_MEMBERS);
 
   /* ─── 메뉴 목록 조회 (CMS 메뉴와 동일한 ADMIN 타입, 기관코드 포함) ─── */
   const { data: menuData } = useQuery<{ adminMenus: MenuTreeNode[] }>(ADMIN_MENUS, {
     variables: { menuType: 'ADMIN', hospitalCode: formHospitalCode || undefined },
     fetchPolicy: 'cache-and-network',
+  });
+
+  /* ─── 메뉴 목록 lazy 조회 (수정 다이얼로그용) ─── */
+  const [fetchMenus] = useLazyQuery<{ adminMenus: MenuTreeNode[] }>(ADMIN_MENUS, {
+    fetchPolicy: 'network-only',
   });
 
   /* ─── 관리자 목록 조회 ─── */
@@ -353,28 +373,67 @@ function PermissionGroupContent() {
     setEditingId(row.id);
     setFormGroupName(row.name || '');
     setFormHospitalCode(row.hospitalCode || 'ANAM');
-    setFormAssignedAdmins([]);
     setDialogOpen(true);
 
-    // 상세 메뉴 권한 조회
+    // 상세 메뉴 권한 + 메뉴 목록 + 그룹 멤버를 동시에 가져옴
     try {
-      const { data: detailData } = await fetchDetail({ variables: { groupId: row.id } });
+      const hospitalCode = row.hospitalCode || 'ANAM';
+      const [{ data: detailData }, { data: menuResult }, { data: memberData }] = await Promise.all([
+        fetchDetail({ variables: { groupId: row.id } }),
+        fetchMenus({ variables: { menuType: 'ADMIN', hospitalCode } }),
+        fetchMembers({ variables: { groupId: row.id, hospitalCode } }),
+      ]);
+
+      // 기존 배정된 관리자 로드
+      const members = memberData?.permissionGroupMembers ?? [];
+      setFormAssignedAdmins(
+        members.map((m) => ({ id: m.id, userId: m.userId, userName: m.userName }))
+      );
       const entries = detailData?.groupMenuPermissions ?? [];
       // entries를 메뉴 트리에 매핑
-      const menus: MenuTreeNode[] = menuData?.adminMenus ?? [];
+      const menus: MenuTreeNode[] = menuResult?.adminMenus ?? [];
       const entryMap = new Map(entries.map((e) => [e.menuId, e.accessLevel]));
+
+      // 디버깅: 서버에서 받은 데이터 확인
+      console.log('=== 권한 조회 디버깅 ===');
+      console.log('entries (서버 응답):', JSON.stringify(entries, null, 2));
+      console.log('menus (메뉴 트리):', menus.map((m) => ({
+        id: m.id, name: m.name,
+        children: m.children?.map((c) => ({ id: c.id, name: c.name })),
+      })));
+      console.log('entryMap:', Object.fromEntries(entryMap));
+
+      // 디버깅: 메뉴 ID 매칭 확인
+      menus.forEach((m) => {
+        console.log(`메뉴 "${m.name}" (id: ${m.id}) → entryMap 결과:`, entryMap.get(m.id));
+        m.children?.forEach((c) => {
+          console.log(`  하위 "${c.name}" (id: ${c.id}) → entryMap 결과:`, entryMap.get(c.id));
+        });
+      });
+
       setFormMenuPermissions(
-        menus.map((m) => ({
-          menuId: m.id,
-          menuName: m.name,
-          parentId: m.parentId,
-          permission: (entryMap.get(m.id) as PermissionLevel) || 'NONE',
-          children: m.children?.map((c) => ({
+        menus.map((m) => {
+          const children = m.children?.map((c) => ({
             menuId: c.id,
             menuName: c.name,
-            permission: (entryMap.get(c.id) as PermissionLevel) || 'NONE',
-          })),
-        }))
+            permission: (entryMap.get(c.id) as PermissionLevel) || 'FULL',
+          }));
+          // 상위 메뉴 권한: 하위 메뉴가 있으면 하위 기준으로 계산
+          let parentPermission: PermissionLevel;
+          if (children && children.length > 0) {
+            const allSame = children.every((c) => c.permission === children[0].permission);
+            parentPermission = allSame ? children[0].permission : 'CUSTOM';
+          } else {
+            parentPermission = (entryMap.get(m.id) as PermissionLevel) || 'FULL';
+          }
+          return {
+            menuId: m.id,
+            menuName: m.name,
+            parentId: m.parentId,
+            permission: parentPermission,
+            children,
+          };
+        })
       );
     } catch {
       toast.error('메뉴 권한 정보를 불러오지 못했습니다.');
@@ -382,28 +441,56 @@ function PermissionGroupContent() {
     }
   };
 
-  /* ─── 저장 ─── */
+  /* ─── 메뉴 권한 API 저장 (순차 처리) ─── */
+  const saveMenuPermissions = async (groupId: string) => {
+    if (formMenuPermissions.length === 0) return;
+    for (const mp of formMenuPermissions) {
+      if (mp.permission !== 'CUSTOM') {
+        await setMenuPermission({
+          variables: {
+            hospitalCode: formHospitalCode,
+            input: { groupId, menuId: mp.menuId, accessLevel: mp.permission },
+          },
+        });
+      }
+      if (mp.children && mp.children.length > 0) {
+        for (const child of mp.children) {
+          const accessLevel = mp.permission !== 'CUSTOM' ? mp.permission : child.permission;
+          await setMenuPermission({
+            variables: {
+              hospitalCode: formHospitalCode,
+              input: { groupId, menuId: child.menuId, accessLevel },
+            },
+          });
+        }
+      }
+    }
+  };
+
+  /* ─── 관리자 배정 API 저장 ─── */
+  const saveAdminAssignment = async (groupId: string) => {
+    if (formAssignedAdmins.length === 0) return;
+    await setPermissionGroupMembers({
+      variables: {
+        groupId,
+        userIds: formAssignedAdmins.map((admin) => admin.id),
+        hospitalCode: formHospitalCode,
+      },
+    });
+  };
+
+  /* ─── 메인 저장 ─── */
   const handleSave = async () => {
     if (!formGroupName.trim()) {
       toast.error('그룹명은 필수 입력입니다.');
       setSaveConfirmOpen(false);
       return;
     }
-    if (formMenuPermissions.length === 0) {
-      toast.error('메뉴 별 권한을 설정해 주세요.');
-      setSaveConfirmOpen(false);
-      return;
-    }
-    if (formAssignedAdmins.length === 0) {
-      toast.error('관리자를 배정해 주세요.');
-      setSaveConfirmOpen(false);
-      return;
-    }
     try {
       let groupId = editingId;
 
-      // 1) 그룹 생성 or 수정
       if (editingId) {
+        // 수정: 그룹명만 저장 (메뉴권한/관리자배정은 서브 다이얼로그에서 즉시 저장)
         await updateGroup({
           variables: {
             hospitalCode: formHospitalCode,
@@ -412,6 +499,7 @@ function PermissionGroupContent() {
           },
         });
       } else {
+        // 신규: 그룹 생성 후 메뉴권한 + 관리자배정 한번에 저장
         const { data: createData } = await createGroup({
           variables: {
             hospitalCode: formHospitalCode,
@@ -419,53 +507,12 @@ function PermissionGroupContent() {
           },
         });
         groupId = createData?.createMenuPermissionGroup?.id ?? null;
-      }
-
-      // 2) 메뉴별 권한 설정 (하위 메뉴에만 setMenuPermission 호출)
-      if (groupId && formMenuPermissions.length > 0) {
-        const permissionCalls: Promise<unknown>[] = [];
-        for (const mp of formMenuPermissions) {
-          if (mp.children && mp.children.length > 0) {
-            // 하위 메뉴가 있으면 하위 메뉴에만 권한 설정
-            for (const child of mp.children) {
-              const accessLevel = mp.permission !== 'CUSTOM' ? mp.permission : child.permission;
-              permissionCalls.push(
-                setMenuPermission({
-                  variables: {
-                    hospitalCode: formHospitalCode,
-                    input: { groupId, menuId: child.menuId, accessLevel },
-                  },
-                })
-              );
-            }
-          } else {
-            // 하위 메뉴 없는 단독 메뉴는 직접 권한 설정
-            permissionCalls.push(
-              setMenuPermission({
-                variables: {
-                  hospitalCode: formHospitalCode,
-                  input: { groupId, menuId: mp.menuId, accessLevel: mp.permission },
-                },
-              })
-            );
-          }
+        if (groupId) {
+          // 서버에서 그룹 생성 완료 후 처리될 시간 확보
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await saveMenuPermissions(groupId);
+          await saveAdminAssignment(groupId);
         }
-        await Promise.all(permissionCalls);
-      }
-
-      // 3) 관리자 배정
-      if (groupId && formAssignedAdmins.length > 0) {
-        await Promise.all(
-          formAssignedAdmins.map((admin) =>
-            assignPermissionGroup({
-              variables: {
-                userId: admin.userId,
-                groupId,
-                hospitalCode: formHospitalCode,
-              },
-            })
-          )
-        );
       }
 
       toast.success(editingId ? '권한 그룹이 수정되었습니다.' : '권한 그룹이 등록되었습니다.');
@@ -476,6 +523,44 @@ function PermissionGroupContent() {
       const message = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
       toast.error(message);
       setSaveConfirmOpen(false);
+    }
+  };
+
+  /* ─── 메뉴 별 권한 저장 (서브 다이얼로그 - 수정 모드에서만 즉시 저장) ─── */
+  const handleSaveMenuPermissions = async () => {
+    if (!editingId) {
+      // 신규: 로컬 상태만 유지, 메인 저장 시 일괄 처리
+      setMenuPermDialogOpen(false);
+      toast.success('메뉴 권한이 설정되었습니다.');
+      return;
+    }
+    try {
+      await saveMenuPermissions(editingId);
+      toast.success('메뉴 권한이 저장되었습니다.');
+      setMenuPermDialogOpen(false);
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '메뉴 권한 저장 중 오류가 발생했습니다.';
+      toast.error(message);
+    }
+  };
+
+  /* ─── 관리자 배정 저장 (서브 다이얼로그 - 수정 모드에서만 즉시 저장) ─── */
+  const handleSaveAdminAssignment = async () => {
+    if (!editingId) {
+      // 신규: 로컬 상태만 유지, 메인 저장 시 일괄 처리
+      setAdminAssignDialogOpen(false);
+      toast.success('관리자가 배정되었습니다.');
+      return;
+    }
+    try {
+      await saveAdminAssignment(editingId);
+      toast.success('관리자 배정이 저장되었습니다.');
+      setAdminAssignDialogOpen(false);
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '관리자 배정 저장 중 오류가 발생했습니다.';
+      toast.error(message);
     }
   };
 
@@ -712,7 +797,7 @@ function PermissionGroupContent() {
                     className={cn(
                       'h-[38px] rounded-md border px-5 text-sm transition-colors cursor-pointer',
                       formHospitalCode === h.code
-                        ? 'bg-[#0084ff] text-white border-[#0084ff]'
+                        ? 'bg-[#9F1836] text-white border-[#9F1836]'
                         : 'border-gray-300 bg-white text-black hover:bg-gray-50'
                     )}
                   >
@@ -830,10 +915,7 @@ function PermissionGroupContent() {
             </Button>
             <Button
               variant="dark"
-              onClick={() => {
-                setMenuPermDialogOpen(false);
-                toast.success('메뉴 권한이 설정되었습니다.');
-              }}
+              onClick={handleSaveMenuPermissions}
               className="rounded-md px-4"
             >
               저장
@@ -1025,10 +1107,7 @@ function PermissionGroupContent() {
             </Button>
             <Button
               variant="dark"
-              onClick={() => {
-                setAdminAssignDialogOpen(false);
-                toast.success('관리자가 배정되었습니다.');
-              }}
+              onClick={handleSaveAdminAssignment}
               className="rounded-md px-4"
             >
               저장

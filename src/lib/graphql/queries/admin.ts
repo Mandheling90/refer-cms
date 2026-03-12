@@ -15,6 +15,7 @@ export const GET_ADMIN_USERS = gql`
         hospitalCode
         rejectReason
         createdAt
+        updatedAt
       }
       totalCount
       hasNextPage
@@ -39,6 +40,24 @@ export const ADMIN_CREATE_USER = gql`
   }
 `;
 
+/** 아이디 중복 확인 */
+export const CHECK_USER_ID_AVAILABLE = gql`
+  query CheckUserIdAvailable($userId: String!) {
+    checkUserIdAvailable(userId: $userId) {
+      available
+      existsInDb
+      existsInEhr
+    }
+  }
+`;
+
+/** 관리자 삭제 */
+export const ADMIN_DELETE_USER = gql`
+  mutation AdminDeleteUser($id: String!) {
+    adminDeleteUser(id: $id)
+  }
+`;
+
 /** 관리자 상세 조회 */
 export const GET_ADMIN_USER_DETAIL = gql`
   query AdminUserById($id: String!) {
@@ -51,6 +70,7 @@ export const GET_ADMIN_USER_DETAIL = gql`
       userType
       status
       hospitalCode
+      allowedIp
       rejectReason
       profile {
         licenseNo
