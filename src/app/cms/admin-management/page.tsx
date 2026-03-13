@@ -223,7 +223,9 @@ function AdminManagementContent() {
   const [createUser] = useMutation(ADMIN_CREATE_USER);
 
   /* ─── GraphQL 아이디 중복 확인 ─── */
-  const [checkUserId] = useLazyQuery(CHECK_USER_ID_AVAILABLE, {
+  const [checkUserId] = useLazyQuery<{
+    checkUserIdAvailable: { available: boolean; existsInDb: boolean; existsInEhr: boolean };
+  }>(CHECK_USER_ID_AVAILABLE, {
     fetchPolicy: 'network-only',
   });
 
