@@ -54,7 +54,8 @@
       "Bash(rm:*)",
       "Bash(wmic process:*)",
       "mcp__claude_ai_Figma__get_metadata",
-      "Bash(echo EXIT:$?:*)"
+      "Bash(echo EXIT:$?:*)",
+      "Bash(find \"C:\\\\Users\\\\USER\\\\Desktop\\\\alba\\\\refer-cms\" -type f -name \"*admin*\" 2>/dev/null | head -20)"
     ]
   },
   "enableAllProjectMcpServers": true,

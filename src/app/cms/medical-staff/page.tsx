@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { useQuery } from '@apollo/client/react';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
@@ -27,15 +27,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useAuthStore } from '@/stores/auth-store';
-import { GET_MEDICAL_STAFF_LIST } from '@/lib/graphql/queries/medical-staff';
-import type {
-  MedicalStaffItem,
-  MedicalStaffListResponse,
-} from '@/types/medical-staff';
 import {
-  CONSULTANT_STATUS_OPTIONS,
-  HOSPITAL_CODE_MAP,
-} from '@/types/medical-staff';
+  GET_MEDICAL_STAFF_LIST,
+  GET_ADMIN_ECONSULT_CONSULTANTS,
+  DESIGNATE_ECONSULT_CONSULTANT,
+  DEACTIVATE_ECONSULT_CONSULTANT,
+} from '@/lib/graphql/queries/medical-staff';
+import type { MedicalStaffItem, MedicalStaffListResponse } from '@/types/medical-staff';
+import { CONSULTANT_STATUS_OPTIONS, HOSPITAL_CODE_MAP } from '@/types/medical-staff';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { Check, ImageIcon, Trash2, X } from 'lucide-react';
@@ -49,13 +48,7 @@ const HOSPITAL_SEARCH_OPTIONS = [
 ] as const;
 
 /* ─── 검색 필드 공통 ─── */
-function FieldGroup({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-sm font-semibold text-foreground">{label}</label>
@@ -71,6 +64,41 @@ function formatYmd(val?: string | null) {
     return `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}`;
   }
   return val;
+}
+
+/* ─── 프로필 이미지 파일명 생성 ─── */
+function buildProfileFilename(item: MedicalStaffItem) {
+  const hospital = HOSPITAL_CODE_MAP[item.hospitalCode ?? ''] ?? item.hospitalCode ?? '';
+  const dept = item.departmentName ?? '';
+  const name = item.doctorName ?? '';
+  return `${hospital} ${dept} ${name}.png`.trim();
+}
+
+/* ─── 파일 크기 포맷 ─── */
+function formatFileSize(bytes: number) {
+  if (bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+/* ─── 이미지 다운로드 (파일명 지정) ─── */
+async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    // CORS 차단 시 새 탭에서 열기
+    window.open(url, '_blank');
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -90,23 +118,45 @@ export default function MedicalStaffPage() {
   const [searchDepartment, setSearchDepartment] = useState('');
   const [searchConsultant, setSearchConsultant] = useState('');
 
-  /* ─── 적용된 필터 ─── */
-  const [appliedFilter, setAppliedFilter] = useState<{
-    doctorId?: string;
-    name?: string;
-    hospitalCode?: string;
-    department?: string;
-    smcrYn?: string;
-  }>({});
-
   /* ─── 상세 다이얼로그 ─── */
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MedicalStaffItem | null>(null);
 
   /* ─── 수정 폼 상태 ─── */
   const [editConsultant, setEditConsultant] = useState(false);
-  const [editFrvsPsbl, setEditFrvsPsbl] = useState(false);
-  const [editRevsPsbl, setEditRevsPsbl] = useState(false);
+  const [editEmailLocal, setEditEmailLocal] = useState('');
+  const [editEmailDomain, setEditEmailDomain] = useState('');
+  const [consultantRecordId, setConsultantRecordId] = useState<string | null>(null);
+  const [imageFileSize, setImageFileSize] = useState<number>(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  /* ─── 이미지 파일 크기 조회 ─── */
+  useEffect(() => {
+    if (!selectedItem?.photoUrl) {
+      setImageFileSize(0);
+      setImageLoaded(false);
+      return;
+    }
+    setImageLoaded(false);
+    // HEAD 요청 시도 → 실패 시 blob으로 fallback
+    fetch(selectedItem.photoUrl, { method: 'HEAD' })
+      .then((res) => {
+        const len = res.headers.get('content-length');
+        if (len && parseInt(len, 10) > 0) {
+          setImageFileSize(parseInt(len, 10));
+        } else {
+          return fetch(selectedItem.photoUrl!)
+            .then((r) => r.blob())
+            .then((blob) => setImageFileSize(blob.size));
+        }
+      })
+      .catch(() => {
+        fetch(selectedItem.photoUrl!)
+          .then((r) => r.blob())
+          .then((blob) => setImageFileSize(blob.size))
+          .catch(() => setImageFileSize(0));
+      });
+  }, [selectedItem?.photoUrl]);
 
   /* ─── 선택 행 / 확인 다이얼로그 ─── */
   const [selectedRows, setSelectedRows] = useState<MedicalStaffItem[]>([]);
@@ -122,30 +172,64 @@ export default function MedicalStaffPage() {
     },
   );
 
-  const allItems = data?.medicalStaffList?.items ?? [];
+  /* ─── 자문의 목록 조회 ─── */
+  const {
+    data: consultantsData,
+    loading: consultantsLoading,
+    refetch: refetchConsultants,
+  } = useQuery<{
+    adminEconsultConsultants: { id: string; doctorId: string; email: string; isActive: boolean }[];
+  }>(GET_ADMIN_ECONSULT_CONSULTANTS, {
+    variables: { hospitalCode },
+    fetchPolicy: 'network-only',
+  });
+  const activeConsultantIds = useMemo(() => {
+    const set = new Set<string>();
+    consultantsData?.adminEconsultConsultants?.forEach((c) => {
+      if (c.isActive) set.add(c.doctorId);
+    });
+    return set;
+  }, [consultantsData]);
 
-  /* ─── 프론트 필터링 ─── */
+  /* ─── 자문의 관련 mutation ─── */
+  const [fetchConsultantsByHospital] = useLazyQuery<{
+    adminEconsultConsultants: { id: string; doctorId: string; email: string; isActive: boolean }[];
+  }>(GET_ADMIN_ECONSULT_CONSULTANTS, { fetchPolicy: 'network-only' });
+  const [designateConsultant] = useMutation(DESIGNATE_ECONSULT_CONSULTANT);
+  const [deactivateConsultant] = useMutation(DEACTIVATE_ECONSULT_CONSULTANT);
+
+  const allItems = data?.medicalStaffList?.items ?? [];
+  const tableLoading = loading || consultantsLoading;
+
+  /* ─── 프론트 필터링 (입력 즉시 반영) ─── */
   const filteredItems = useMemo(() => {
+    const doctorIdTrim = searchDoctorId.trim();
+    const nameTrim = searchName.trim();
+    const hospitalVal = searchHospital === '__all' ? '' : searchHospital;
+    const deptTrim = searchDepartment.trim();
+    const consultantVal = searchConsultant === '__all' ? '' : searchConsultant;
+
     return allItems.filter((item) => {
-      if (appliedFilter.doctorId && !item.doctorId.includes(appliedFilter.doctorId))
-        return false;
-      if (appliedFilter.name && !item.doctorName.includes(appliedFilter.name))
-        return false;
-      if (appliedFilter.hospitalCode && item.hospitalCode !== appliedFilter.hospitalCode)
-        return false;
-      if (
-        appliedFilter.department &&
-        !(item.departmentName ?? '').includes(appliedFilter.department)
-      )
-        return false;
-      if (appliedFilter.smcrYn && item.smcrYn !== appliedFilter.smcrYn)
-        return false;
+      if (doctorIdTrim && !item.doctorId.includes(doctorIdTrim)) return false;
+      if (nameTrim && !item.doctorName.includes(nameTrim)) return false;
+      if (hospitalVal && item.hospitalCode !== hospitalVal) return false;
+      if (deptTrim && !(item.departmentName ?? '').includes(deptTrim)) return false;
+      if (consultantVal) {
+        const isConsultant = activeConsultantIds.has(item.doctorId);
+        if (consultantVal === 'Y' && !isConsultant) return false;
+        if (consultantVal === 'N' && isConsultant) return false;
+      }
       return true;
     });
-  }, [allItems, appliedFilter]);
+  }, [allItems, searchDoctorId, searchName, searchHospital, searchDepartment, searchConsultant, activeConsultantIds]);
 
   const totalCount = filteredItems.length;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  /* 필터 변경 시 1페이지로 리셋 */
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchDoctorId, searchName, searchHospital, searchDepartment, searchConsultant]);
 
   /* ─── 프론트 페이징 ─── */
   const pagedItems = useMemo(() => {
@@ -153,18 +237,12 @@ export default function MedicalStaffPage() {
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, currentPage, pageSize]);
 
-  /* ─── 재검색 ─── */
+  /* ─── 재검색 (API 재조회) ─── */
   const handleSearch = useCallback(() => {
-    setAppliedFilter({
-      doctorId: searchDoctorId.trim() || undefined,
-      name: searchName.trim() || undefined,
-      hospitalCode:
-        searchHospital === '__all' ? undefined : searchHospital || undefined,
-      department: searchDepartment.trim() || undefined,
-      smcrYn: searchConsultant === '__all' ? undefined : searchConsultant || undefined,
-    });
     setCurrentPage(1);
-  }, [searchDoctorId, searchName, searchHospital, searchDepartment, searchConsultant]);
+    refetch();
+    refetchConsultants();
+  }, [refetch, refetchConsultants]);
 
   /* ─── 초기화 ─── */
   const handleReset = () => {
@@ -173,27 +251,87 @@ export default function MedicalStaffPage() {
     setSearchHospital('');
     setSearchDepartment('');
     setSearchConsultant('');
-    setAppliedFilter({});
     setCurrentPage(1);
   };
 
   /* ─── 행 클릭 → 상세 다이얼로그 ─── */
-  const handleRowClick = (row: MedicalStaffItem) => {
-    setSelectedItem(row);
-    setEditConsultant(row.smcrYn === 'Y');
-    setEditFrvsPsbl(row.frvsMdcrPsblYn === 'Y');
-    setEditRevsPsbl(row.revsMdcrPsblYn === 'Y');
-    setDetailOpen(true);
-  };
+  const handleRowClick = useCallback(
+    async (row: MedicalStaffItem) => {
+      setSelectedItem(row);
+      const isConsultant = activeConsultantIds.has(row.doctorId);
+      setEditConsultant(isConsultant);
+      setEditEmailLocal('');
+      setEditEmailDomain('');
+      setConsultantRecordId(null);
 
-  /* ─── 저장 (TODO: 수정 API 연동 시 교체) ─── */
+      // 자문의인 경우 consultant record 조회 (id, email)
+      if (isConsultant && row.hospitalCode) {
+        try {
+          const { data: cData } = await fetchConsultantsByHospital({
+            variables: { hospitalCode: row.hospitalCode },
+          });
+          const record = cData?.adminEconsultConsultants?.find(
+            (c) => c.doctorId === row.doctorId && c.isActive,
+          );
+          if (record) {
+            setConsultantRecordId(record.id);
+            const [local, domain] = (record.email ?? '').split('@');
+            setEditEmailLocal(local ?? '');
+            setEditEmailDomain(domain ?? '');
+          }
+        } catch {
+          // 조회 실패 시 무시
+        }
+      }
+      setDetailOpen(true);
+    },
+    [activeConsultantIds, fetchConsultantsByHospital],
+  );
+
+  /* ─── 저장 ─── */
   const handleSave = async () => {
     if (!selectedItem) return;
-    // TODO: mutation 연동
-    toast.success('저장되었습니다.');
-    setSaveConfirmOpen(false);
-    setDetailOpen(false);
-    refetch();
+    try {
+      if (editConsultant) {
+        // 자문의 지정 (On)
+        const localPart = editEmailLocal.trim();
+        const domainPart = editEmailDomain.trim();
+        if (!localPart || !domainPart) {
+          toast.error('자문의 이메일을 입력해 주세요.');
+          setSaveConfirmOpen(false);
+          return;
+        }
+        const fullEmail = `${localPart}@${domainPart}`;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fullEmail)) {
+          toast.error('올바른 이메일 형식으로 입력해 주세요.');
+          setSaveConfirmOpen(false);
+          return;
+        }
+        await designateConsultant({
+          variables: {
+            input: {
+              hospitalCode: selectedItem.hospitalCode,
+              doctorId: selectedItem.doctorId,
+              email: fullEmail,
+            },
+          },
+        });
+      } else if (consultantRecordId) {
+        // 자문의 해제 (Off)
+        await deactivateConsultant({
+          variables: { id: consultantRecordId },
+        });
+      }
+      toast.success('저장되었습니다.');
+      setSaveConfirmOpen(false);
+      setDetailOpen(false);
+      refetchConsultants();
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
+      toast.error(message);
+      setSaveConfirmOpen(false);
+    }
   };
 
   /* ─── 일괄 삭제 (TODO: 삭제 API 연동 시 교체) ─── */
@@ -214,11 +352,12 @@ export default function MedicalStaffPage() {
   };
 
   /* ─── 테이블 컬럼 ─── */
-  const columns: ColumnDef<MedicalStaffItem, unknown>[] = [
+  const columns: ColumnDef<MedicalStaffItem, unknown>[] = useMemo(
+    () => [
     {
       id: 'doctorId',
       header: '사번',
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: MedicalStaffItem } }) => (
         <span className="text-sm text-muted-foreground">{row.original.doctorId}</span>
       ),
       size: 80,
@@ -226,19 +365,25 @@ export default function MedicalStaffPage() {
     {
       id: 'photoUrl',
       header: '의료진 프로필 사진',
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: MedicalStaffItem } }) => (
         <div className="flex items-center justify-center">
           {row.original.photoUrl ? (
             <img
               src={row.original.photoUrl}
               alt={row.original.doctorName}
               className="h-16 w-14 rounded object-cover border border-gray-300"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                target.parentElement!.querySelector('.img-fallback')?.classList.remove('hidden');
+              }}
             />
-          ) : (
-            <div className="flex h-16 w-14 items-center justify-center rounded border border-gray-300 bg-gray-100">
-              <ImageIcon className="h-5 w-5 text-gray-400" />
-            </div>
-          )}
+          ) : null}
+          <div
+            className={`flex h-16 w-14 items-center justify-center rounded border border-gray-300 bg-gray-100 img-fallback ${row.original.photoUrl ? 'hidden' : ''}`}
+          >
+            <ImageIcon className="h-5 w-5 text-gray-400" />
+          </div>
         </div>
       ),
       size: 140,
@@ -246,7 +391,7 @@ export default function MedicalStaffPage() {
     {
       id: 'doctorName',
       header: '성명',
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: MedicalStaffItem } }) => (
         <button
           className="text-primary underline underline-offset-2 hover:text-primary/90 cursor-pointer"
           onClick={(e) => {
@@ -272,16 +417,14 @@ export default function MedicalStaffPage() {
     {
       id: 'departmentName',
       header: '주 진료과',
-      cell: ({ row }) => (
-        <span className="text-sm">{row.original.departmentName ?? '-'}</span>
-      ),
+      cell: ({ row }) => <span className="text-sm">{row.original.departmentName ?? '-'}</span>,
       size: 150,
     },
     {
       id: 'smcrYn',
       header: '자문의 여부',
       cell: ({ row }) =>
-        row.original.smcrYn === 'Y' ? (
+        activeConsultantIds.has(row.original.doctorId) ? (
           <Check className="mx-auto h-5 w-5 text-green-600" />
         ) : (
           <X className="mx-auto h-5 w-5 text-red-500" />
@@ -314,13 +457,11 @@ export default function MedicalStaffPage() {
       id: 'apstYmd',
       header: '발령일',
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {formatYmd(row.original.apstYmd)}
-        </span>
+        <span className="text-sm text-muted-foreground">{formatYmd(row.original.apstYmd)}</span>
       ),
       size: 110,
     },
-  ];
+  ], [handleRowClick, activeConsultantIds]);
 
   return (
     <>
@@ -353,7 +494,7 @@ export default function MedicalStaffPage() {
                 placeholder="사번을 입력해 주세요."
                 value={searchDoctorId}
                 onChange={(e) => setSearchDoctorId(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
             </FieldGroup>
             <FieldGroup label="성함">
@@ -361,7 +502,7 @@ export default function MedicalStaffPage() {
                 placeholder="성함을 입력해 주세요."
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
             </FieldGroup>
             <FieldGroup label="소속병원">
@@ -386,7 +527,7 @@ export default function MedicalStaffPage() {
                 placeholder="주 진료과를 입력해 주세요."
                 value={searchDepartment}
                 onChange={(e) => setSearchDepartment(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
             </FieldGroup>
             <FieldGroup label="자문의 여부">
@@ -412,7 +553,7 @@ export default function MedicalStaffPage() {
           <DataTable
             columns={columns}
             data={pagedItems}
-            loading={loading}
+            loading={tableLoading}
             totalItems={totalCount}
             currentPage={currentPage}
             pageSize={pageSize}
@@ -474,17 +615,54 @@ export default function MedicalStaffPage() {
                   <label className="text-sm font-semibold text-foreground">
                     의료진 프로필 사진
                   </label>
-                  <div className="flex items-start gap-4">
-                    {selectedItem.photoUrl ? (
+                  <div className="flex items-end gap-4">
+                    {selectedItem.photoUrl && imageLoaded ? (
                       <img
                         src={selectedItem.photoUrl}
                         alt={selectedItem.doctorName}
-                        className="h-24 w-20 rounded border border-gray-300 object-cover"
+                        className="h-[274px] w-[188px] shrink-0 rounded border border-gray-300 object-cover"
+                        onError={() => setImageLoaded(false)}
                       />
                     ) : (
-                      <div className="flex h-24 w-20 items-center justify-center rounded border border-gray-300 bg-gray-100">
+                      <div className="flex h-[274px] w-[188px] shrink-0 items-center justify-center rounded border border-gray-300 bg-gray-100">
                         <ImageIcon className="h-8 w-8 text-gray-400" />
                       </div>
+                    )}
+                    {/* 이미지 로드 성공 시에만 파일명 표시 */}
+                    {selectedItem.photoUrl && imageLoaded && (
+                      <div className="flex flex-col gap-1 pb-1">
+                        <span className="text-sm">
+                          <button
+                            type="button"
+                            className="text-blue-500 underline underline-offset-2 hover:text-blue-600 cursor-pointer"
+                            onClick={() =>
+                              downloadImage(
+                                selectedItem.photoUrl!,
+                                buildProfileFilename(selectedItem)
+                              )
+                            }
+                          >
+                            {buildProfileFilename(selectedItem)}
+                          </button>
+                          {imageFileSize > 0 && (
+                            <span className="text-gray-500">
+                              {' '}
+                              ({formatFileSize(imageFileSize)})
+                            </span>
+                          )}
+                        </span>
+                        <div className="h-px w-full min-w-[250px] bg-gray-300" />
+                      </div>
+                    )}
+                    {/* 숨겨진 img로 로드 성공 여부 판별 */}
+                    {selectedItem.photoUrl && !imageLoaded && (
+                      <img
+                        src={selectedItem.photoUrl}
+                        alt=""
+                        className="hidden"
+                        onLoad={() => setImageLoaded(true)}
+                        onError={() => setImageLoaded(false)}
+                      />
                     )}
                   </div>
                 </div>
@@ -500,27 +678,24 @@ export default function MedicalStaffPage() {
                   </div>
                 </div>
 
-                {/* 초진 가능 여부 */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">초진 가능 여부</label>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={editFrvsPsbl} onCheckedChange={setEditFrvsPsbl} />
-                    <span className="text-sm text-muted-foreground">
-                      {editFrvsPsbl ? 'On' : 'Off'}
-                    </span>
+                {/* 자문의 이메일 */}
+                <FieldGroup label="자문의 이메일">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      className="flex-1"
+                      placeholder="이메일"
+                      value={editEmailLocal}
+                      onChange={(e) => setEditEmailLocal(e.target.value)}
+                    />
+                    <span className="text-[22px] shrink-0">@</span>
+                    <Input
+                      className="flex-1"
+                      placeholder="도메인"
+                      value={editEmailDomain}
+                      onChange={(e) => setEditEmailDomain(e.target.value)}
+                    />
                   </div>
-                </div>
-
-                {/* 재진 가능 여부 */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">재진 가능 여부</label>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={editRevsPsbl} onCheckedChange={setEditRevsPsbl} />
-                    <span className="text-sm text-muted-foreground">
-                      {editRevsPsbl ? 'On' : 'Off'}
-                    </span>
-                  </div>
-                </div>
+                </FieldGroup>
 
                 {/* 약력 */}
                 {selectedItem.bio && (
