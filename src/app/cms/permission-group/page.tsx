@@ -490,7 +490,7 @@ function PermissionGroupContent() {
       let groupId = editingId;
 
       if (editingId) {
-        // 수정: 그룹명만 저장 (메뉴권한/관리자배정은 서브 다이얼로그에서 즉시 저장)
+        // 수정: 그룹명 저장
         await updateGroup({
           variables: {
             hospitalCode: formHospitalCode,
@@ -499,7 +499,7 @@ function PermissionGroupContent() {
           },
         });
       } else {
-        // 신규: 그룹 생성 후 메뉴권한 + 관리자배정 한번에 저장
+        // 신규: 그룹 생성
         const { data: createData } = await createGroup({
           variables: {
             hospitalCode: formHospitalCode,
@@ -510,9 +510,13 @@ function PermissionGroupContent() {
         if (groupId) {
           // 서버에서 그룹 생성 완료 후 처리될 시간 확보
           await new Promise((resolve) => setTimeout(resolve, 1000));
-          await saveMenuPermissions(groupId);
-          await saveAdminAssignment(groupId);
         }
+      }
+
+      // 메뉴 권한 + 관리자 배정 순차 저장
+      if (groupId) {
+        await saveMenuPermissions(groupId);
+        await saveAdminAssignment(groupId);
       }
 
       toast.success(editingId ? '권한 그룹이 수정되었습니다.' : '권한 그룹이 등록되었습니다.');
@@ -526,42 +530,16 @@ function PermissionGroupContent() {
     }
   };
 
-  /* ─── 메뉴 별 권한 저장 (서브 다이얼로그 - 수정 모드에서만 즉시 저장) ─── */
-  const handleSaveMenuPermissions = async () => {
-    if (!editingId) {
-      // 신규: 로컬 상태만 유지, 메인 저장 시 일괄 처리
-      setMenuPermDialogOpen(false);
-      toast.success('메뉴 권한이 설정되었습니다.');
-      return;
-    }
-    try {
-      await saveMenuPermissions(editingId);
-      toast.success('메뉴 권한이 저장되었습니다.');
-      setMenuPermDialogOpen(false);
-      refetch();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '메뉴 권한 저장 중 오류가 발생했습니다.';
-      toast.error(message);
-    }
+  /* ─── 메뉴 별 권한 저장 (서브 다이얼로그 - 로컬 상태만 유지, 메인 저장 시 일괄 처리) ─── */
+  const handleSaveMenuPermissions = () => {
+    setMenuPermDialogOpen(false);
+    toast.success('메뉴 권한이 설정되었습니다.');
   };
 
-  /* ─── 관리자 배정 저장 (서브 다이얼로그 - 수정 모드에서만 즉시 저장) ─── */
-  const handleSaveAdminAssignment = async () => {
-    if (!editingId) {
-      // 신규: 로컬 상태만 유지, 메인 저장 시 일괄 처리
-      setAdminAssignDialogOpen(false);
-      toast.success('관리자가 배정되었습니다.');
-      return;
-    }
-    try {
-      await saveAdminAssignment(editingId);
-      toast.success('관리자 배정이 저장되었습니다.');
-      setAdminAssignDialogOpen(false);
-      refetch();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '관리자 배정 저장 중 오류가 발생했습니다.';
-      toast.error(message);
-    }
+  /* ─── 관리자 배정 저장 (서브 다이얼로그 - 로컬 상태만 유지, 메인 저장 시 일괄 처리) ─── */
+  const handleSaveAdminAssignment = () => {
+    setAdminAssignDialogOpen(false);
+    toast.success('관리자가 배정되었습니다.');
   };
 
   /* ─── 삭제 ─── */
