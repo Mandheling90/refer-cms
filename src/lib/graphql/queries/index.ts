@@ -9,3 +9,4 @@ export * from './menu';
 export * from './partner';
 export * from './medical-staff';
 export * from './permission-group';
+export * from './e-consult';

@@ -14,7 +14,7 @@ import {
   FileText,
   History,
   Image,
-  LayoutDashboard,
+  Mail,
   PenLine,
   Settings2,
   ShieldCheck,
@@ -39,11 +39,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    title: '메인페이지',
-    icon: LayoutDashboard,
-    children: [{ title: '대시보드', href: '/cms/home' }],
-  },
   {
     title: '메뉴 관리',
     href: '/cms/menu',
@@ -123,11 +118,11 @@ const NAV_ITEMS: NavItem[] = [
     href: '/cms/board',
     icon: ClipboardList,
   },
-  // {
-  //   title: 'e-Consult',
-  //   href: '/cms/e-consult',
-  //   icon: Mail,
-  // },
+  {
+    title: 'e-Consult',
+    href: '/cms/e-consult',
+    icon: Mail,
+  },
   {
     title: '시스템 관리',
     icon: ShieldCheck,
