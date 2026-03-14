@@ -107,7 +107,26 @@ export const GET_PERMISSION_AUDIT_LOGS = gql`
         hospitalCode
         adminNumber
         adminName
+        ipAddress
         createdAt
+        permissionMenuHistories {
+          logId
+          target
+          menuId
+          menuName
+          accessLevel
+          adminNumber
+          adminName
+          createdAt
+        }
+        permissionMemberHistories {
+          logId
+          target
+          memberLabels
+          adminNumber
+          adminName
+          createdAt
+        }
       }
       totalCount
       hasNextPage

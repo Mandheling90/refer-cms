@@ -30,6 +30,26 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth-store';
 
 /* ─── 타입 정의 ─── */
+interface PermissionMenuHistory {
+  logId: string;
+  target: string;
+  menuId: string | null;
+  menuName: string | null;
+  accessLevel: string | null;
+  adminNumber: string | null;
+  adminName: string | null;
+  createdAt: string;
+}
+
+interface PermissionMemberHistory {
+  logId: string;
+  target: string;
+  memberLabels: string[];
+  adminNumber: string | null;
+  adminName: string | null;
+  createdAt: string;
+}
+
 interface PermissionAuditLogItem {
   id: string;
   action: string;
@@ -38,7 +58,10 @@ interface PermissionAuditLogItem {
   hospitalCode: string;
   adminNumber: string;
   adminName: string;
+  ipAddress: string | null;
   createdAt: string;
+  permissionMenuHistories: PermissionMenuHistory[] | null;
+  permissionMemberHistories: PermissionMemberHistory[] | null;
 }
 
 interface PermissionAuditLogsResponse {
@@ -345,53 +368,39 @@ export default function PermissionGroupHistoryPage() {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <ReadOnlyField label="수정 관리자" value={selectedLog.adminName || '-'} />
-                  <ReadOnlyField label="관리자번호" value={selectedLog.adminNumber || '-'} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <ReadOnlyField label="권한그룹명" value={selectedParsed?.groupName || '-'} />
-                  <ReadOnlyField label="이력구분" value={toActionLabel(selectedLog.action)} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <ReadOnlyField label="변경 대상" value={selectedLog.target || '-'} />
-                  <ReadOnlyField label="수정일시" value={formatDateTime(selectedLog.createdAt)} />
+                  <ReadOnlyField label="이력 구분" value={toActionLabel(selectedLog.action)} />
+                  <ReadOnlyField label="IP주소" value={selectedLog.ipAddress || '-'} />
                 </div>
 
-                {/* 권한 목록 */}
+                {/* 연결메뉴 등록/수정 내역 */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-semibold text-foreground">
-                    권한 내역
+                    연결메뉴 등록/수정 내역
                   </label>
                   <textarea
-                    className="w-full min-h-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full min-h-[140px] rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono disabled:cursor-not-allowed disabled:opacity-70"
                     value={
-                      selectedParsed?.permissions?.length
-                        ? JSON.stringify(selectedParsed.permissions, null, 2)
+                      selectedLog.permissionMenuHistories?.length
+                        ? JSON.stringify(selectedLog.permissionMenuHistories, null, 2)
                         : '-'
                     }
                     disabled
                   />
                 </div>
 
-                {/* 원본 detail */}
+                {/* 연결관리자 등록/수정 내역 */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-semibold text-foreground">
-                    상세 데이터
+                    연결관리자 등록/수정 내역
                   </label>
                   <textarea
-                    className="w-full min-h-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full min-h-[140px] rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono disabled:cursor-not-allowed disabled:opacity-70"
                     value={
-                      selectedLog.detail
-                        ? (() => {
-                            try {
-                              const outer = JSON.parse(selectedLog.detail);
-                              if (outer.value) {
-                                try { outer.value = JSON.parse(outer.value); } catch { /* keep as-is */ }
-                              }
-                              return JSON.stringify(outer, null, 2);
-                            } catch {
-                              return selectedLog.detail;
-                            }
-                          })()
+                      selectedLog.permissionMemberHistories?.length
+                        ? JSON.stringify(selectedLog.permissionMemberHistories, null, 2)
                         : '-'
                     }
                     disabled
