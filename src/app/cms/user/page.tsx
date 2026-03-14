@@ -26,11 +26,11 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import {
   ADMIN_UPDATE_USER,
   GET_ADMIN_USERS_MEMBERS,
-  GET_ADMIN_USER_BY_ID,
 } from '@/lib/graphql/queries/member';
+import { GET_ADMIN_USER_APPROVAL_BY_ID } from '@/lib/graphql/queries/member-apply';
 import type {
   AdminUser,
-  AdminUserByIdResponse,
+  AdminUserApprovalByIdResponse,
   AdminUserDetail,
   AdminUsersResponse,
 } from '@/types/member';
@@ -124,7 +124,7 @@ export default function MemberPage() {
   const totalItems = data?.adminUsers?.totalCount ?? 0;
 
   /* ─── GraphQL 상세 조회 ─── */
-  const [fetchDetail] = useLazyQuery<AdminUserByIdResponse>(GET_ADMIN_USER_BY_ID, {
+  const [fetchDetail] = useLazyQuery<AdminUserApprovalByIdResponse>(GET_ADMIN_USER_APPROVAL_BY_ID, {
     fetchPolicy: 'network-only',
   });
 
@@ -187,8 +187,8 @@ export default function MemberPage() {
     setDetailOpen(true);
     try {
       const { data: detailData } = await fetchDetail({ variables: { id: row.id } });
-      if (detailData?.adminUserById) {
-        setSelectedUser(detailData.adminUserById);
+      if (detailData?.adminUserApprovalById) {
+        setSelectedUser(detailData.adminUserApprovalById);
         setMemo('');
       }
     } catch {
