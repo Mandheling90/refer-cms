@@ -66,6 +66,11 @@ export interface AdminUserByIdResponse {
   adminUserById: AdminUserDetail;
 }
 
+/** adminUserApprovalById 응답 wrapper */
+export interface AdminUserApprovalByIdResponse {
+  adminUserApprovalById: AdminUserDetail;
+}
+
 export interface Member extends AuditFields {
   MEMBER_ID: string;
   MEMBER_NO?: string;

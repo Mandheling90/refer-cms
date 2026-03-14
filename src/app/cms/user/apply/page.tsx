@@ -27,9 +27,8 @@ import {
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
-import { GET_ADMIN_USERS, APPROVE_USER, REJECT_USER } from '@/lib/graphql/queries/member-apply';
-import { GET_ADMIN_USER_BY_ID } from '@/lib/graphql/queries/member';
-import type { AdminUser, AdminUserByIdResponse, AdminUserDetail, AdminUsersResponse } from '@/types/member';
+import { GET_ADMIN_USERS, GET_ADMIN_USER_APPROVAL_BY_ID, APPROVE_USER, REJECT_USER } from '@/lib/graphql/queries/member-apply';
+import type { AdminUser, AdminUserApprovalByIdResponse, AdminUserDetail, AdminUsersResponse } from '@/types/member';
 import {
   MEMBER_TYPE_OPTIONS,
   APPLY_STATUS_OPTIONS,
@@ -122,7 +121,7 @@ export default function MemberApplyPage() {
   const totalItems = data?.adminUsers?.totalCount ?? 0;
 
   /* ─── GraphQL 상세 조회 ─── */
-  const [fetchDetail] = useLazyQuery<AdminUserByIdResponse>(GET_ADMIN_USER_BY_ID, {
+  const [fetchDetail] = useLazyQuery<AdminUserApprovalByIdResponse>(GET_ADMIN_USER_APPROVAL_BY_ID, {
     fetchPolicy: 'network-only',
   });
 
@@ -186,8 +185,8 @@ export default function MemberApplyPage() {
     setRejectReason('');
     try {
       const { data: detailData } = await fetchDetail({ variables: { id: row.id } });
-      if (detailData?.adminUserById) {
-        setSelectedUser(detailData.adminUserById);
+      if (detailData?.adminUserApprovalById) {
+        setSelectedUser(detailData.adminUserApprovalById);
       }
     } catch {
       toast.error('회원 상세 정보를 불러오지 못했습니다.');

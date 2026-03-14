@@ -25,6 +25,51 @@ export const GET_ADMIN_USERS = gql`
   }
 `;
 
+/** 가입신청 상세 조회 */
+export const GET_ADMIN_USER_APPROVAL_BY_ID = gql`
+  query AdminUserApprovalById($id: String!) {
+    adminUserApprovalById(id: $id) {
+      id
+      userId
+      userName
+      email
+      phone
+      userType
+      status
+      hospitalCode
+      mustChangePw
+      rejectReason
+      lastLoginAt
+      lastLoginIp
+      withdrawnAt
+      createdAt
+      updatedAt
+      profile {
+        birthDate
+        licenseNo
+        school
+        department
+        doctorType
+        specialty
+        isDirector
+        emailConsent
+        smsConsent
+        replyConsent
+        hospName
+        hospCode
+        hospPhone
+        hospAddress
+        hospAddressDetail
+        hospZipCode
+        hospWebsite
+        careInstitutionNo
+        gender
+        representative
+      }
+    }
+  }
+`;
+
 /** 가입 승인 */
 export const APPROVE_USER = gql`
   mutation ApproveUser($id: String!) {
