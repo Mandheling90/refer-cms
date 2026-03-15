@@ -44,8 +44,8 @@ export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
 
 /** 관리자 협력병의원 신청 상세 조회 */
 export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
-  query AdminPartnerApplicationById($id: String!, $hospitalCode: HospitalCode) {
-    adminPartnerApplicationById(id: $id, hospitalCode: $hospitalCode) {
+  query AdminPartnerApplicationById($id: String!) {
+    adminPartnerApplicationById(id: $id) {
       id
       hospitalId
       hospitalCode
@@ -80,7 +80,14 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       staffDeptValue
       remarks
       attachments
-      attachmentRows
+      attachmentRows {
+        id
+        originalName
+        storedPath
+        mimeType
+        fileSize
+        createdAt
+      }
       approvedAt
       terminatedAt
       createdAt

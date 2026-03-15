@@ -236,7 +236,7 @@ function BannerCardContent({
           <img
             src={banner.IMAGE_URL}
             alt={banner.BANNER_NAME}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm">

@@ -240,7 +240,6 @@ export default function MemberPage() {
       size: 60,
       cell: ({ row }) => (currentPage - 1) * pageSize + row.index + 1,
     },
-    { accessorKey: 'id', header: '회원번호', size: 120 },
     { accessorKey: 'userId', header: '회원아이디', size: 130 },
     { accessorKey: 'userName', header: '회원명', size: 100 },
     { accessorKey: 'phone', header: '전화번호', size: 140 },
