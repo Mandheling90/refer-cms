@@ -106,8 +106,8 @@ export const DELETE_BOARD_POST = gql`
 
 /** 첨부파일 목록 조회 */
 export const ATTACHMENTS = gql`
-  query Attachments($entityId: ID!, $entityType: AttachmentEntityType!, $hospitalCode: HospitalCode) {
-    attachments(entityId: $entityId, entityType: $entityType, hospitalCode: $hospitalCode) {
+  query Attachments($entityId: ID!, $entityType: AttachmentEntityType!) {
+    attachments(entityId: $entityId, entityType: $entityType) {
       id
       originalName
       mimeType
@@ -120,7 +120,7 @@ export const ATTACHMENTS = gql`
 
 /** 첨부파일 다운로드 URL */
 export const PRESIGNED_DOWNLOAD_URL = gql`
-  query PresignedDownloadUrl($attachmentId: ID!, $hospitalCode: HospitalCode) {
-    presignedDownloadUrl(attachmentId: $attachmentId, hospitalCode: $hospitalCode)
+  query PresignedDownloadUrl($attachmentId: ID!) {
+    presignedDownloadUrl(attachmentId: $attachmentId)
   }
 `;
