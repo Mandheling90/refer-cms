@@ -315,6 +315,8 @@ export default function LogPage() {
             totalPages={Math.ceil(totalItems / pageSize) || 1}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            onRowClick={handleTargetClick}
+            getRowId={(row) => row.id}
           />
         }
       />
