@@ -47,7 +47,7 @@ export default function LoginPage() {
     try {
       const { data } = await loginMutation({
         variables: {
-          input: { userId, password, hospitalCode: institution.toUpperCase() },
+          input: { userId, password },
         },
       });
 
