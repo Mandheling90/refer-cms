@@ -46,3 +46,48 @@ export const ANSWER_ECONSULT = gql`
     }
   }
 `;
+
+/** Admin e-Consult 목록 조회 (서버 사이드 필터링/페이징) */
+export const GET_ADMIN_ECONSULTS = gql`
+  query AdminEConsults(
+    $hospitalCode: HospitalCode
+    $filter: EConsultFilterInput
+    $pagination: PaginationInput
+  ) {
+    adminEConsults(
+      hospitalCode: $hospitalCode
+      filter: $filter
+      pagination: $pagination
+    ) {
+      items {
+        id
+        requesterId
+        requester {
+          id
+          userName
+        }
+        consultantId
+        consultant {
+          id
+          name
+          departmentId
+          specialty
+        }
+        hospitalCode
+        title
+        status
+        createdAt
+        expiresAt
+        answeredAt
+        reply {
+          id
+          content
+          createdAt
+        }
+      }
+      totalCount
+      hasNextPage
+      cursor
+    }
+  }
+`;

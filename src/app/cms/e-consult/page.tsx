@@ -1,14 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { type ColumnDef } from '@tanstack/react-table';
-import { useQuery, useMutation } from '@apollo/client/react';
-import { DataTable } from '@/components/organisms/DataTable';
-import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
+import { DataTable } from '@/components/organisms/DataTable';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogBody,
@@ -18,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -25,17 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/auth-store';
-import {
-  GET_ECONSULT_LIST,
-  ANSWER_ECONSULT,
-} from '@/lib/graphql/queries/e-consult';
-import type { EConsultItem, EConsultListResponse, EConsultStatus } from '@/types/e-consult';
-import { ECONSULT_STATUS_MAP, ECONSULT_STATUS_OPTIONS } from '@/types/e-consult';
-import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
-import { Trash2 } from 'lucide-react';
+import { GET_ADMIN_ECONSULTS } from '@/lib/graphql/queries/e-consult';
+import { useAuthStore } from '@/stores/auth-store';
+import type {
+  AdminEConsultItem,
+  AdminEConsultListResponse,
+  EConsultStatus,
+} from '@/types/e-consult';
+import { ECONSULT_STATUS_MAP, ECONSULT_STATUS_OPTIONS } from '@/types/e-consult';
+import { useQuery } from '@apollo/client/react';
+import { type ColumnDef } from '@tanstack/react-table';
+import { useCallback, useMemo, useState } from 'react';
 
 /* ─── 검색 필드 공통 ─── */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -51,11 +48,13 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 function StatusBadge({ status }: { status: EConsultStatus }) {
   const colorMap: Record<EConsultStatus, string> = {
     PENDING: 'bg-yellow-100 text-yellow-800',
-    COMPLETED: 'bg-green-100 text-green-800',
+    ANSWERED: 'bg-green-100 text-green-800',
     EXPIRED: 'bg-red-100 text-red-800',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorMap[status]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorMap[status]}`}
+    >
       {ECONSULT_STATUS_MAP[status] ?? status}
     </span>
   );
@@ -78,7 +77,7 @@ function formatDateTime(val?: string | null) {
 }
 
 /* ═══════════════════════════════════════
-   e-Consult 관리 페이지
+   e-Consult 관리 페이지 (Admin)
    ═══════════════════════════════════════ */
 export default function EConsultPage() {
   const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
@@ -87,136 +86,54 @@ export default function EConsultPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
-  /* ─── 검색 조건 (입력 즉시 필터링) ─── */
-  const [searchRequesterName, setSearchRequesterName] = useState('');
-  const [searchRequesterEmail, setSearchRequesterEmail] = useState('');
-  const [searchHospitalName, setSearchHospitalName] = useState('');
-  const [searchTitle, setSearchTitle] = useState('');
-  const [searchConsultant, setSearchConsultant] = useState('');
-  const [searchDepartment, setSearchDepartment] = useState('');
+  /* ─── 검색 조건 (서버 사이드 필터) ─── */
   const [searchStatus, setSearchStatus] = useState('');
+
+  /* ─── 적용된 필터 (검색 버튼 클릭 시 반영) ─── */
+  const [appliedStatus, setAppliedStatus] = useState<string | undefined>();
 
   /* ─── 상세 다이얼로그 ─── */
   const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<EConsultItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AdminEConsultItem | null>(null);
 
-  /* ─── 답변 폼 상태 ─── */
-  const [editAnswer, setEditAnswer] = useState('');
-
-  /* ─── 선택 행 / 확인 다이얼로그 ─── */
-  const [selectedRows, setSelectedRows] = useState<EConsultItem[]>([]);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
+  /* ─── 필터 변수 구성 ─── */
+  const filterVariables = useMemo(() => {
+    if (appliedStatus) return { status: appliedStatus };
+    return undefined;
+  }, [appliedStatus]);
 
   /* ─── GraphQL 목록 조회 ─── */
-  const { data, loading, refetch } = useQuery<EConsultListResponse>(
-    GET_ECONSULT_LIST,
-    {
-      variables: { hospitalCode },
-      fetchPolicy: 'network-only',
+  const { data, loading, refetch } = useQuery<AdminEConsultListResponse>(GET_ADMIN_ECONSULTS, {
+    variables: {
+      hospitalCode,
+      filter: filterVariables,
+      pagination: { page: currentPage, limit: pageSize },
     },
-  );
+    fetchPolicy: 'network-only',
+  });
 
-  /* ─── GraphQL 답변 등록 ─── */
-  const [answerEConsult] = useMutation(ANSWER_ECONSULT);
-
-  const allItems = data?.eConsultList?.items ?? [];
-
-  /* ─── 프론트 필터링 (입력 즉시 반영) ─── */
-  const filteredItems = useMemo(() => {
-    const nameTrim = searchRequesterName.trim();
-    const emailTrim = searchRequesterEmail.trim();
-    const hospTrim = searchHospitalName.trim();
-    const titleTrim = searchTitle.trim();
-    const consultTrim = searchConsultant.trim();
-    const deptTrim = searchDepartment.trim();
-    const statusVal = searchStatus === '__all' ? '' : searchStatus;
-
-    return allItems.filter((item) => {
-      if (nameTrim && !item.requesterName.includes(nameTrim)) return false;
-      if (emailTrim && !item.requesterEmail.includes(emailTrim)) return false;
-      if (hospTrim && !item.hospitalName.includes(hospTrim)) return false;
-      if (titleTrim && !item.title.includes(titleTrim)) return false;
-      if (consultTrim && !item.consultantName.includes(consultTrim)) return false;
-      if (deptTrim && !item.consultantDepartment.includes(deptTrim)) return false;
-      if (statusVal && item.status !== statusVal) return false;
-      return true;
-    });
-  }, [allItems, searchRequesterName, searchRequesterEmail, searchHospitalName, searchTitle, searchConsultant, searchDepartment, searchStatus]);
-
-  const totalCount = filteredItems.length;
+  const items = data?.adminEConsults?.items ?? [];
+  const totalCount = data?.adminEConsults?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-  /* 필터 변경 시 1페이지로 리셋 */
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchRequesterName, searchRequesterEmail, searchHospitalName, searchTitle, searchConsultant, searchDepartment, searchStatus]);
-
-  /* ─── 프론트 페이징 ─── */
-  const pagedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredItems.slice(start, start + pageSize);
-  }, [filteredItems, currentPage, pageSize]);
-
-  /* ─── 재검색 (API 재조회) ─── */
+  /* ─── 검색 (서버 필터 적용) ─── */
   const handleSearch = useCallback(() => {
+    setAppliedStatus(searchStatus || undefined);
     setCurrentPage(1);
-    refetch();
-  }, [refetch]);
+  }, [searchStatus]);
 
   /* ─── 초기화 ─── */
   const handleReset = () => {
-    setSearchRequesterName('');
-    setSearchRequesterEmail('');
-    setSearchHospitalName('');
-    setSearchTitle('');
-    setSearchConsultant('');
-    setSearchDepartment('');
     setSearchStatus('');
+    setAppliedStatus(undefined);
     setCurrentPage(1);
   };
 
   /* ─── 행 클릭 → 상세 다이얼로그 ─── */
-  const handleRowClick = useCallback((row: EConsultItem) => {
+  const handleRowClick = useCallback((row: AdminEConsultItem) => {
     setSelectedItem(row);
-    setEditAnswer(row.answer ?? '');
     setDetailOpen(true);
   }, []);
-
-  /* ─── 답변 저장 ─── */
-  const handleSave = async () => {
-    if (!selectedItem) return;
-    try {
-      if (!editAnswer.trim()) {
-        toast.error('답변 내용을 입력해 주세요.');
-        setSaveConfirmOpen(false);
-        return;
-      }
-      await answerEConsult({
-        variables: {
-          id: selectedItem.id,
-          answer: editAnswer.trim(),
-        },
-      });
-      toast.success('답변이 저장되었습니다.');
-      setSaveConfirmOpen(false);
-      setDetailOpen(false);
-      refetch();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
-      toast.error(message);
-      setSaveConfirmOpen(false);
-    }
-  };
-
-  /* ─── 일괄 삭제 (TODO: 삭제 API 연동 시 교체) ─── */
-  const handleBulkDelete = async () => {
-    if (selectedRows.length === 0) return;
-    toast.success(`${selectedRows.length}건이 삭제되었습니다.`);
-    setDeleteConfirmOpen(false);
-    setSelectedRows([]);
-    refetch();
-  };
 
   /* ─── 페이징 ─── */
   const handlePageChange = (page: number) => setCurrentPage(page);
@@ -226,7 +143,7 @@ export default function EConsultPage() {
   };
 
   /* ─── 테이블 컬럼 ─── */
-  const columns: ColumnDef<EConsultItem, unknown>[] = useMemo(
+  const columns: ColumnDef<AdminEConsultItem, unknown>[] = useMemo(
     () => [
       {
         id: 'index',
@@ -240,27 +157,17 @@ export default function EConsultPage() {
       {
         id: 'requesterName',
         header: '신청자명',
-        cell: ({ row }) => <span className="text-sm">{row.original.requesterName}</span>,
-        size: 90,
-      },
-      {
-        id: 'hospitalName',
-        header: '의료기관명',
-        cell: ({ row }) => <span className="text-sm">{row.original.hospitalName}</span>,
-        size: 120,
-      },
-      {
-        id: 'requesterEmail',
-        header: '신청자 이메일',
-        cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.requesterEmail}</span>,
-        size: 160,
+        cell: ({ row }) => (
+          <span className="text-sm">{row.original.requester?.userName ?? '-'}</span>
+        ),
+        size: 100,
       },
       {
         id: 'title',
         header: 'e-Consult 제목',
         cell: ({ row }) => (
           <button
-            className="text-primary underline underline-offset-2 hover:text-primary/90 cursor-pointer text-left truncate max-w-[200px]"
+            className="text-primary underline underline-offset-2 hover:text-primary/90 cursor-pointer text-left truncate max-w-[240px]"
             onClick={(e) => {
               e.stopPropagation();
               handleRowClick(row.original);
@@ -269,120 +176,74 @@ export default function EConsultPage() {
             {row.original.title}
           </button>
         ),
-        size: 200,
-      },
-      {
-        id: 'createdAt',
-        header: '신청일시',
-        cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{formatDateTime(row.original.createdAt)}</span>
-        ),
-        size: 150,
+        size: 240,
       },
       {
         id: 'consultantName',
         header: '자문의',
-        cell: ({ row }) => <span className="text-sm">{row.original.consultantName}</span>,
-        size: 80,
+        cell: ({ row }) => <span className="text-sm">{row.original.consultant?.name ?? '-'}</span>,
+        size: 100,
       },
       {
-        id: 'consultantDepartment',
-        header: '자문의 진료과',
-        cell: ({ row }) => <span className="text-sm">{row.original.consultantDepartment}</span>,
-        size: 110,
+        id: 'specialty',
+        header: '전문분야',
+        cell: ({ row }) => (
+          <span className="text-sm truncate block max-w-[240px]">
+            {row.original.consultant?.specialty ?? '-'}
+          </span>
+        ),
+        size: 240,
       },
       {
         id: 'status',
         header: '답변여부',
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
-        size: 90,
+        size: 80,
+      },
+      {
+        id: 'createdAt',
+        header: '신청일시',
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {formatDateTime(row.original.createdAt)}
+          </span>
+        ),
+        size: 120,
+      },
+      {
+        id: 'expiresAt',
+        header: '만료일시',
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {formatDateTime(row.original.expiresAt)}
+          </span>
+        ),
+        size: 120,
       },
       {
         id: 'answeredAt',
         header: '답변일시',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{formatDateTime(row.original.answeredAt)}</span>
+          <span className="text-sm text-muted-foreground">
+            {formatDateTime(row.original.answeredAt)}
+          </span>
         ),
-        size: 150,
+        size: 120,
       },
     ],
-    [handleRowClick, totalCount, currentPage, pageSize],
+    [handleRowClick, totalCount, currentPage, pageSize]
   );
 
   return (
     <>
       <ListPageTemplate
-        title="e-Consult"
+        title="e-Consult 관리"
         hospitalSelector={<HospitalSelector />}
         totalItems={totalCount}
         onSearch={handleSearch}
         onReset={handleReset}
-        listHeaderActions={
-          <Button
-            variant="outline-red"
-            size="md"
-            onClick={() => {
-              if (selectedRows.length === 0) {
-                toast.error('삭제할 항목을 선택해주세요.');
-                return;
-              }
-              setDeleteConfirmOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-            일괄 삭제
-          </Button>
-        }
         searchSection={
           <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-            <FieldGroup label="신청자명">
-              <Input
-                placeholder="신청자명을 입력해 주세요."
-                value={searchRequesterName}
-                onChange={(e) => setSearchRequesterName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              />
-            </FieldGroup>
-            <FieldGroup label="의료기관명">
-              <Input
-                placeholder="의료기관명을 입력해 주세요."
-                value={searchHospitalName}
-                onChange={(e) => setSearchHospitalName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              />
-            </FieldGroup>
-            <FieldGroup label="신청자 이메일">
-              <Input
-                placeholder="신청자 이메일을 입력해 주세요."
-                value={searchRequesterEmail}
-                onChange={(e) => setSearchRequesterEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              />
-            </FieldGroup>
-            <FieldGroup label="e-Consult 제목">
-              <Input
-                placeholder="e-Consult 제목을 입력해 주세요."
-                value={searchTitle}
-                onChange={(e) => setSearchTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              />
-            </FieldGroup>
-            <FieldGroup label="자문의">
-              <Input
-                placeholder="자문의를 입력해 주세요."
-                value={searchConsultant}
-                onChange={(e) => setSearchConsultant(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              />
-            </FieldGroup>
-            <FieldGroup label="자문의 진료과">
-              <Input
-                placeholder="자문의 진료과를 입력해 주세요."
-                value={searchDepartment}
-                onChange={(e) => setSearchDepartment(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              />
-            </FieldGroup>
             <FieldGroup label="답변여부">
               <Select
                 value={searchStatus || '__all'}
@@ -405,7 +266,7 @@ export default function EConsultPage() {
         listContent={
           <DataTable
             columns={columns}
-            data={pagedItems}
+            data={items}
             loading={loading}
             totalItems={totalCount}
             currentPage={currentPage}
@@ -414,14 +275,12 @@ export default function EConsultPage() {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             onRowClick={handleRowClick}
-            enableSelection
-            onSelectionChange={setSelectedRows}
             getRowId={(row) => row.id}
           />
         }
       />
 
-      {/* ═══ 상세/답변 다이얼로그 ═══ */}
+      {/* ═══ 상세 다이얼로그 ═══ */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-[640px] max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -429,7 +288,7 @@ export default function EConsultPage() {
               e-Consult 상세{selectedItem ? ` : ${selectedItem.title}` : ''}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              e-Consult 상세 정보를 조회하고 답변합니다.
+              e-Consult 상세 정보를 조회합니다.
             </DialogDescription>
           </DialogHeader>
 
@@ -439,16 +298,28 @@ export default function EConsultPage() {
                 {/* 신청 정보 */}
                 <div className="grid grid-cols-2 gap-4">
                   <FieldGroup label="신청자명">
-                    <Input value={selectedItem.requesterName} disabled />
+                    <Input value={selectedItem.requester?.userName ?? '-'} disabled />
                   </FieldGroup>
-                  <FieldGroup label="의료기관명">
-                    <Input value={selectedItem.hospitalName} disabled />
+                  <FieldGroup label="병원코드">
+                    <Input value={selectedItem.hospitalCode ?? '-'} disabled />
                   </FieldGroup>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <FieldGroup label="신청자 이메일">
-                    <Input value={selectedItem.requesterEmail} disabled />
+                  <FieldGroup label="자문의">
+                    <Input value={selectedItem.consultant?.name ?? '-'} disabled />
+                  </FieldGroup>
+                  <FieldGroup label="전문분야">
+                    <Input value={selectedItem.consultant?.specialty ?? '-'} disabled />
+                  </FieldGroup>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FieldGroup label="답변여부">
+                    <Input
+                      value={ECONSULT_STATUS_MAP[selectedItem.status] ?? selectedItem.status}
+                      disabled
+                    />
                   </FieldGroup>
                   <FieldGroup label="신청일시">
                     <Input value={formatDateTime(selectedItem.createdAt)} disabled />
@@ -456,17 +327,8 @@ export default function EConsultPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <FieldGroup label="자문의">
-                    <Input value={selectedItem.consultantName} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="자문의 진료과">
-                    <Input value={selectedItem.consultantDepartment} disabled />
-                  </FieldGroup>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FieldGroup label="답변여부">
-                    <Input value={ECONSULT_STATUS_MAP[selectedItem.status] ?? selectedItem.status} disabled />
+                  <FieldGroup label="만료일시">
+                    <Input value={formatDateTime(selectedItem.expiresAt)} disabled />
                   </FieldGroup>
                   <FieldGroup label="답변일시">
                     <Input value={formatDateTime(selectedItem.answeredAt)} disabled />
@@ -478,74 +340,50 @@ export default function EConsultPage() {
                   <Input value={selectedItem.title} disabled />
                 </FieldGroup>
 
-                {/* e-Consult 내용 */}
-                <FieldGroup label="e-Consult 내용">
-                  <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm whitespace-pre-wrap min-h-[120px]">
-                    {selectedItem.content}
-                  </div>
-                </FieldGroup>
-
                 {/* 자문의 답변 */}
-                <FieldGroup label="자문의 답변">
-                  {selectedItem.status === 'COMPLETED' ? (
-                    <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm whitespace-pre-wrap min-h-[120px]">
-                      {selectedItem.answer}
-                    </div>
-                  ) : selectedItem.status === 'EXPIRED' ? (
+                {selectedItem.reply && (
+                  <>
+                    <FieldGroup label="자문의 답변">
+                      <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm whitespace-pre-wrap min-h-[120px]">
+                        {selectedItem.reply.content}
+                      </div>
+                    </FieldGroup>
+                    <FieldGroup label="답변 등록일시">
+                      <Input value={formatDateTime(selectedItem.reply.createdAt)} disabled />
+                    </FieldGroup>
+                  </>
+                )}
+
+                {!selectedItem.reply && selectedItem.status === 'EXPIRED' && (
+                  <FieldGroup label="자문의 답변">
                     <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-muted-foreground min-h-[120px]">
                       답변 기한이 만료되었습니다.
                     </div>
-                  ) : (
-                    <Textarea
-                      placeholder="답변 내용을 입력해 주세요."
-                      value={editAnswer}
-                      onChange={(e) => setEditAnswer(e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                  )}
-                </FieldGroup>
+                  </FieldGroup>
+                )}
+
+                {!selectedItem.reply && selectedItem.status === 'PENDING' && (
+                  <FieldGroup label="자문의 답변">
+                    <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-muted-foreground min-h-[120px]">
+                      아직 답변이 등록되지 않았습니다.
+                    </div>
+                  </FieldGroup>
+                )}
               </>
             )}
           </DialogBody>
 
-          <DialogFooter className="gap-1.5">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setDetailOpen(false)}
               className="rounded-md border-gray-500 px-4"
             >
-              취소
+              닫기
             </Button>
-            {selectedItem?.status === 'PENDING' && (
-              <Button
-                variant="dark"
-                onClick={() => setSaveConfirmOpen(true)}
-                className="rounded-md px-4"
-              >
-                답변 저장
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* 저장 확인 */}
-      <ConfirmDialog
-        open={saveConfirmOpen}
-        onOpenChange={setSaveConfirmOpen}
-        title="답변 저장 확인"
-        description="답변을 저장하시겠습니까?"
-        onConfirm={handleSave}
-      />
-
-      {/* 삭제 확인 */}
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title="삭제 확인"
-        description={`선택한 ${selectedRows.length}건을 삭제하시겠습니까?`}
-        onConfirm={handleBulkDelete}
-      />
     </>
   );
 }
