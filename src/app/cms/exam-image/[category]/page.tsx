@@ -14,22 +14,30 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { uploadFile } from '@/lib/api/graphql';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
+import {
+  APPROVE_IMAGING_REQUEST,
+  GET_IMAGING_REQUESTS,
+  GET_IMAGING_REQUEST_DETAIL,
+  REJECT_IMAGING_REQUEST,
+  REPLACE_IMAGING_REQUEST_ATTACHMENTS,
+} from '@/lib/graphql/queries/exam-image';
+import { PRESIGNED_DOWNLOAD_URL } from '@/lib/graphql/queries/board';
 import type {
-  ExamImageApprovalStatus,
-  ExamImageDetail,
-  ExamImageModel,
-  UploadedImage,
+  AttachmentModel,
+  ImagingRequestDetailResponse,
+  ImagingRequestDisplayState,
+  ImagingRequestModel,
+  ImagingRequestsResponse,
 } from '@/types/exam-image';
+import { useApolloClient, useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Eye, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Eye, ImageIcon, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-// TODO: API 연동 시 GraphQL import로 교체
-// import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
-// import { ... } from '@/lib/graphql/queries/exam-image';
 
 /* ═══════════════════════════════════════
    카테고리별 타이틀 매핑
@@ -39,103 +47,6 @@ const CATEGORY_TITLE: Record<string, string> = {
   endoscopy: '내시경검사',
   etc: '기타검사',
 };
-
-/* ═══════════════════════════════════════
-   Mock 데이터
-   ═══════════════════════════════════════ */
-const MOCK_DATA: ExamImageDetail[] = [
-  {
-    id: '1', no: 12, patientName: '남궁성모', residentNo: '980218-*******', patientNo: '12345',
-    examDate: '2025-04-25 16:33', examName: 'CT- Chest(CE)[G] - 다중검사시 조영제차감',
-    imageRequestDate: '2025-04-25 16:33', partnerDoctor: '이철수',
-    approvalStatus: 'PENDING', imageCount: 0,
-    images: [],
-    createdAt: '2025-04-25T16:33:00Z', updatedAt: '2025-04-25T16:33:00Z',
-  },
-  {
-    id: '2', no: 11, patientName: '남궁성모', residentNo: '980218-*******', patientNo: '12345',
-    examDate: '2025-04-25 16:33', examName: 'CT- Chest(CE)[G] - 다중검사시 조영제차감',
-    imageRequestDate: '2025-04-25 16:33', partnerDoctor: '김현장',
-    approvalStatus: 'APPROVED', imageCount: 4,
-    images: [
-      { id: 'img1', fileName: '이미지_018683970362.jpg', fileSize: '3kb' },
-      { id: 'img2', fileName: '이미지_018683970363.jpg', fileSize: '3kb' },
-      { id: 'img3', fileName: '이미지_018683970364.jpg', fileSize: '3kb' },
-      { id: 'img4', fileName: '이미지_018683970365.jpg', fileSize: '3kb' },
-    ],
-    createdAt: '2025-04-25T16:33:00Z', updatedAt: '2025-04-25T16:33:00Z',
-  },
-  {
-    id: '3', no: 10, patientName: '남궁성모', residentNo: '980218-*******', patientNo: '12345',
-    examDate: '2025-04-25 16:33', examName: 'CT- Chest(CE)[G] - 다중검사시 조영제차감',
-    imageRequestDate: '2025-04-25 16:33', partnerDoctor: '최지원',
-    approvalStatus: 'APPROVED', imageCount: 3,
-    images: [
-      { id: 'img5', fileName: '이미지_018683970370.jpg', fileSize: '5kb' },
-      { id: 'img6', fileName: '이미지_018683970371.jpg', fileSize: '4kb' },
-      { id: 'img7', fileName: '이미지_018683970372.jpg', fileSize: '3kb' },
-    ],
-    createdAt: '2025-04-25T16:33:00Z', updatedAt: '2025-04-25T16:33:00Z',
-  },
-  {
-    id: '4', no: 10, patientName: '정수빈', residentNo: '001105-*******', patientNo: '56789',
-    examDate: '2025-04-24 10:20', examName: 'CT- Abdomen(CE) - 복부 조영 CT',
-    imageRequestDate: '2025-04-24 10:20', partnerDoctor: '박상훈',
-    approvalStatus: 'APPROVED', imageCount: 0,
-    images: [],
-    createdAt: '2025-04-24T10:20:00Z', updatedAt: '2025-04-24T10:20:00Z',
-  },
-  {
-    id: '9', no: 6, patientName: '남궁성모', residentNo: '980218-*******', patientNo: '12345',
-    examDate: '2025-04-25 16:33', examName: 'CT- Chest(CE)[G] - 다중검사시 조영제차감',
-    imageRequestDate: '2025-04-25 16:33', partnerDoctor: '최지원',
-    approvalStatus: 'REJECTED', imageCount: 0,
-    images: [],
-    createdAt: '2025-04-25T16:33:00Z', updatedAt: '2025-04-25T16:33:00Z',
-  },
-  {
-    id: '5', no: 10, patientName: '남궁성모', residentNo: '980218-*******', patientNo: '12345',
-    examDate: '2025-01-25 16:33', examName: 'CT- Chest(CE)[G] - 다중검사시 조영제차감',
-    imageRequestDate: '2025-01-25 16:33', partnerDoctor: '최지원',
-    approvalStatus: 'EXPIRED', imageCount: 0,
-    images: [],
-    createdAt: '2025-01-25T16:33:00Z', updatedAt: '2025-01-25T16:33:00Z',
-  },
-  {
-    id: '6', no: 9, patientName: '김영희', residentNo: '910315-*******', patientNo: '23456',
-    examDate: '2025-04-20 09:15', examName: 'MRI Brain(CE) - 조영증강',
-    imageRequestDate: '2025-04-20 09:15', partnerDoctor: '박상훈',
-    approvalStatus: 'APPROVED', imageCount: 6,
-    images: [
-      { id: 'img10', fileName: '이미지_018683970380.jpg', fileSize: '4kb' },
-      { id: 'img11', fileName: '이미지_018683970381.jpg', fileSize: '4kb' },
-      { id: 'img12', fileName: '이미지_018683970382.jpg', fileSize: '5kb' },
-      { id: 'img13', fileName: '이미지_018683970383.jpg', fileSize: '3kb' },
-      { id: 'img14', fileName: '이미지_018683970384.jpg', fileSize: '4kb' },
-      { id: 'img15', fileName: '이미지_018683970385.jpg', fileSize: '3kb' },
-    ],
-    createdAt: '2025-04-20T09:15:00Z', updatedAt: '2025-04-20T09:15:00Z',
-  },
-  {
-    id: '7', no: 8, patientName: '박철호', residentNo: '850712-*******', patientNo: '34567',
-    examDate: '2025-04-18 14:30', examName: 'X-Ray Chest PA',
-    imageRequestDate: '2025-04-18 14:30', partnerDoctor: '이철수',
-    approvalStatus: 'PENDING', imageCount: 0,
-    images: [],
-    createdAt: '2025-04-18T14:30:00Z', updatedAt: '2025-04-18T14:30:00Z',
-  },
-  {
-    id: '8', no: 7, patientName: '이민정', residentNo: '770923-*******', patientNo: '45678',
-    examDate: '2025-04-15 11:00', examName: 'US Abdomen',
-    imageRequestDate: '2025-04-15 11:00', partnerDoctor: '김현장',
-    approvalStatus: 'APPROVED', imageCount: 2,
-    images: [
-      { id: 'img20', fileName: '이미지_018683970390.jpg', fileSize: '6kb' },
-      { id: 'img21', fileName: '이미지_018683970391.jpg', fileSize: '5kb' },
-    ],
-    createdAt: '2025-04-15T11:00:00Z', updatedAt: '2025-04-15T11:00:00Z',
-  },
-];
 
 /* --- 공통 컴포넌트 --- */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -157,17 +68,18 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* --- 승인 상태 뱃지 --- */
-function ApprovalBadge({ status }: { status: ExamImageApprovalStatus }) {
-  const config: Record<ExamImageApprovalStatus, { label: string; className: string }> = {
-    PENDING: { label: '대기', className: 'bg-gray-100 text-gray-600 border-gray-300' },
-    APPROVED: { label: '승인 완료', className: 'bg-green-50 text-green-700 border-green-300' },
-    REJECTED: { label: '반려 완료', className: 'bg-red-50 text-red-600 border-red-300' },
-    EXPIRED: { label: '기간 만료', className: 'text-muted-foreground' },
+/* --- 표시 상태 뱃지 --- */
+function DisplayStateBadge({ state }: { state: ImagingRequestDisplayState }) {
+  const config: Record<ImagingRequestDisplayState, { label: string; className: string }> = {
+    REQUESTABLE: { label: '요청가능', className: 'bg-blue-50 text-blue-700 border-blue-300' },
+    PENDING_IMAGE: { label: '이미지 대기', className: 'bg-gray-100 text-gray-600 border-gray-300' },
+    VIEWABLE: { label: '조회가능', className: 'bg-green-50 text-green-700 border-green-300' },
+    REJECTED: { label: '반려', className: 'bg-red-50 text-red-600 border-red-300' },
+    EXPIRED: { label: '만료', className: 'text-muted-foreground' },
   };
-  const { label, className } = config[status] ?? config.PENDING;
+  const { label, className } = config[state] ?? config.REQUESTABLE;
 
-  if (status === 'EXPIRED') {
+  if (state === 'EXPIRED') {
     return <span className={`text-sm ${className}`}>{label}</span>;
   }
   return (
@@ -177,6 +89,19 @@ function ApprovalBadge({ status }: { status: ExamImageApprovalStatus }) {
   );
 }
 
+/* --- 날짜 포맷 --- */
+const formatDateTime = (val?: string | null) => {
+  if (!val) return '-';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return val;
+  const yyyy = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const HH = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${MM}-${dd} ${HH}:${mm}`;
+};
+
 /* ═══════════════════════════════════════
    검사이미지 관리 페이지
    ═══════════════════════════════════════ */
@@ -184,8 +109,7 @@ export default function ExamImagePage() {
   const params = useParams();
   const category = params.category as string;
   const pageTitle = CATEGORY_TITLE[category] ?? '검사이미지 관리';
-
-  const [mockItems, setMockItems] = useState<ExamImageDetail[]>(MOCK_DATA);
+  const apolloClient = useApolloClient();
 
   /* --- 페이징 --- */
   const [currentPage, setCurrentPage] = useState(1);
@@ -193,189 +117,379 @@ export default function ExamImagePage() {
 
   /* --- 검색 조건 --- */
   const [searchPatientName, setSearchPatientName] = useState('');
-  const [searchResidentNo, setSearchResidentNo] = useState('');
-  const [searchPatientNo, setSearchPatientNo] = useState('');
-  const [searchDoctor, setSearchDoctor] = useState('');
+  const [searchPtntNo, setSearchPtntNo] = useState('');
   const [searchExamName, setSearchExamName] = useState('');
 
   const [appliedFilter, setAppliedFilter] = useState<{
     patientName?: string;
-    residentNo?: string;
-    patientNo?: string;
-    partnerDoctor?: string;
+    ptntNo?: string;
     examName?: string;
   }>({});
 
-  /* --- 필터링 & 페이징 --- */
-  const filteredItems = useMemo(() => {
-    return mockItems.filter((item) => {
-      if (appliedFilter.patientName && !item.patientName.includes(appliedFilter.patientName)) return false;
-      if (appliedFilter.residentNo && !item.residentNo.includes(appliedFilter.residentNo)) return false;
-      if (appliedFilter.patientNo && !item.patientNo.includes(appliedFilter.patientNo)) return false;
-      if (appliedFilter.partnerDoctor && !item.partnerDoctor.includes(appliedFilter.partnerDoctor)) return false;
-      if (appliedFilter.examName && !item.examName.includes(appliedFilter.examName)) return false;
-      return true;
-    });
-  }, [mockItems, appliedFilter]);
+  /* --- GraphQL 목록 조회 --- */
+  const { data, loading, refetch } = useQuery<ImagingRequestsResponse>(
+    GET_IMAGING_REQUESTS,
+    {
+      variables: {
+        input: {
+          page: currentPage,
+          limit: pageSize,
+          filter: {
+            ...(appliedFilter.patientName ? { patientName: appliedFilter.patientName } : {}),
+            ...(appliedFilter.ptntNo ? { ptntNo: appliedFilter.ptntNo } : {}),
+            ...(appliedFilter.examName ? { examName: appliedFilter.examName } : {}),
+          },
+        },
+      },
+      fetchPolicy: 'network-only',
+    },
+  );
 
-  const totalCount = filteredItems.length;
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-  const pagedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredItems.slice(start, start + pageSize);
-  }, [filteredItems, currentPage, pageSize]);
+  const items = data?.imagingRequestsForAdmin?.items ?? [];
+  const totalCount = data?.imagingRequestsForAdmin?.totalCount ?? 0;
+
+  /* --- GraphQL 상세 조회 --- */
+  const [fetchDetail] = useLazyQuery<ImagingRequestDetailResponse>(
+    GET_IMAGING_REQUEST_DETAIL,
+    { fetchPolicy: 'network-only' },
+  );
+
+  /* --- Presigned URL 조회 --- */
+  const [fetchPresignedUrl] = useLazyQuery<{ presignedDownloadUrl: string }>(
+    PRESIGNED_DOWNLOAD_URL,
+    { fetchPolicy: 'network-only' },
+  );
+
+  const handleViewAttachment = async (attachmentId: string, fileName?: string) => {
+    try {
+      const { data: urlData } = await fetchPresignedUrl({ variables: { attachmentId } });
+      if (urlData?.presignedDownloadUrl) {
+        setSingleImageUrl(urlData.presignedDownloadUrl);
+        setSingleImageName(fileName ?? '');
+        setSingleImageOpen(true);
+      } else {
+        toast.error('다운로드 URL을 가져오지 못했습니다.');
+      }
+    } catch {
+      toast.error('파일을 불러오는 중 오류가 발생했습니다.');
+    }
+  };
+
+  /* --- Mutations --- */
+  const [approveRequest] = useMutation(APPROVE_IMAGING_REQUEST);
+  const [rejectRequest] = useMutation(REJECT_IMAGING_REQUEST);
+  const [replaceAttachments] = useMutation(REPLACE_IMAGING_REQUEST_ATTACHMENTS);
 
   /* --- 선택 행 --- */
-  const [selectedRows, setSelectedRows] = useState<ExamImageModel[]>([]);
+  const [selectedRows, setSelectedRows] = useState<ImagingRequestModel[]>([]);
 
   /* --- 다이얼로그 상태 --- */
-  const [registerOpen, setRegisterOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ExamImageDetail | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ImagingRequestModel | null>(null);
 
   /* --- 확인 다이얼로그 --- */
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const [deleteAllImagesOpen, setDeleteAllImagesOpen] = useState(false);
   const [deleteSingleImageOpen, setDeleteSingleImageOpen] = useState(false);
   const [deleteTargetImageId, setDeleteTargetImageId] = useState<string | null>(null);
-  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
-  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
-  const [actionTargetId, setActionTargetId] = useState<string | null>(null);
+
+  /* --- 전체이미지 조회 팝업 --- */
+  const [allImagesOpen, setAllImagesOpen] = useState(false);
+  const [allImageUrls, setAllImageUrls] = useState<Record<string, string>>({});
+
+  /* --- 단건 이미지 조회 팝업 --- */
+  const [singleImageOpen, setSingleImageOpen] = useState(false);
+  const [singleImageUrl, setSingleImageUrl] = useState<string | null>(null);
+  const [singleImageName, setSingleImageName] = useState('');
+
+  /* --- 첨부파일 목록의 presigned URL 일괄 조회 --- */
+  const fetchAllPresignedUrls = async (attachments: AttachmentModel[]) => {
+    const urls: Record<string, string> = {};
+    await Promise.all(
+      attachments.map(async (att) => {
+        try {
+          const { data: urlData } = await apolloClient.query<{ presignedDownloadUrl: string }>({
+            query: PRESIGNED_DOWNLOAD_URL,
+            variables: { attachmentId: att.id },
+            fetchPolicy: 'network-only',
+          });
+          if (urlData?.presignedDownloadUrl) {
+            urls[att.id] = urlData.presignedDownloadUrl;
+          }
+        } catch { /* skip */ }
+      }),
+    );
+    return urls;
+  };
+
+  /* --- 전체이미지 조회 열기 (상세 다이얼로그 내부 or 리스트에서 직접) --- */
+  const handleOpenAllImages = async (item?: ImagingRequestModel) => {
+    // 리스트에서 직접 호출 시 상세 조회 후 열기
+    if (item) {
+      setAllImagesOpen(true);
+      setAllImageUrls({});
+      try {
+        const { data: detailData } = await fetchDetail({ variables: { id: item.id } });
+        const detail = detailData?.imagingRequestDetail;
+        if (!detail?.attachments?.length) {
+          toast.error('등록된 이미지가 없습니다.');
+          setAllImagesOpen(false);
+          return;
+        }
+        setSelectedItem(detail);
+        setAllImageUrls(await fetchAllPresignedUrls(detail.attachments));
+      } catch {
+        toast.error('이미지를 불러오지 못했습니다.');
+        setAllImagesOpen(false);
+      }
+      return;
+    }
+
+    // 상세 다이얼로그 내부에서 호출 시 (selectedItem 사용)
+    if (!selectedItem?.attachments?.length) return;
+    setAllImagesOpen(true);
+    setAllImageUrls({});
+    setAllImageUrls(await fetchAllPresignedUrls(selectedItem.attachments));
+  };
 
   /* --- 파일 업로드 참조 --- */
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
 
   /* --- 검색 --- */
   const handleSearch = useCallback(() => {
-    setAppliedFilter({
+    const newFilter = {
       patientName: searchPatientName.trim() || undefined,
-      residentNo: searchResidentNo.trim() || undefined,
-      patientNo: searchPatientNo.trim() || undefined,
-      partnerDoctor: searchDoctor.trim() || undefined,
+      ptntNo: searchPtntNo.trim() || undefined,
       examName: searchExamName.trim() || undefined,
-    });
+    };
+    setAppliedFilter(newFilter);
     setCurrentPage(1);
-  }, [searchPatientName, searchResidentNo, searchPatientNo, searchDoctor, searchExamName]);
+    // 동일 조건 재검색 시에도 쿼리가 나가도록 명시적 refetch
+    refetch({
+      input: {
+        page: 1,
+        limit: pageSize,
+        filter: {
+          ...(newFilter.patientName ? { patientName: newFilter.patientName } : {}),
+          ...(newFilter.ptntNo ? { ptntNo: newFilter.ptntNo } : {}),
+          ...(newFilter.examName ? { examName: newFilter.examName } : {}),
+        },
+      },
+    });
+  }, [searchPatientName, searchPtntNo, searchExamName, pageSize, refetch]);
 
   const handleReset = () => {
     setSearchPatientName('');
-    setSearchResidentNo('');
-    setSearchPatientNo('');
-    setSearchDoctor('');
+    setSearchPtntNo('');
     setSearchExamName('');
     setAppliedFilter({});
     setCurrentPage(1);
+    refetch({
+      input: {
+        page: 1,
+        limit: pageSize,
+        filter: {},
+      },
+    });
   };
 
-  /* --- 이미지 등록 열기 --- */
-  const handleOpenRegister = (row: ExamImageModel) => {
-    const detail = mockItems.find((i) => i.id === row.id);
-    if (detail) {
-      setSelectedItem(detail);
-      setRegisterOpen(true);
+  /* --- 행 클릭 → 상세 조회 --- */
+  const handleRowClick = async (row: ImagingRequestModel) => {
+    setDetailLoading(true);
+    setDetailOpen(true);
+    try {
+      const { data: detailData } = await fetchDetail({ variables: { id: row.id } });
+      if (detailData?.imagingRequestDetail) {
+        setSelectedItem(detailData.imagingRequestDetail);
+      }
+    } catch {
+      toast.error('상세 정보를 불러오지 못했습니다.');
+    } finally {
+      setDetailLoading(false);
     }
   };
 
-  /* --- 이미지 수정/조회 열기 --- */
-  const handleOpenEdit = (row: ExamImageModel) => {
-    const detail = mockItems.find((i) => i.id === row.id);
-    if (detail) {
-      setSelectedItem(detail);
-      setEditOpen(true);
+  /* --- 승인 --- */
+  const handleApprove = async () => {
+    if (!actionTargetId) return;
+    try {
+      await approveRequest({
+        variables: { input: { imagingRequestId: actionTargetId } },
+      });
+      toast.success('승인 처리되었습니다.');
+      setApproveConfirmOpen(false);
+      setActionTargetId(null);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '승인 처리 중 오류가 발생했습니다.';
+      toast.error(msg);
+      setApproveConfirmOpen(false);
     }
   };
 
-  /* --- 승인 (Mock) --- */
-  const handleApprove = () => {
+  /* --- 반려 --- */
+  const handleReject = async () => {
     if (!actionTargetId) return;
-    setMockItems((prev) =>
-      prev.map((item) =>
-        item.id === actionTargetId ? { ...item, approvalStatus: 'APPROVED' as const } : item,
-      ),
-    );
-    toast.success('승인 처리되었습니다.');
-    setApproveConfirmOpen(false);
-    setActionTargetId(null);
+    try {
+      await rejectRequest({
+        variables: {
+          input: {
+            imagingRequestId: actionTargetId,
+            reason: rejectReason.trim() || '반려 처리',
+          },
+        },
+      });
+      toast.success('반려 처리되었습니다.');
+      setRejectConfirmOpen(false);
+      setRejectReason('');
+      setActionTargetId(null);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '반려 처리 중 오류가 발생했습니다.';
+      toast.error(msg);
+      setRejectConfirmOpen(false);
+    }
   };
 
-  /* --- 반려 (Mock) --- */
-  const handleReject = () => {
-    if (!actionTargetId) return;
-    setMockItems((prev) =>
-      prev.map((item) =>
-        item.id === actionTargetId ? { ...item, approvalStatus: 'REJECTED' as const } : item,
-      ),
-    );
-    toast.success('반려 처리되었습니다.');
-    setRejectConfirmOpen(false);
-    setActionTargetId(null);
-  };
-
-  /* --- 파일 업로드 (Mock) --- */
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* --- 파일 업로드 --- */
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || !selectedItem) return;
+    if (!files || files.length === 0 || !selectedItem) return;
+    setUploading(true);
+    try {
+      // 1) 각 파일을 서버에 업로드
+      const uploadResults = await Promise.all(
+        Array.from(files).map((file) => uploadFile(file)),
+      );
 
-    const newImages: UploadedImage[] = Array.from(files).map((file, idx) => ({
-      id: `new_${Date.now()}_${idx}`,
-      fileName: file.name,
-      fileSize: file.size < 1024 ? `${file.size}b` : `${Math.round(file.size / 1024)}kb`,
-    }));
+      // 2) 기존 첨부파일 + 새 업로드 파일 합산
+      const existingAttachments = (selectedItem.attachments ?? []).map((a) => ({
+        url: a.storedPath,
+        name: a.originalName,
+        mimeType: a.mimeType,
+        size: a.fileSize,
+      }));
+      const newAttachments = uploadResults.map((r) => ({
+        url: r.storedPath,
+        name: r.originalName,
+        mimeType: r.mimeType,
+        size: r.fileSize,
+      }));
+      const allAttachments = [...existingAttachments, ...newAttachments];
 
-    const updated = {
-      ...selectedItem,
-      images: [...selectedItem.images, ...newImages],
-      imageCount: selectedItem.images.length + newImages.length,
-    };
-    setSelectedItem(updated);
-    setMockItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-    toast.success(`${files.length}개 파일이 업로드되었습니다.`);
-    e.target.value = '';
+      // 3) replaceAttachments 뮤테이션 호출
+      await replaceAttachments({
+        variables: {
+          imagingRequestId: selectedItem.id,
+          attachments: allAttachments,
+        },
+      });
+
+      // 4) 상세 다시 조회하여 selectedItem 갱신
+      const { data: detailData } = await fetchDetail({ variables: { id: selectedItem.id } });
+      if (detailData?.imagingRequestDetail) {
+        setSelectedItem(detailData.imagingRequestDetail);
+      }
+
+      toast.success(`${uploadResults.length}개 파일이 업로드되었습니다.`);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '파일 업로드 중 오류가 발생했습니다.';
+      toast.error(msg);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
-  /* --- 저장 (Mock) --- */
-  const handleSaveRegister = () => {
-    toast.success('이미지가 등록되었습니다.');
-    setRegisterOpen(false);
+  /* --- 개별 이미지 수정 (교체) --- */
+  const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedItem || !replaceTargetId) return;
+    setUploading(true);
+    try {
+      const result = await uploadFile(file);
+      const updatedAttachments = (selectedItem.attachments ?? []).map((a) =>
+        a.id === replaceTargetId
+          ? { url: result.storedPath, name: result.originalName, mimeType: result.mimeType, size: result.fileSize }
+          : { url: a.storedPath, name: a.originalName, mimeType: a.mimeType, size: a.fileSize },
+      );
+      await replaceAttachments({
+        variables: {
+          imagingRequestId: selectedItem.id,
+          attachments: updatedAttachments,
+        },
+      });
+      const { data: detailData } = await fetchDetail({ variables: { id: selectedItem.id } });
+      if (detailData?.imagingRequestDetail) {
+        setSelectedItem(detailData.imagingRequestDetail);
+      }
+      toast.success('이미지가 교체되었습니다.');
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '이미지 교체 중 오류가 발생했습니다.';
+      toast.error(msg);
+    } finally {
+      setUploading(false);
+      setReplaceTargetId(null);
+      e.target.value = '';
+    }
   };
 
-  const handleSaveEdit = () => {
-    toast.success('저장되었습니다.');
-    setEditOpen(false);
-  };
-
-  /* --- 전체이미지 삭제 (Mock) --- */
-  const handleDeleteAllImages = () => {
+  /* --- 전체 첨부파일 삭제 --- */
+  const handleDeleteAllAttachments = async () => {
     if (!selectedItem) return;
-    const updated = { ...selectedItem, images: [], imageCount: 0 };
-    setSelectedItem(updated);
-    setMockItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-    toast.success('전체 이미지가 삭제되었습니다.');
-    setDeleteAllImagesOpen(false);
+    try {
+      await replaceAttachments({
+        variables: {
+          imagingRequestId: selectedItem.id,
+          attachments: [],
+        },
+      });
+      setSelectedItem({ ...selectedItem, attachments: [] });
+      toast.success('전체 이미지가 삭제되었습니다.');
+      setDeleteAllImagesOpen(false);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
+      toast.error(msg);
+      setDeleteAllImagesOpen(false);
+    }
   };
 
-  /* --- 개별 이미지 삭제 (Mock) --- */
-  const handleDeleteSingleImage = () => {
+  /* --- 개별 첨부파일 삭제 --- */
+  const handleDeleteSingleAttachment = async () => {
     if (!selectedItem || !deleteTargetImageId) return;
-    const updated = {
-      ...selectedItem,
-      images: selectedItem.images.filter((img) => img.id !== deleteTargetImageId),
-      imageCount: selectedItem.images.length - 1,
-    };
-    setSelectedItem(updated);
-    setMockItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-    toast.success('이미지가 삭제되었습니다.');
-    setDeleteSingleImageOpen(false);
-    setDeleteTargetImageId(null);
-  };
-
-  /* --- 일괄 삭제 (Mock) --- */
-  const handleBulkDelete = () => {
-    const deleteIds = new Set(selectedRows.map((r) => r.id));
-    setMockItems((prev) => prev.filter((item) => !deleteIds.has(item.id)));
-    toast.success(`${selectedRows.length}건이 삭제되었습니다.`);
-    setDeleteConfirmOpen(false);
-    setSelectedRows([]);
+    const remaining = (selectedItem.attachments ?? []).filter((a) => a.id !== deleteTargetImageId);
+    try {
+      await replaceAttachments({
+        variables: {
+          imagingRequestId: selectedItem.id,
+          attachments: remaining.map((a) => ({
+            url: a.storedPath,
+            name: a.originalName,
+            mimeType: a.mimeType,
+            size: a.fileSize,
+          })),
+        },
+      });
+      setSelectedItem({ ...selectedItem, attachments: remaining });
+      toast.success('이미지가 삭제되었습니다.');
+      setDeleteSingleImageOpen(false);
+      setDeleteTargetImageId(null);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.';
+      toast.error(msg);
+      setDeleteSingleImageOpen(false);
+    }
   };
 
   /* --- 페이징 --- */
@@ -386,116 +500,111 @@ export default function ExamImagePage() {
   };
 
   /* --- 테이블 컬럼 --- */
-  const columns: ColumnDef<ExamImageModel, unknown>[] = [
+  const columns: ColumnDef<ImagingRequestModel, unknown>[] = [
     {
-      id: 'no',
-      header: '번호',
-      cell: ({ row }) => <span className="text-sm">{row.original.no}</span>,
-      size: 60,
+      accessorKey: 'ptntNo',
+      header: '환자번호',
+      size: 100,
     },
     {
-      id: 'patientName',
-      header: '환자명',
-      cell: ({ row }) => <span className="text-sm">{row.original.patientName}</span>,
-      size: 80,
-    },
-    {
-      id: 'residentNo',
-      header: '주민등록번호',
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.residentNo}</span>,
+      accessorKey: 'orderCode',
+      header: '오더코드',
       size: 120,
     },
     {
-      id: 'patientNo',
-      header: '환자번호',
-      cell: ({ row }) => <span className="text-sm">{row.original.patientNo}</span>,
-      size: 80,
+      accessorKey: 'examDate',
+      header: '검사일',
+      size: 100,
     },
     {
-      id: 'examDate',
-      header: '검사일시',
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.examDate}</span>,
+      id: 'requestedAt',
+      header: '요청일시',
       size: 140,
+      cell: ({ row }) => formatDateTime(row.original.requestedAt),
     },
     {
-      id: 'examName',
-      header: '검사명',
-      cell: ({ row }) => <span className="text-sm">{row.original.examName}</span>,
-      size: 200,
-    },
-    {
-      id: 'imageRequestDate',
-      header: '이미지신청일',
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.imageRequestDate}</span>,
+      id: 'expiresAt',
+      header: '만료일시',
       size: 140,
+      cell: ({ row }) => formatDateTime(row.original.expiresAt),
     },
     {
-      id: 'partnerDoctor',
-      header: '협력의',
-      cell: ({ row }) => <span className="text-sm">{row.original.partnerDoctor}</span>,
+      id: 'attachmentCount',
+      header: '첨부파일',
       size: 80,
+      cell: ({ row }) => (row.original.attachments?.length ?? 0) + '건',
     },
     {
-      id: 'approvalStatus',
-      header: () => <span className="block text-center">승인여부</span>,
+      id: 'status',
+      header: () => <span className="block text-center">상태</span>,
+      size: 130,
       cell: ({ row }) => {
-        const status = row.original.approvalStatus;
-        if (status === 'PENDING') {
+        const { status, displayState, id } = row.original;
+        if (status === 'REQUESTED') {
           return (
             <div className="flex gap-1.5 justify-center" onClick={(e) => e.stopPropagation()}>
               <Button
                 size="sm"
                 className="h-7 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5"
-                onClick={() => { setActionTargetId(row.original.id); setApproveConfirmOpen(true); }}
+                onClick={() => { setActionTargetId(id); setApproveConfirmOpen(true); }}
               >
                 승인
               </Button>
               <Button
                 size="sm"
                 className="h-7 bg-red-500 hover:bg-red-600 text-white text-xs px-2.5"
-                onClick={() => { setActionTargetId(row.original.id); setRejectConfirmOpen(true); }}
+                onClick={() => { setActionTargetId(id); setRejectReason(''); setRejectConfirmOpen(true); }}
               >
                 반려
               </Button>
             </div>
           );
         }
-        return <div className="flex justify-center"><ApprovalBadge status={status} /></div>;
+        // status 기반으로 반려/만료 우선 표시
+        const effectiveState: ImagingRequestDisplayState =
+          status === 'REJECTED' ? 'REJECTED' :
+          status === 'EXPIRED' ? 'EXPIRED' :
+          displayState;
+        return (
+          <div className="flex justify-center">
+            <DisplayStateBadge state={effectiveState} />
+          </div>
+        );
       },
-      size: 130,
     },
     {
       id: 'actions',
-      header: () => <span className="block text-center">이미지 등록/조회</span>,
+      header: () => <span className="block text-center">이미지 관리</span>,
+      size: 160,
       cell: ({ row }) => {
-        const { approvalStatus, imageCount } = row.original;
-        if (approvalStatus === 'APPROVED' && imageCount === 0) {
+        const { displayState } = row.original;
+        if (displayState === 'PENDING_IMAGE') {
           return (
             <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
               <Button
                 size="sm"
                 className="h-7 bg-[#522AE9] hover:bg-[#4520d4] text-white text-xs px-2.5"
-                onClick={() => handleOpenRegister(row.original)}
+                onClick={() => handleRowClick(row.original)}
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />이미지 등록
               </Button>
             </div>
           );
         }
-        if (approvalStatus === 'APPROVED' && imageCount > 0) {
+        if (displayState === 'VIEWABLE') {
           return (
             <div className="flex gap-1.5 justify-center" onClick={(e) => e.stopPropagation()}>
               <Button
                 size="sm"
                 className="h-7 bg-orange-500 hover:bg-orange-600 text-white text-xs px-2.5"
-                onClick={() => handleOpenEdit(row.original)}
+                onClick={() => handleRowClick(row.original)}
               >
                 수정
               </Button>
               <Button
                 size="sm"
                 className="h-7 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5"
-                onClick={() => handleOpenEdit(row.original)}
+                onClick={() => handleOpenAllImages(row.original)}
               >
                 조회
               </Button>
@@ -504,21 +613,18 @@ export default function ExamImagePage() {
         }
         return null;
       },
-      size: 160,
     },
   ];
 
   /* --- 다이얼로그 내 정보 필드 렌더링 --- */
-  const renderInfoFields = (item: ExamImageDetail) => (
+  const renderInfoFields = (item: ImagingRequestModel) => (
     <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-      <ReadonlyField label="번호" value={String(item.no)} />
-      <ReadonlyField label="환자명" value={item.patientName} />
-      <ReadonlyField label="주민등록번호" value={item.residentNo} />
-      <ReadonlyField label="환자번호" value={item.patientNo} />
-      <ReadonlyField label="검사명" value={item.examName} />
-      <ReadonlyField label="검사일시" value={item.examDate} />
-      <ReadonlyField label="이미지신청일" value={item.imageRequestDate} />
-      <ReadonlyField label="협력의" value={item.partnerDoctor} />
+      <ReadonlyField label="환자번호" value={item.ptntNo} />
+      <ReadonlyField label="오더코드" value={item.orderCode} />
+      <ReadonlyField label="검사일" value={item.examDate} />
+      <ReadonlyField label="요청일시" value={formatDateTime(item.requestedAt)} />
+      <ReadonlyField label="만료일시" value={formatDateTime(item.expiresAt)} />
+      {item.pacsAccessNo && <ReadonlyField label="PACS Access No" value={item.pacsAccessNo} />}
     </div>
   );
 
@@ -533,14 +639,15 @@ export default function ExamImagePage() {
       <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-gray-400 bg-gray-50 px-6 py-8">
         <Upload className="h-6 w-6 text-gray-400" />
         <p className="text-sm text-muted-foreground">
-          첨부할 파일을 여기에 끌어다 놓거나, 파일 선택 버튼을 직접 선택해주세요.
+          {uploading ? '업로드 중...' : '첨부할 파일을 여기에 끌어다 놓거나, 파일 선택 버튼을 직접 선택해주세요.'}
         </p>
         <Button
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
         >
-          파일선택
+          {uploading ? '업로드 중...' : '파일선택'}
         </Button>
         <input
           ref={fileInputRef}
@@ -550,43 +657,65 @@ export default function ExamImagePage() {
           className="hidden"
           onChange={handleFileUpload}
         />
+        <input
+          ref={replaceFileInputRef}
+          type="file"
+          accept=".jpg,.jpeg,.png"
+          className="hidden"
+          onChange={handleReplaceFile}
+        />
       </div>
     </div>
   );
 
-  /* --- 이미지 목록 테이블 렌더링 --- */
-  const renderImageTable = (images: UploadedImage[]) => (
+  /* --- 첨부파일 목록 테이블 렌더링 --- */
+  const renderAttachmentTable = (attachments: AttachmentModel[]) => (
     <div className="rounded-md border border-gray-300 overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-300 bg-gray-50">
             <th className="px-4 py-2.5 text-left font-semibold w-16">번호</th>
-            <th className="px-4 py-2.5 text-left font-semibold">이미지명</th>
+            <th className="px-4 py-2.5 text-left font-semibold">파일명</th>
             <th className="px-4 py-2.5 text-right font-semibold w-48"></th>
           </tr>
         </thead>
         <tbody>
-          {images.map((img, idx) => (
-            <tr key={img.id} className="border-b border-gray-200 last:border-b-0">
+          {attachments.map((att, idx) => (
+            <tr key={att.id} className="border-b border-gray-200 last:border-b-0">
               <td className="px-4 py-2.5">{idx + 1}</td>
               <td className="px-4 py-2.5">
-                <span className="text-src-blue hover:underline cursor-pointer">
-                  {img.fileName} ({img.fileSize})
+                <span
+                  className="text-src-blue hover:underline cursor-pointer"
+                  onClick={() => handleViewAttachment(att.id, att.originalName)}
+                >
+                  {att.originalName} ({att.fileSize < 1024 ? `${att.fileSize}B` : `${Math.round(att.fileSize / 1024)}KB`})
                 </span>
               </td>
               <td className="px-4 py-2.5 text-right">
                 <div className="flex gap-1.5 justify-end">
-                  <Button size="sm" className="h-7 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5">
+                  <Button
+                    size="sm"
+                    className="h-7 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5"
+                    onClick={() => handleViewAttachment(att.id, att.originalName)}
+                  >
                     <Eye className="h-3 w-3 mr-1" />보기
                   </Button>
-                  <Button size="sm" className="h-7 bg-orange-500 hover:bg-orange-600 text-white text-xs px-2.5">
+                  <Button
+                    size="sm"
+                    className="h-7 bg-orange-500 hover:bg-orange-600 text-white text-xs px-2.5"
+                    disabled={uploading}
+                    onClick={() => {
+                      setReplaceTargetId(att.id);
+                      replaceFileInputRef.current?.click();
+                    }}
+                  >
                     <Pencil className="h-3 w-3 mr-1" />수정
                   </Button>
                   <Button
                     size="sm"
                     className="h-7 bg-gray-500 hover:bg-gray-600 text-white text-xs px-2.5"
                     onClick={() => {
-                      setDeleteTargetImageId(img.id);
+                      setDeleteTargetImageId(att.id);
                       setDeleteSingleImageOpen(true);
                     }}
                   >
@@ -596,7 +725,7 @@ export default function ExamImagePage() {
               </td>
             </tr>
           ))}
-          {images.length === 0 && (
+          {attachments.length === 0 && (
             <tr>
               <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                 등록된 이미지가 없습니다.
@@ -615,23 +744,6 @@ export default function ExamImagePage() {
         totalItems={totalCount}
         onSearch={handleSearch}
         onReset={handleReset}
-        listHeaderActions={
-          <Button
-            variant="outline"
-            size="md"
-            className="text-src-red border-src-red hover:bg-src-red/10"
-            onClick={() => {
-              if (selectedRows.length === 0) {
-                toast.error('삭제할 항목을 선택해주세요.');
-                return;
-              }
-              setDeleteConfirmOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-            일괄 삭제
-          </Button>
-        }
         searchSection={
           <div className="grid grid-cols-3 gap-x-6 gap-y-4">
             <FieldGroup label="환자명">
@@ -642,27 +754,11 @@ export default function ExamImagePage() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
             </FieldGroup>
-            <FieldGroup label="주민등록번호">
-              <Input
-                placeholder="주민등록번호를 입력해 주세요."
-                value={searchResidentNo}
-                onChange={(e) => setSearchResidentNo(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </FieldGroup>
             <FieldGroup label="환자번호">
               <Input
                 placeholder="환자번호를 입력해 주세요."
-                value={searchPatientNo}
-                onChange={(e) => setSearchPatientNo(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </FieldGroup>
-            <FieldGroup label="협력의">
-              <Input
-                placeholder="협력의를 입력해 주세요."
-                value={searchDoctor}
-                onChange={(e) => setSearchDoctor(e.target.value)}
+                value={searchPtntNo}
+                onChange={(e) => setSearchPtntNo(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
             </FieldGroup>
@@ -679,79 +775,65 @@ export default function ExamImagePage() {
         listContent={
           <DataTable
             columns={columns}
-            data={pagedItems}
-            loading={false}
+            data={items}
+            loading={loading}
             totalItems={totalCount}
             currentPage={currentPage}
             pageSize={pageSize}
-            totalPages={totalPages}
+            totalPages={Math.ceil(totalCount / pageSize) || 1}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
-            enableSelection
-            onSelectionChange={setSelectedRows}
-            getRowId={(row) => row.id}
+            onRowClick={handleRowClick}
           />
         }
       />
 
-      {/* 이미지 등록 다이얼로그 */}
-      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+      {/* ═══ 상세/이미지 관리 다이얼로그 ═══ */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent size="lg">
           <DialogHeader>
-            <DialogTitle>이미지 등록{selectedItem ? ` : ${selectedItem.patientName}` : ''}</DialogTitle>
-            <DialogDescription className="sr-only">검사이미지를 등록합니다.</DialogDescription>
+            <DialogTitle>
+              검사이미지 {selectedItem?.displayState === 'PENDING_IMAGE' ? '등록' : '관리'}
+              {selectedItem ? ` : ${selectedItem.ptntNo}` : ''}
+            </DialogTitle>
+            <DialogDescription className="sr-only">검사이미지를 관리합니다.</DialogDescription>
           </DialogHeader>
           <DialogBody className="max-h-[65vh] overflow-y-auto space-y-6">
-            {selectedItem && (
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground">
+                로딩 중...
+              </div>
+            ) : selectedItem ? (
               <>
                 {renderInfoFields(selectedItem)}
                 {renderUploadSection(800)}
+
+                {(selectedItem.attachments?.length ?? 0) > 0 && (
+                  <>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        className="bg-gray-600 hover:bg-gray-700 text-white"
+                        onClick={() => handleOpenAllImages()}
+                      >
+                        전체이미지 조회
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-gray-600 hover:bg-gray-700 text-white"
+                        onClick={() => setDeleteAllImagesOpen(true)}
+                      >
+                        전체이미지 삭제 &gt;
+                      </Button>
+                    </div>
+                    {renderAttachmentTable(selectedItem.attachments ?? [])}
+                  </>
+                )}
               </>
-            )}
+            ) : null}
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRegisterOpen(false)}>취소</Button>
-            <Button onClick={handleSaveRegister}>저장</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 이미지 수정/조회 다이얼로그 */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>이미지 수정{selectedItem ? ` : ${selectedItem.patientName}` : ''}</DialogTitle>
-            <DialogDescription className="sr-only">검사이미지를 수정합니다.</DialogDescription>
-          </DialogHeader>
-          <DialogBody className="max-h-[65vh] overflow-y-auto space-y-6">
-            {selectedItem && (
-              <>
-                {renderInfoFields(selectedItem)}
-
-                {renderUploadSection(400)}
-
-                {/* 전체 이미지 조회/삭제 버튼 */}
-                <div className="flex gap-2 justify-end">
-                  <Button size="sm" className="bg-gray-600 hover:bg-gray-700 text-white">
-                    전체이미지 조회
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-gray-600 hover:bg-gray-700 text-white"
-                    onClick={() => setDeleteAllImagesOpen(true)}
-                  >
-                    전체이미지 삭제 &gt;
-                  </Button>
-                </div>
-
-                {/* 이미지 목록 */}
-                {renderImageTable(selectedItem.images)}
-              </>
-            )}
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>취소</Button>
-            <Button onClick={handleSaveEdit}>저장</Button>
+            <Button variant="outline" onClick={() => setDetailOpen(false)}>닫기</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -761,26 +843,29 @@ export default function ExamImagePage() {
         open={approveConfirmOpen}
         onOpenChange={setApproveConfirmOpen}
         title="승인 확인"
-        description="해당 검사이미지를 승인하시겠습니까?"
+        description="해당 검사이미지 요청을 승인하시겠습니까?"
         onConfirm={handleApprove}
       />
 
       {/* 반려 확인 */}
       <ConfirmDialog
         open={rejectConfirmOpen}
-        onOpenChange={setRejectConfirmOpen}
+        onOpenChange={(open) => { setRejectConfirmOpen(open); if (!open) setRejectReason(''); }}
         title="반려 확인"
-        description="해당 검사이미지를 반려하시겠습니까?"
+        description={
+          <div className="space-y-3 w-full">
+            <p>해당 검사이미지 요청을 반려하시겠습니까?</p>
+            <Textarea
+              className="w-full"
+              placeholder="반려 사유를 입력해주세요."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+        }
         onConfirm={handleReject}
-      />
-
-      {/* 일괄 삭제 확인 */}
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title="삭제 확인"
-        description={`선택한 ${selectedRows.length}건을 삭제하시겠습니까?`}
-        onConfirm={handleBulkDelete}
+        destructive
       />
 
       {/* 전체이미지 삭제 확인 */}
@@ -789,7 +874,7 @@ export default function ExamImagePage() {
         onOpenChange={setDeleteAllImagesOpen}
         title="전체이미지 삭제"
         description="삭제된 이미지는 복구가 불가능합니다. 현재 등록된 이미지를 모두 삭제하시겠습니까?"
-        onConfirm={handleDeleteAllImages}
+        onConfirm={handleDeleteAllAttachments}
       />
 
       {/* 개별 이미지 삭제 확인 */}
@@ -797,9 +882,110 @@ export default function ExamImagePage() {
         open={deleteSingleImageOpen}
         onOpenChange={setDeleteSingleImageOpen}
         title="이미지 삭제"
-        description="삭제된 이미지는 복구가 불가능합니다. 현재 등록된 이미지를 삭제하시겠습니까?"
-        onConfirm={handleDeleteSingleImage}
+        description="삭제된 이미지는 복구가 불가능합니다. 해당 이미지를 삭제하시겠습니까?"
+        onConfirm={handleDeleteSingleAttachment}
       />
+
+      {/* ═══ 전체이미지 조회 팝업 ═══ */}
+      <Dialog open={allImagesOpen} onOpenChange={setAllImagesOpen}>
+        <DialogContent size="lg" showCloseButton={false} className="p-10 flex flex-col gap-10 max-h-[90vh]">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between border-b border-gray-400 pb-5">
+            <div className="flex items-center gap-4">
+              <span className="inline-flex items-center justify-center rounded-full bg-[#9f1836] px-5 py-1 text-xl font-semibold text-white tracking-tight">
+                {pageTitle}
+              </span>
+              <span className="text-[32px] font-semibold tracking-tight leading-[1.5]">
+                {selectedItem?.orderCode ?? ''}
+              </span>
+            </div>
+            <button
+              onClick={() => setAllImagesOpen(false)}
+              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 cursor-pointer"
+            >
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+
+          {/* 이미지 섹션 */}
+          <div className="flex flex-col gap-4 min-h-0">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[#9f1836]" />
+              <span className="text-2xl font-semibold tracking-tight">이미지</span>
+            </div>
+            <div className="overflow-y-auto flex-1 pr-2">
+              {Object.keys(allImageUrls).length === 0 ? (
+                <div className="flex items-center justify-center py-20 text-muted-foreground">
+                  이미지 로딩 중...
+                </div>
+              ) : (
+                <div className="grid grid-cols-5 gap-4">
+                  {(selectedItem?.attachments ?? []).map((att) => (
+                    <div key={att.id} className="relative aspect-square rounded-[5px] overflow-hidden bg-gray-100">
+                      {allImageUrls[att.id] ? (
+                        <img
+                          src={allImageUrls[att.id]}
+                          alt={att.originalName}
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={() => handleViewAttachment(att.id, att.originalName)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                          로딩 실패
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ 단건 이미지 조회 팝업 ═══ */}
+      <Dialog open={singleImageOpen} onOpenChange={setSingleImageOpen}>
+        <DialogContent size="lg" showCloseButton={false} className="p-10 flex flex-col gap-10 max-h-[90vh]">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between border-b border-gray-400 pb-5">
+            <div className="flex items-center gap-4">
+              <span className="inline-flex items-center justify-center rounded-full bg-[#9f1836] px-5 py-1 text-xl font-semibold text-white tracking-tight">
+                {pageTitle}
+              </span>
+              <span className="text-[32px] font-semibold tracking-tight leading-[1.5]">
+                {singleImageName || selectedItem?.orderCode || ''}
+              </span>
+            </div>
+            <button
+              onClick={() => setSingleImageOpen(false)}
+              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 cursor-pointer"
+            >
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+
+          {/* 이미지 */}
+          <div className="flex flex-col gap-4 min-h-0">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[#9f1836]" />
+              <span className="text-2xl font-semibold tracking-tight">이미지</span>
+            </div>
+            <div className="overflow-y-auto flex-1 flex items-center justify-center">
+              {singleImageUrl ? (
+                <img
+                  src={singleImageUrl}
+                  alt={singleImageName}
+                  className="max-w-full max-h-[60vh] object-contain rounded-[5px]"
+                />
+              ) : (
+                <div className="flex items-center justify-center py-20 text-muted-foreground">
+                  이미지 로딩 중...
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

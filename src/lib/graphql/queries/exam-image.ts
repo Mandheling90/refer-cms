@@ -1,25 +1,33 @@
 import { gql } from '@apollo/client';
 
 /** 검사이미지 목록 조회 */
-export const GET_ADMIN_EXAM_IMAGES = gql`
-  query AdminExamImages(
-    $filter: ExamImageFilterInput
+export const GET_IMAGING_REQUESTS = gql`
+  query ImagingRequestsForAdmin(
     $hospitalCode: HospitalCode
-    $pagination: PaginationInput
+    $input: ImagingRequestListInput
   ) {
-    adminExamImages(filter: $filter, hospitalCode: $hospitalCode, pagination: $pagination) {
+    imagingRequestsForAdmin(hospitalCode: $hospitalCode, input: $input) {
       items {
         id
-        no
-        patientName
-        residentNo
-        patientNo
+        hospitalCode
+        ptntNo
+        orderCode
         examDate
-        examName
-        imageRequestDate
-        partnerDoctor
-        approvalStatus
-        imageCount
+        pacsAccessNo
+        status
+        displayState
+        requestedAt
+        approvedAt
+        rejectedAt
+        expiresAt
+        attachments {
+          id
+          originalName
+          storedPath
+          mimeType
+          fileSize
+          createdAt
+        }
         createdAt
         updatedAt
       }
@@ -30,25 +38,28 @@ export const GET_ADMIN_EXAM_IMAGES = gql`
 `;
 
 /** 검사이미지 상세 조회 */
-export const GET_ADMIN_EXAM_IMAGE_BY_ID = gql`
-  query AdminExamImageById($id: String!, $hospitalCode: HospitalCode) {
-    adminExamImageById(id: $id, hospitalCode: $hospitalCode) {
+export const GET_IMAGING_REQUEST_DETAIL = gql`
+  query ImagingRequestDetail($id: String!, $hospitalCode: HospitalCode) {
+    imagingRequestDetail(id: $id, hospitalCode: $hospitalCode) {
       id
-      no
-      patientName
-      residentNo
-      patientNo
+      hospitalCode
+      ptntNo
+      orderCode
       examDate
-      examName
-      imageRequestDate
-      partnerDoctor
-      approvalStatus
-      imageCount
-      images {
+      pacsAccessNo
+      status
+      displayState
+      requestedAt
+      approvedAt
+      rejectedAt
+      expiresAt
+      attachments {
         id
-        fileName
+        originalName
+        storedPath
+        mimeType
         fileSize
-        url
+        createdAt
       }
       createdAt
       updatedAt
@@ -57,28 +68,52 @@ export const GET_ADMIN_EXAM_IMAGE_BY_ID = gql`
 `;
 
 /** 검사이미지 승인 */
-export const APPROVE_EXAM_IMAGE = gql`
-  mutation ApproveExamImage($id: String!) {
-    approveExamImage(id: $id) {
+export const APPROVE_IMAGING_REQUEST = gql`
+  mutation ApproveImagingRequest($hospitalCode: HospitalCode, $input: ApproveImagingRequestInput!) {
+    approveImagingRequest(hospitalCode: $hospitalCode, input: $input) {
       id
-      approvalStatus
+      status
+      displayState
+      approvedAt
     }
   }
 `;
 
 /** 검사이미지 반려 */
-export const REJECT_EXAM_IMAGE = gql`
-  mutation RejectExamImage($id: String!) {
-    rejectExamImage(id: $id) {
+export const REJECT_IMAGING_REQUEST = gql`
+  mutation RejectImagingRequest($hospitalCode: HospitalCode, $input: RejectImagingRequestInput!) {
+    rejectImagingRequest(hospitalCode: $hospitalCode, input: $input) {
       id
-      approvalStatus
+      status
+      displayState
+      rejectedAt
     }
   }
 `;
 
-/** 검사이미지 삭제 */
-export const DELETE_EXAM_IMAGES = gql`
-  mutation DeleteExamImages($ids: [String!]!) {
-    deleteExamImages(ids: $ids)
+/** 검사이미지 첨부파일 교체 */
+export const REPLACE_IMAGING_REQUEST_ATTACHMENTS = gql`
+  mutation ReplaceImagingRequestAttachments(
+    $hospitalCode: HospitalCode
+    $imagingRequestId: String!
+    $attachments: [ImagingRequestAttachmentInput!]!
+  ) {
+    replaceImagingRequestAttachments(
+      hospitalCode: $hospitalCode
+      imagingRequestId: $imagingRequestId
+      attachments: $attachments
+    ) {
+      id
+      status
+      displayState
+      attachments {
+        id
+        originalName
+        storedPath
+        mimeType
+        fileSize
+        createdAt
+      }
+    }
   }
 `;
