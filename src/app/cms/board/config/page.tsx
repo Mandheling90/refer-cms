@@ -141,7 +141,7 @@ export default function BoardConfigPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // ── 인증 정보 ──
-  const hospitalCode = useAuthStore((s: { hospitalCode: string | null }) => s.hospitalCode);
+  const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
 
   // ── GraphQL ──
   const { data, loading, refetch } = useQuery<{

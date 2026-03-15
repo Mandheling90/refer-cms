@@ -87,10 +87,16 @@ export default function EConsultPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   /* ─── 검색 조건 (서버 사이드 필터) ─── */
+  const [searchTitle, setSearchTitle] = useState('');
+  const [searchRequesterName, setSearchRequesterName] = useState('');
+  const [searchRequesterEmail, setSearchRequesterEmail] = useState('');
+  const [searchHospitalName, setSearchHospitalName] = useState('');
+  const [searchConsultantName, setSearchConsultantName] = useState('');
+  const [searchConsultantDept, setSearchConsultantDept] = useState('');
   const [searchStatus, setSearchStatus] = useState('');
 
   /* ─── 적용된 필터 (검색 버튼 클릭 시 반영) ─── */
-  const [appliedStatus, setAppliedStatus] = useState<string | undefined>();
+  const [appliedFilter, setAppliedFilter] = useState<Record<string, string>>({});
 
   /* ─── 상세 다이얼로그 ─── */
   const [detailOpen, setDetailOpen] = useState(false);
@@ -98,9 +104,16 @@ export default function EConsultPage() {
 
   /* ─── 필터 변수 구성 ─── */
   const filterVariables = useMemo(() => {
-    if (appliedStatus) return { status: appliedStatus };
-    return undefined;
-  }, [appliedStatus]);
+    const f: Record<string, string> = {};
+    if (appliedFilter.title) f.title = appliedFilter.title;
+    if (appliedFilter.requesterName) f.requesterName = appliedFilter.requesterName;
+    if (appliedFilter.requesterEmail) f.requesterEmail = appliedFilter.requesterEmail;
+    if (appliedFilter.requesterHospitalName) f.requesterHospitalName = appliedFilter.requesterHospitalName;
+    if (appliedFilter.consultantName) f.consultantName = appliedFilter.consultantName;
+    if (appliedFilter.consultantDepartment) f.consultantDepartment = appliedFilter.consultantDepartment;
+    if (appliedFilter.status) f.status = appliedFilter.status;
+    return Object.keys(f).length > 0 ? f : undefined;
+  }, [appliedFilter]);
 
   /* ─── GraphQL 목록 조회 ─── */
   const { data, loading, refetch } = useQuery<AdminEConsultListResponse>(GET_ADMIN_ECONSULTS, {
@@ -118,14 +131,28 @@ export default function EConsultPage() {
 
   /* ─── 검색 (서버 필터 적용) ─── */
   const handleSearch = useCallback(() => {
-    setAppliedStatus(searchStatus || undefined);
+    const f: Record<string, string> = {};
+    if (searchTitle.trim()) f.title = searchTitle.trim();
+    if (searchRequesterName.trim()) f.requesterName = searchRequesterName.trim();
+    if (searchRequesterEmail.trim()) f.requesterEmail = searchRequesterEmail.trim();
+    if (searchHospitalName.trim()) f.requesterHospitalName = searchHospitalName.trim();
+    if (searchConsultantName.trim()) f.consultantName = searchConsultantName.trim();
+    if (searchConsultantDept.trim()) f.consultantDepartment = searchConsultantDept.trim();
+    if (searchStatus) f.status = searchStatus;
+    setAppliedFilter(f);
     setCurrentPage(1);
-  }, [searchStatus]);
+  }, [searchTitle, searchRequesterName, searchRequesterEmail, searchHospitalName, searchConsultantName, searchConsultantDept, searchStatus]);
 
   /* ─── 초기화 ─── */
   const handleReset = () => {
+    setSearchTitle('');
+    setSearchRequesterName('');
+    setSearchRequesterEmail('');
+    setSearchHospitalName('');
+    setSearchConsultantName('');
+    setSearchConsultantDept('');
     setSearchStatus('');
-    setAppliedStatus(undefined);
+    setAppliedFilter({});
     setCurrentPage(1);
   };
 
@@ -244,6 +271,54 @@ export default function EConsultPage() {
         onReset={handleReset}
         searchSection={
           <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+            <FieldGroup label="e-Consult 제목">
+              <Input
+                placeholder="제목을 입력해 주세요."
+                value={searchTitle}
+                onChange={(e) => setSearchTitle(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FieldGroup>
+            <FieldGroup label="신청자명">
+              <Input
+                placeholder="신청자명을 입력해 주세요."
+                value={searchRequesterName}
+                onChange={(e) => setSearchRequesterName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FieldGroup>
+            <FieldGroup label="신청자 이메일">
+              <Input
+                placeholder="신청자 이메일을 입력해 주세요."
+                value={searchRequesterEmail}
+                onChange={(e) => setSearchRequesterEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FieldGroup>
+            <FieldGroup label="의료기관명">
+              <Input
+                placeholder="의료기관명을 입력해 주세요."
+                value={searchHospitalName}
+                onChange={(e) => setSearchHospitalName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FieldGroup>
+            <FieldGroup label="자문의">
+              <Input
+                placeholder="자문의를 입력해 주세요."
+                value={searchConsultantName}
+                onChange={(e) => setSearchConsultantName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FieldGroup>
+            <FieldGroup label="자문의 진료과">
+              <Input
+                placeholder="자문의 진료과를 입력해 주세요."
+                value={searchConsultantDept}
+                onChange={(e) => setSearchConsultantDept(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </FieldGroup>
             <FieldGroup label="답변여부">
               <Select
                 value={searchStatus || '__all'}

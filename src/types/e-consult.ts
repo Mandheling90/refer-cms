@@ -85,8 +85,14 @@ export interface AdminEConsultItem {
 
 /** Admin e-Consult 필터 */
 export interface AdminEConsultFilter {
-  hospitalCode?: string;
+  title?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  requesterHospitalName?: string;
+  consultantName?: string;
+  consultantDepartment?: string;
   status?: EConsultStatus;
+  hospitalCode?: string;
 }
 
 /** Admin e-Consult 목록 응답 */

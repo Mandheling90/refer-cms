@@ -68,8 +68,8 @@ export const DELETE_BOARD_SETTING = gql`
 
 /** 게시물 목록 조회 (페이징) */
 export const BOARD_POSTS = gql`
-  query BoardPosts($boardId: String!, $hospitalCode: HospitalCode, $pagination: PaginationInput, $search: String) {
-    boardPosts(boardId: $boardId, hospitalCode: $hospitalCode, pagination: $pagination, search: $search) {
+  query BoardPosts($boardId: String!, $pagination: PaginationInput, $search: String) {
+    boardPosts(boardId: $boardId, pagination: $pagination, search: $search) {
       items {
         ${BOARD_POST_FIELDS}
       }
