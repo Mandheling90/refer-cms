@@ -589,7 +589,7 @@ export default function BoardPage() {
                   setGroupPageSize(Number(e.target.value));
                   setGroupPage(1);
                 }}
-                className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-white"
+                className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-card"
               >
                 {[5, 10, 20, 50].map((n) => (
                   <option key={n} value={n}>{n}건</option>

@@ -71,7 +71,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* 메인 콘텐츠 영역 */}
-      <div className="flex flex-1 items-center justify-center bg-gray-100">
+      <div className="flex flex-1 items-center justify-center bg-background">
         <div className="w-full max-w-[480px] px-5">
           {/* 로고 영역 */}
           <div className="mb-10 flex justify-center">
@@ -99,7 +99,7 @@ export default function LoginPage() {
                 }}
                 className={`h-[50px] w-full appearance-none rounded-lg border bg-background px-4 text-base outline-none focus:border-primary ${
                   institution ? 'text-foreground' : 'text-gray-800'
-                } ${errors.institution ? 'border-src-red' : 'border-gray-400'}`}
+                } ${errors.institution ? 'border-src-red' : 'border-border'}`}
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8d98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   if (errors.userId) setErrors((p) => ({ ...p, userId: undefined }));
                 }}
                 placeholder="아이디를 입력해 주세요"
-                className="h-[50px] w-full rounded-lg border border-gray-400 bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
+                className="h-[50px] w-full rounded-lg border border-border bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
                 autoFocus
               />
               {errors.userId && (
@@ -152,7 +152,7 @@ export default function LoginPage() {
                   if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
                 }}
                 placeholder="비밀번호를 입력해 주세요"
-                className="h-[50px] w-full rounded-lg border border-gray-400 bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
+                className="h-[50px] w-full rounded-lg border border-border bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
               />
               {errors.password && (
                 <p className="mt-1.5 text-sm text-src-red">{errors.password}</p>

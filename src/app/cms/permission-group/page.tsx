@@ -85,10 +85,10 @@ interface MenuTreeNode {
 
 /* ─── 상수 ─── */
 const PERMISSION_OPTIONS: { value: PermissionLevel; label: string; color: string }[] = [
-  { value: 'CUSTOM', label: '개별설정', color: 'bg-gray-200 text-black border-black' },
-  { value: 'FULL', label: '모두허용', color: 'bg-[#0084ff] text-white border-black' },
-  { value: 'READ', label: '읽기전용', color: 'bg-[#8b8d00] text-white border-black' },
-  { value: 'NONE', label: '접근불가', color: 'bg-red-600 text-white border-black' },
+  { value: 'CUSTOM', label: '개별설정', color: 'bg-gray-200 text-foreground border-border' },
+  { value: 'FULL', label: '모두허용', color: 'bg-src-blue text-white border-border' },
+  { value: 'READ', label: '읽기전용', color: 'bg-src-point text-white border-border' },
+  { value: 'NONE', label: '접근불가', color: 'bg-destructive text-white border-border' },
 ];
 
 const HOSPITAL_OPTIONS = [
@@ -137,7 +137,7 @@ function FormField({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
-        <span className="text-sm font-normal text-black">{label}</span>
+        <span className="text-sm font-normal text-foreground">{label}</span>
         {required && <span className="text-[11px] text-red-500">*</span>}
       </div>
       {children}
@@ -775,8 +775,8 @@ function PermissionGroupContent() {
                     className={cn(
                       'h-[38px] rounded-md border px-5 text-sm transition-colors cursor-pointer',
                       formHospitalCode === h.code
-                        ? 'bg-[#9F1836] text-white border-[#9F1836]'
-                        : 'border-gray-300 bg-white text-black hover:bg-gray-50'
+                        ? 'bg-primary text-white border-primary'
+                        : 'border-gray-300 bg-card text-foreground hover:bg-gray-100'
                     )}
                   >
                     {h.label}

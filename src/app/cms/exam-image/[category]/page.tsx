@@ -892,7 +892,7 @@ export default function ExamImagePage() {
           {/* 헤더 */}
           <div className="flex items-center justify-between border-b border-gray-400 pb-5">
             <div className="flex items-center gap-4">
-              <span className="inline-flex items-center justify-center rounded-full bg-[#9f1836] px-5 py-1 text-xl font-semibold text-white tracking-tight">
+              <span className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-1 text-xl font-semibold text-white tracking-tight">
                 {pageTitle}
               </span>
               <span className="text-[32px] font-semibold tracking-tight leading-[1.5]">
@@ -949,7 +949,7 @@ export default function ExamImagePage() {
           {/* 헤더 */}
           <div className="flex items-center justify-between border-b border-gray-400 pb-5">
             <div className="flex items-center gap-4">
-              <span className="inline-flex items-center justify-center rounded-full bg-[#9f1836] px-5 py-1 text-xl font-semibold text-white tracking-tight">
+              <span className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-1 text-xl font-semibold text-white tracking-tight">
                 {pageTitle}
               </span>
               <span className="text-[32px] font-semibold tracking-tight leading-[1.5]">

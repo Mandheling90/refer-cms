@@ -132,8 +132,8 @@ function SortableMenuRow({
 
   const badgeLabel = item.isActive ? '사용' : '미사용';
   const badgeClass = item.isActive
-    ? 'bg-[#9F1836] text-white'
-    : 'bg-[#8b8d98] text-white';
+    ? 'bg-primary text-white'
+    : 'bg-gray-500 text-white';
 
   const childCount = item.children?.length ?? 0;
   const countStr = String(childCount).padStart(2, '0');
@@ -148,10 +148,10 @@ function SortableMenuRow({
           ? 'grid-cols-[36px_1fr_36px_36px_36px]'
           : 'grid-cols-[36px_1fr_36px_36px]',
         isSelected
-          ? 'border-[#9F1836] bg-[rgba(159,24,54,0.05)]'
+          ? 'border-primary bg-primary/5'
           : item.isActive
-            ? 'border-gray-200 bg-white hover:border-[#9F1836]'
-            : 'border-gray-200 bg-gray-100 hover:border-[#9F1836]'
+            ? 'border-gray-200 bg-card hover:border-primary'
+            : 'border-gray-200 bg-gray-100 hover:border-primary'
       )}
       onClick={onClick}
     >
@@ -190,7 +190,7 @@ function SortableMenuRow({
 
       {/* 수정 버튼 */}
       <button
-        className="flex items-center justify-center text-gray-600 hover:text-[#9F1836] transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
+        className="flex items-center justify-center text-gray-600 hover:text-primary transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           onEdit();
@@ -201,7 +201,7 @@ function SortableMenuRow({
 
       {/* 삭제 버튼 */}
       <button
-        className="flex items-center justify-center text-gray-600 hover:text-[#DE4841] transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
+        className="flex items-center justify-center text-gray-600 hover:text-destructive transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
@@ -269,9 +269,9 @@ function MenuColumn({
   const countText = `${String(items.length).padStart(2, '0')} 건`;
 
   return (
-    <div className="flex flex-col border border-gray-200 rounded-xl bg-white flex-1 shadow-[0_0_12px_rgba(0,0,0,0.06)]">
+    <div className="flex flex-col border border-gray-200 rounded-xl bg-card flex-1 shadow-[0_0_12px_rgba(0,0,0,0.06)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[rgba(159,24,54,0.1)] rounded-t-xl">
+      <div className="flex items-center justify-between px-4 py-3 bg-primary/10 rounded-t-xl">
         <h4 className="text-base font-semibold text-gray-900">{title}</h4>
         <span className="text-sm font-semibold text-gray-700">{countText}</span>
       </div>
@@ -307,7 +307,7 @@ function MenuColumn({
           <Save className="h-4 w-4" />
           순서 저장
         </Button>
-        <Button size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm bg-[#9F1836] hover:bg-[#8a1530] text-white" onClick={onAddNew}>
+        <Button size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm bg-primary hover:bg-primary/90 text-white" onClick={onAddNew}>
           <Plus className="h-4 w-4" />
           신규 메뉴 추가
         </Button>
@@ -341,7 +341,7 @@ function ToggleSwitch({
       disabled={disabled}
       className={cn(
         'relative inline-flex h-7 w-[64px] shrink-0 cursor-pointer items-center rounded-[14px] transition-colors duration-200',
-        checked ? 'bg-[#9F1836]' : 'bg-[#e0e0e0]',
+        checked ? 'bg-primary' : 'bg-gray-300',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       onClick={() => !disabled && onChange(!checked)}
@@ -358,7 +358,7 @@ function ToggleSwitch({
       )}
       <span
         className={cn(
-          'pointer-events-none absolute h-6 w-6 rounded-full bg-white shadow transition-[left] duration-200',
+          'pointer-events-none absolute h-6 w-6 rounded-full bg-card shadow transition-[left] duration-200',
           checked ? 'left-[38px]' : 'left-[2px]'
         )}
       />
@@ -506,11 +506,11 @@ function CmsMenuDialog({
                   <span
                     className={cn(
                       'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
-                      form.hospitalCode === opt.value ? 'border-[#9F1836]' : 'border-gray-400'
+                      form.hospitalCode === opt.value ? 'border-primary' : 'border-gray-400'
                     )}
                   >
                     {form.hospitalCode === opt.value && (
-                      <span className="size-2 rounded-full bg-[#9F1836]" />
+                      <span className="size-2 rounded-full bg-primary" />
                     )}
                   </span>
                   {opt.label}
@@ -552,11 +552,11 @@ function CmsMenuDialog({
                   <span
                     className={cn(
                       'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
-                      form.menuTargetType === opt.value ? 'border-[#9F1836]' : 'border-gray-400'
+                      form.menuTargetType === opt.value ? 'border-primary' : 'border-gray-400'
                     )}
                   >
                     {form.menuTargetType === opt.value && (
-                      <span className="size-2 rounded-full bg-[#9F1836]" />
+                      <span className="size-2 rounded-full bg-primary" />
                     )}
                   </span>
                   {opt.label}
@@ -618,7 +618,7 @@ function CmsMenuDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button className="bg-[#9F1836] hover:bg-[#8a1530] text-white" onClick={handleSave} disabled={saving}>
+          <Button className="bg-primary hover:bg-primary/90 text-white" onClick={handleSave} disabled={saving}>
             저장
           </Button>
         </DialogFooter>
@@ -781,7 +781,7 @@ export default function CmsMenuPage() {
       </div>
 
       {/* Guide text + Legend */}
-      <div className="bg-white border border-gray-300 rounded-xl px-4 py-3 space-y-2">
+      <div className="bg-card border border-gray-300 rounded-xl px-4 py-3 space-y-2">
         <p className="text-sm text-gray-600">
           각 항목의 아이콘을 드래그 &amp; 드롭 하시면 순서를 변경하실 수 있습니다.
         </p>
@@ -795,11 +795,11 @@ export default function CmsMenuPage() {
             <span>= 하위메뉴 보기</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-[#9F1836] text-white">Y</span>
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-primary text-white">Y</span>
             <span>= 사용</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-[#8b8d98] text-white">미</span>
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[12px] font-semibold bg-gray-500 text-white">미</span>
             <span>= 미사용</span>
           </span>
         </div>

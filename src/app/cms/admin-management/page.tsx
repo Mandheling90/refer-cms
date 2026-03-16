@@ -76,7 +76,7 @@ function FormField({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
-        <span className="text-sm font-normal text-black">{label}</span>
+        <span className="text-sm font-normal text-foreground">{label}</span>
         {required && <span className="text-[11px] text-red-500">*</span>}
       </div>
       {children}
@@ -103,7 +103,7 @@ function ToggleSwitch({
       disabled={disabled}
       className={cn(
         'relative inline-flex h-7 w-[52px] shrink-0 cursor-pointer items-center rounded-[14px] transition-colors duration-200',
-        checked ? 'bg-[#9F1836]' : 'bg-[#e0e0e0]',
+        checked ? 'bg-primary' : 'bg-gray-300',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       onClick={() => !disabled && onChange(!checked)}
@@ -120,7 +120,7 @@ function ToggleSwitch({
       )}
       <span
         className={cn(
-          'pointer-events-none absolute h-6 w-6 rounded-full bg-white shadow transition-[left] duration-200',
+          'pointer-events-none absolute h-6 w-6 rounded-full bg-card shadow transition-[left] duration-200',
           checked ? 'left-[26px]' : 'left-[2px]'
         )}
       />
@@ -839,7 +839,7 @@ function AdminManagementContent() {
                       'flex-1 h-[38px] rounded-md border text-sm transition-colors cursor-pointer',
                       regHospitalCode === code
                         ? 'border-primary bg-primary/10 text-primary font-medium'
-                        : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
+                        : 'border-gray-300 bg-card text-gray-500 hover:bg-gray-100'
                     )}
                   >
                     {code === 'ANAM' ? '안암' : code === 'GURO' ? '구로' : '안산'}

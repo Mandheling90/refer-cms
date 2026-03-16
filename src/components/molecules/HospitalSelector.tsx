@@ -51,7 +51,7 @@ export function HospitalSelector({ showAll = false }: HospitalSelectorProps) {
           className={cn(
             'px-5 py-1.5 text-base font-medium rounded-full transition-colors cursor-pointer',
             current === opt.value
-              ? 'bg-white text-primary shadow-sm'
+              ? 'bg-src-white text-primary shadow-sm'
               : 'text-white/80 hover:text-white',
           )}
         >

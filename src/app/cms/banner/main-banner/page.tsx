@@ -241,7 +241,7 @@ function ImageUploadArea({
             </p>
             <button
               type="button"
-              className="mt-2 px-4 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer"
+              className="mt-2 px-4 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-100 cursor-pointer"
               onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
             >
               파일선택
@@ -328,12 +328,12 @@ function BannerCardContent({
             {index}
           </span>
           {isUsed ? (
-            <Badge className="gap-1 bg-white text-green-600 border-green-300 text-xs px-2 py-0.5" variant="outline">
+            <Badge className="gap-1 bg-card text-green-600 border-green-300 text-xs px-2 py-0.5" variant="outline">
               <Check className="h-3 w-3" />
               사용 중
             </Badge>
           ) : (
-            <Badge className="gap-1 bg-white text-red-500 border-red-300 text-xs px-2 py-0.5" variant="outline">
+            <Badge className="gap-1 bg-card text-red-500 border-red-300 text-xs px-2 py-0.5" variant="outline">
               <X className="h-3 w-3" />
               미사용
             </Badge>
@@ -461,7 +461,7 @@ function SortableBannerCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex flex-col rounded-lg border bg-white overflow-hidden',
+        'flex flex-col rounded-lg border bg-card overflow-hidden',
         selected ? 'border-primary border-2' : 'border-gray-300',
         isDragging && 'shadow-lg'
       )}
@@ -503,7 +503,7 @@ function StaticBannerCard({
 }) {
   return (
     <div className={cn(
-      'flex flex-col rounded-lg border bg-white overflow-hidden',
+      'flex flex-col rounded-lg border bg-card overflow-hidden',
       selected ? 'border-primary border-2' : 'border-gray-300',
     )}>
       <BannerCardContent
@@ -525,7 +525,7 @@ function StaticBannerCard({
 
 function AddBannerCard({ onClick }: { onClick: () => void }) {
   return (
-    <div className="flex flex-col rounded-lg border border-gray-300 bg-white overflow-hidden">
+    <div className="flex flex-col rounded-lg border border-gray-300 bg-card overflow-hidden">
       {/* 상단: 배지 영역과 높이 맞춤 */}
       <div className="flex items-center px-3 py-2">
         <Badge className="gap-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/30" variant="outline">
