@@ -691,27 +691,15 @@ function MenuDialog({
             </div>
           )}
 
-          {/* GNB 노출여부 + 메뉴 사용여부 */}
-          <div className="flex gap-6">
-            <div className="flex-1 space-y-1.5">
-              <Label>
-                GNB 노출여부 <span className="text-destructive">*</span>
-              </Label>
-              <ToggleSwitch
-                checked={form.gnbExposure}
-                onChange={(v) => updateField('gnbExposure', v)}
-                disabled={!form.isActive}
-              />
-            </div>
-            <div className="flex-1 space-y-1.5">
-              <Label>
-                메뉴 사용여부 <span className="text-destructive">*</span>
-              </Label>
-              <ToggleSwitch
-                checked={form.isActive}
-                onChange={(v) => updateField('isActive', v)}
-              />
-            </div>
+          {/* GNB 노출여부 */}
+          <div className="space-y-1.5">
+            <Label>
+              GNB 노출여부 <span className="text-destructive">*</span>
+            </Label>
+            <ToggleSwitch
+              checked={form.gnbExposure}
+              onChange={(v) => updateField('gnbExposure', v)}
+            />
           </div>
         </DialogBody>
         <DialogFooter>
