@@ -392,7 +392,7 @@ function AdminManagementContent() {
     setDetailLoading(true);
     setDetailOpen(true);
     try {
-      const { data: detailData } = await fetchDetail({ variables: { id: row.id } });
+      const { data: detailData } = await fetchDetail({ variables: { id: row.id, hospitalCode: 'ALL' } });
       if (detailData?.adminUserById) {
         const u = detailData.adminUserById;
         setSelectedUser(u);
@@ -830,7 +830,7 @@ function AdminManagementContent() {
             {/* 소속 기관 */}
             <FormField label="소속 기관" required>
               <div className="flex gap-1.5">
-                {['ANAM', 'GURO', 'ANSAN'].map((code) => (
+                {['ALL', 'ANAM', 'GURO', 'ANSAN'].map((code) => (
                   <button
                     key={code}
                     type="button"
@@ -842,7 +842,7 @@ function AdminManagementContent() {
                         : 'border-gray-300 bg-card text-gray-500 hover:bg-gray-100'
                     )}
                   >
-                    {code === 'ANAM' ? '안암' : code === 'GURO' ? '구로' : '안산'}
+                    {code === 'ALL' ? '통합관리자' : code === 'ANAM' ? '안암' : code === 'GURO' ? '구로' : '안산'}
                   </button>
                 ))}
               </div>

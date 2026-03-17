@@ -58,7 +58,8 @@
       "Bash(find \"C:\\\\Users\\\\USER\\\\Desktop\\\\alba\\\\refer-cms\" -type f -name \"*admin*\" 2>/dev/null | head -20)",
       "Bash(find:*)",
       "Bash(tr '{' '\\\\n')",
-      "Bash(tr '}' '\\\\n')"
+      "Bash(tr '}' '\\\\n')",
+      "Bash(find /c/Users/LSY/Desktop/Propject/refer-cms -type f \\\\\\(-name introspection* -o -name schema* -o -name *.graphql \\\\\\))"
     ]
   },
   "enableAllProjectMcpServers": true,

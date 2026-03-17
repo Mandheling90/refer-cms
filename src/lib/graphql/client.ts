@@ -111,7 +111,7 @@ const httpLink = createHttpLink({
       try {
         const body = JSON.parse(options.body);
         const effectiveCode = getEffectiveHospitalCode();
-        if (effectiveCode && body.variables) {
+        if (effectiveCode && body.variables && !body.variables.hospitalCode) {
           body.variables.hospitalCode = effectiveCode;
           return fetch(uri, { ...options, body: JSON.stringify(body) });
         }
