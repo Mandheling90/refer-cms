@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { DataTable } from '@/components/organisms/DataTable';
@@ -208,7 +208,7 @@ function AdminManagementContent() {
   });
 
   const allItems = data?.adminUsers?.items ?? [];
-  const items = allItems.filter((item) => item.status !== 'WITHDRAWN');
+  const items = useMemo(() => allItems.filter((item) => item.status !== 'WITHDRAWN'), [allItems]);
   const totalItems = items.length;
 
   /* ─── GraphQL 상세 조회 ─── */
