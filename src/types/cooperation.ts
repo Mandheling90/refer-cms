@@ -31,8 +31,6 @@ export interface PartnerApplicationModel {
   staffEmail?: string;
   directorName?: string;
   directorPhone?: string;
-  directorLicenseNo?: string;
-  institutionType?: string;
   approvedAt?: string;
   terminatedAt?: string;
   reviewedAt?: string;
@@ -46,6 +44,7 @@ export interface PartnerApplicationModel {
 /** 협력병의원 신청 상세 모델 (PartnerHospitalModel) */
 export interface PartnerApplicationDetail extends PartnerApplicationModel {
   /* 병원장 추가 정보 */
+  directorLicenseNo?: string;
   directorBirthDate?: string;
   directorGender?: string;
   directorEmail?: string;
@@ -64,6 +63,7 @@ export interface PartnerApplicationDetail extends PartnerApplicationModel {
   staffTel?: string;
   staffDeptType?: string;
   staffDeptValue?: string;
+  institutionType?: string;
   /* 기타 */
   remarks?: string;
   attachments?: Array<{ url?: string; filename?: string; name?: string; originalName?: string }> | unknown;

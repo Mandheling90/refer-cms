@@ -138,6 +138,7 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
         id
         name
         phisCode
+        classificationCode
         address
         addressDetail
         phone
@@ -146,6 +147,8 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
         website
         representative
         partnerType
+        specialties
+        hospitalCode
       }
     }
   }
