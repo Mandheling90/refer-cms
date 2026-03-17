@@ -502,6 +502,12 @@ export default function ExamImagePage() {
   /* --- 테이블 컬럼 --- */
   const columns: ColumnDef<ImagingRequestModel, unknown>[] = [
     {
+      id: 'rowNumber',
+      header: '번호',
+      size: 60,
+      cell: ({ row }) => totalCount - ((currentPage - 1) * pageSize + row.index),
+    },
+    {
       id: 'patientName',
       header: '환자명',
       size: 90,
@@ -509,8 +515,8 @@ export default function ExamImagePage() {
     },
     {
       id: 'residentNo',
-      header: '주민번호',
-      size: 120,
+      header: '주민등록번호',
+      size: 140,
       cell: ({ row }) => {
         const r = row.original.referralReply;
         if (!r?.frontResidentNo) return '-';
@@ -523,20 +529,21 @@ export default function ExamImagePage() {
       size: 100,
     },
     {
+      accessorKey: 'examDate',
+      header: '검사일시',
+      size: 100,
+    },
+    {
       id: 'examName',
       header: '검사명',
       size: 160,
       cell: ({ row }) => row.original.examInfo?.orderName || '-',
     },
     {
-      accessorKey: 'orderCode',
-      header: '처방코드',
-      size: 120,
-    },
-    {
-      accessorKey: 'examDate',
-      header: '검사일시',
-      size: 100,
+      id: 'requestedAt',
+      header: '이미지신청일',
+      size: 140,
+      cell: ({ row }) => formatDateTime(row.original.requestedAt),
     },
     {
       id: 'doctorName',
@@ -545,44 +552,8 @@ export default function ExamImagePage() {
       cell: ({ row }) => row.original.referralReply?.doctorName || row.original.examInfo?.doctorName || '-',
     },
     {
-      id: 'requestedAt',
-      header: '요청일시',
-      size: 140,
-      cell: ({ row }) => formatDateTime(row.original.requestedAt),
-    },
-    {
-      id: 'approvedAt',
-      header: '승인일시',
-      size: 140,
-      cell: ({ row }) => formatDateTime(row.original.approvedAt),
-    },
-    {
-      id: 'rejectedAt',
-      header: '반려일시',
-      size: 140,
-      cell: ({ row }) => formatDateTime(row.original.rejectedAt),
-    },
-    {
-      id: 'expiresAt',
-      header: '만료일시',
-      size: 140,
-      cell: ({ row }) => formatDateTime(row.original.expiresAt),
-    },
-    {
-      id: 'createdAt',
-      header: '등록일시',
-      size: 140,
-      cell: ({ row }) => formatDateTime(row.original.createdAt),
-    },
-    {
-      id: 'attachmentCount',
-      header: '첨부파일',
-      size: 80,
-      cell: ({ row }) => (row.original.attachments?.length ?? 0) + '건',
-    },
-    {
       id: 'status',
-      header: () => <span className="block text-center">상태</span>,
+      header: () => <span className="block text-center">승인여부</span>,
       size: 130,
       cell: ({ row }) => {
         const { status, displayState, id } = row.original;
@@ -620,7 +591,7 @@ export default function ExamImagePage() {
     },
     {
       id: 'actions',
-      header: () => <span className="block text-center">이미지 관리</span>,
+      header: () => <span className="block text-center">이미지 등록/조회</span>,
       size: 160,
       cell: ({ row }) => {
         const { displayState } = row.original;
@@ -664,80 +635,24 @@ export default function ExamImagePage() {
 
   /* --- 다이얼로그 내 정보 필드 렌더링 --- */
   const renderInfoFields = (item: ImagingRequestModel) => {
-    const statusLabel = (() => {
-      const map: Record<string, string> = {
-        REQUESTED: '요청', APPROVED: '승인', REJECTED: '반려', EXPIRED: '만료',
-      };
-      return map[item.status] ?? item.status;
-    })();
-    const displayLabel = (() => {
-      const map: Record<string, string> = {
-        REQUESTABLE: '요청가능', PENDING_IMAGE: '이미지 대기', VIEWABLE: '조회가능', REJECTED: '반려', EXPIRED: '만료',
-      };
-      return map[item.displayState] ?? item.displayState;
-    })();
     const reply = item.referralReply;
     const exam = item.examInfo;
     const residentNo = reply?.frontResidentNo
       ? `${reply.frontResidentNo}-${reply.backResidentNo ? reply.backResidentNo.charAt(0) + '******' : '******'}`
       : '-';
-    const genderLabel = reply?.genderCode === 'M' ? '남' : reply?.genderCode === 'F' ? '여' : reply?.genderCode || '-';
+    const rowIndex = items.findIndex((i) => i.id === item.id);
+    const rowNumber = rowIndex >= 0 ? totalCount - ((currentPage - 1) * pageSize + rowIndex) : '-';
 
     return (
-      <div className="space-y-5">
-        {/* 환자 정보 */}
-        <p className="text-sm font-semibold text-foreground border-b pb-2">환자 정보</p>
-        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-          <ReadonlyField label="환자명" value={reply?.patientName || '-'} />
-          <ReadonlyField label="주민번호" value={residentNo} />
-          <ReadonlyField label="환자번호" value={item.ptntNo} />
-          <ReadonlyField label="나이" value={reply?.age || '-'} />
-          <ReadonlyField label="성별" value={genderLabel} />
-          <ReadonlyField label="연락처" value={reply?.phoneNo || '-'} />
-        </div>
-
-        {/* 검사 정보 */}
-        <p className="text-sm font-semibold text-foreground border-b pb-2">검사 정보</p>
-        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-          <ReadonlyField label="검사명" value={exam?.orderName || '-'} />
-          <ReadonlyField label="처방코드" value={item.orderCode} />
-          <ReadonlyField label="검사일시" value={item.examDate} />
-          <ReadonlyField label="PACS Access No" value={item.pacsAccessNo || '-'} />
-          <ReadonlyField label="진료과" value={exam?.departmentName || reply?.departmentName || '-'} />
-          <ReadonlyField label="협력의" value={reply?.doctorName || exam?.doctorName || '-'} />
-        </div>
-
-        {/* 진단 정보 */}
-        {(reply?.diagnosisName || reply?.opinion) && (
-          <>
-            <p className="text-sm font-semibold text-foreground border-b pb-2">진단 정보</p>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-              <ReadonlyField label="진단코드" value={reply?.diagnosisCode || '-'} />
-              <ReadonlyField label="진단명" value={reply?.diagnosisName || '-'} />
-              <ReadonlyField label="치료기간" value={reply?.treatmentPeriod || '-'} />
-            </div>
-            {reply?.opinion && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-foreground">소견</label>
-                <Textarea value={reply.opinion} disabled rows={3} />
-              </div>
-            )}
-          </>
-        )}
-
-        {/* 상태 & 일시 */}
-        <p className="text-sm font-semibold text-foreground border-b pb-2">상태 정보</p>
-        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
-          <ReadonlyField label="상태" value={statusLabel} />
-          <ReadonlyField label="표시 상태" value={displayLabel} />
-          <ReadonlyField label="기관코드" value={item.hospitalCode} />
-          <ReadonlyField label="요청일시" value={formatDateTime(item.requestedAt)} />
-          <ReadonlyField label="승인일시" value={formatDateTime(item.approvedAt)} />
-          <ReadonlyField label="반려일시" value={formatDateTime(item.rejectedAt)} />
-          <ReadonlyField label="만료일시" value={formatDateTime(item.expiresAt)} />
-          <ReadonlyField label="등록일시" value={formatDateTime(item.createdAt)} />
-          <ReadonlyField label="수정일시" value={formatDateTime(item.updatedAt)} />
-        </div>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <ReadonlyField label="번호" value={String(rowNumber)} />
+        <ReadonlyField label="환자명" value={reply?.patientName || '-'} />
+        <ReadonlyField label="주민등록번호" value={residentNo} />
+        <ReadonlyField label="환자번호" value={item.ptntNo} />
+        <ReadonlyField label="검사명" value={exam?.orderName || '-'} />
+        <ReadonlyField label="검사일시" value={item.examDate} />
+        <ReadonlyField label="이미지신청일" value={formatDateTime(item.requestedAt)} />
+        <ReadonlyField label="협력의" value={reply?.doctorName || exam?.doctorName || '-'} />
       </div>
     );
   };
@@ -907,8 +822,7 @@ export default function ExamImagePage() {
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>
-              검사이미지 {selectedItem?.displayState === 'PENDING_IMAGE' ? '등록' : '관리'}
-              {selectedItem ? ` : ${selectedItem.ptntNo}` : ''}
+              검사이미지 관리 : {selectedItem?.referralReply?.patientName || '-'}
             </DialogTitle>
             <DialogDescription className="sr-only">검사이미지를 관리합니다.</DialogDescription>
           </DialogHeader>
