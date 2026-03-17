@@ -211,16 +211,16 @@ export default function EConsultPage() {
         cell: ({ row }) => <span className="text-sm">{row.original.consultant?.name ?? '-'}</span>,
         size: 100,
       },
-      {
-        id: 'specialty',
-        header: '전문분야',
-        cell: ({ row }) => (
-          <span className="text-sm truncate block max-w-[240px]">
-            {row.original.consultant?.specialty ?? '-'}
-          </span>
-        ),
-        size: 240,
-      },
+      // {
+      //   id: 'specialty',
+      //   header: '전문분야',
+      //   cell: ({ row }) => (
+      //     <span className="text-sm truncate block max-w-[240px]">
+      //       {row.original.consultant?.specialty ?? '-'}
+      //     </span>
+      //   ),
+      //   size: 240,
+      // },
       {
         id: 'status',
         header: '답변여부',
@@ -384,9 +384,9 @@ export default function EConsultPage() {
                   <FieldGroup label="자문의">
                     <Input value={selectedItem.consultant?.name ?? '-'} disabled />
                   </FieldGroup>
-                  <FieldGroup label="전문분야">
+                  {/* <FieldGroup label="전문분야">
                     <Input value={selectedItem.consultant?.specialty ?? '-'} disabled />
-                  </FieldGroup>
+                  </FieldGroup> */}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

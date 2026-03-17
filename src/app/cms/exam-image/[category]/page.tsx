@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { uploadFile } from '@/lib/api/graphql';
+import JSZip from 'jszip';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import {
   APPROVE_IMAGING_REQUEST,
@@ -260,6 +261,7 @@ export default function ExamImagePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
 
   /* --- 검색 --- */
@@ -358,18 +360,81 @@ export default function ExamImagePage() {
     }
   };
 
+  /* --- ZIP 파일에서 이미지 추출 --- */
+  const extractImagesFromZip = async (zipFile: File): Promise<File[]> => {
+    const zip = await JSZip.loadAsync(zipFile);
+    const imageFiles: File[] = [];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp'];
+
+    const entries = Object.entries(zip.files).filter(([name, entry]) => {
+      if (entry.dir) return false;
+      // __MACOSX 등 시스템 파일 제외
+      if (name.startsWith('__MACOSX') || name.startsWith('.')) return false;
+      const ext = name.substring(name.lastIndexOf('.')).toLowerCase();
+      return imageExtensions.includes(ext);
+    });
+
+    for (const [name, entry] of entries) {
+      const blob = await entry.async('blob');
+      const fileName = name.includes('/') ? name.substring(name.lastIndexOf('/') + 1) : name;
+      const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+        '.bmp': 'image/bmp', '.gif': 'image/gif', '.webp': 'image/webp',
+      };
+      imageFiles.push(new File([blob], fileName, { type: mimeMap[ext] || 'image/jpeg' }));
+    }
+
+    return imageFiles;
+  };
+
   /* --- 파일 업로드 --- */
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !selectedItem) return;
     setUploading(true);
     try {
-      // 1) 각 파일을 서버에 업로드
-      const uploadResults = await Promise.all(
-        Array.from(files).map((file) => uploadFile(file)),
-      );
+      // 1) ZIP 파일은 압축 해제하여 이미지 추출, 나머지는 그대로
+      const filesToUpload: File[] = [];
+      for (const file of Array.from(files)) {
+        if (file.name.toLowerCase().endsWith('.zip')) {
+          const extracted = await extractImagesFromZip(file);
+          if (extracted.length === 0) {
+            toast.error(`ZIP 파일(${file.name})에 이미지가 없습니다.`);
+            continue;
+          }
+          filesToUpload.push(...extracted);
+        } else {
+          filesToUpload.push(file);
+        }
+      }
 
-      // 2) 기존 첨부파일 + 새 업로드 파일 합산
+      if (filesToUpload.length === 0) {
+        setUploading(false);
+        e.target.value = '';
+        return;
+      }
+
+      // 기존 첨부파일 + 신규 파일 합산 장수가 800장 이상이면 차단
+      const existingCount = selectedItem.attachments?.length ?? 0;
+      const totalCount = existingCount + filesToUpload.length;
+      if (totalCount > 800) {
+        toast.error(`이미지는 최대 800장까지 등록 가능합니다. (기존 ${existingCount}장 + 신규 ${filesToUpload.length}장 = ${totalCount}장)`);
+        setUploading(false);
+        e.target.value = '';
+        return;
+      }
+
+      // 2) 각 파일을 순차적으로 서버에 업로드 (동시 업로드 시 503 방지)
+      setUploadProgress({ current: 0, total: filesToUpload.length });
+      const uploadResults = [];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const result = await uploadFile(filesToUpload[i]);
+        uploadResults.push(result);
+        setUploadProgress({ current: i + 1, total: filesToUpload.length });
+      }
+
+      // 3) 기존 첨부파일 + 새 업로드 파일 합산
       const existingAttachments = (selectedItem.attachments ?? []).map((a) => ({
         url: a.storedPath,
         name: a.originalName,
@@ -384,7 +449,7 @@ export default function ExamImagePage() {
       }));
       const allAttachments = [...existingAttachments, ...newAttachments];
 
-      // 3) replaceAttachments 뮤테이션 호출
+      // 4) replaceAttachments 뮤테이션 호출
       await replaceAttachments({
         variables: {
           imagingRequestId: selectedItem.id,
@@ -392,7 +457,7 @@ export default function ExamImagePage() {
         },
       });
 
-      // 4) 상세 다시 조회하여 selectedItem 갱신
+      // 5) 상세 다시 조회하여 selectedItem 갱신
       const { data: detailData } = await fetchDetail({ variables: { id: selectedItem.id } });
       if (detailData?.imagingRequestDetail) {
         setSelectedItem(detailData.imagingRequestDetail);
@@ -657,6 +722,29 @@ export default function ExamImagePage() {
     );
   };
 
+  /* --- 드래그 앤 드롭 핸들러 --- */
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (uploading || !selectedItem) return;
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    // fileInputRef의 onChange와 동일한 로직을 재사용하기 위해 DataTransfer 활용
+    const dt = new DataTransfer();
+    for (const file of Array.from(files)) {
+      dt.items.add(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.files = dt.files;
+      fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   /* --- 이미지 업로드 영역 렌더링 --- */
   const renderUploadSection = (maxImages: number) => (
     <div className="space-y-3">
@@ -665,7 +753,11 @@ export default function ExamImagePage() {
         - 등록하고자 하는 이미지들을 jpg 파일 또는 압축(ZIP)하여 업로드하십시오.<br />
         - 용량관계상 한 압축파일에 {maxImages}장 이상 사진 업로드 시 업로드가 불가합니다.
       </p>
-      <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-gray-400 bg-gray-50 px-6 py-8">
+      <div
+        className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-gray-400 bg-gray-50 px-6 py-8"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
         <Upload className="h-6 w-6 text-gray-400" />
         <p className="text-sm text-muted-foreground">
           {uploading ? '업로드 중...' : '첨부할 파일을 여기에 끌어다 놓거나, 파일 선택 버튼을 직접 선택해주세요.'}
@@ -835,6 +927,21 @@ export default function ExamImagePage() {
               <>
                 {renderInfoFields(selectedItem)}
                 {renderUploadSection(800)}
+
+                {/* 업로드 진행 중 프로그레스 */}
+                {uploading && uploadProgress.total > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-foreground">
+                      업로드 중... ({uploadProgress.current} / {uploadProgress.total})
+                    </p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {(selectedItem.attachments?.length ?? 0) > 0 && (
                   <>
