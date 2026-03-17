@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -55,6 +55,11 @@ export function DataTable<TData>({
   getRowId,
 }: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  // data가 변경되면 선택 상태 초기화
+  useEffect(() => {
+    setRowSelection({});
+  }, [data]);
 
   const selectionColumn: ColumnDef<TData, unknown> = {
     id: 'select',
