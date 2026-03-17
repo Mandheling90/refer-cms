@@ -14,12 +14,41 @@ export const GET_IMAGING_REQUESTS = gql`
         orderCode
         examDate
         pacsAccessNo
+        refrSno
+        refrYmd
         status
         displayState
         requestedAt
         approvedAt
         rejectedAt
         expiresAt
+        examInfo {
+          orderName
+          doctorName
+          departmentName
+          orderDate
+          pacsAccessNo
+          specimenCode
+          specimenNo
+          grossResult
+          resultContent
+        }
+        referralReply {
+          patientName
+          frontResidentNo
+          backResidentNo
+          age
+          genderCode
+          phoneNo
+          departmentName
+          doctorName
+          diagnosisCode
+          diagnosisName
+          opinion
+          referralDate
+          replyDate
+          treatmentPeriod
+        }
         attachments {
           id
           originalName
@@ -47,12 +76,41 @@ export const GET_IMAGING_REQUEST_DETAIL = gql`
       orderCode
       examDate
       pacsAccessNo
+      refrSno
+      refrYmd
       status
       displayState
       requestedAt
       approvedAt
       rejectedAt
       expiresAt
+      examInfo {
+        orderName
+        doctorName
+        departmentName
+        orderDate
+        pacsAccessNo
+        specimenCode
+        specimenNo
+        grossResult
+        resultContent
+      }
+      referralReply {
+        patientName
+        frontResidentNo
+        backResidentNo
+        age
+        genderCode
+        phoneNo
+        departmentName
+        doctorName
+        diagnosisCode
+        diagnosisName
+        opinion
+        referralDate
+        replyDate
+        treatmentPeriod
+      }
       attachments {
         id
         originalName

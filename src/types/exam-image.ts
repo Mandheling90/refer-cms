@@ -21,6 +21,37 @@ export interface AttachmentModel {
   createdAt?: string;
 }
 
+/** 특수검사결과 정보 (examInfo) */
+export interface SpecialExamResultItem {
+  orderName?: string;
+  doctorName?: string;
+  departmentName?: string;
+  orderDate?: string;
+  pacsAccessNo?: string;
+  specimenCode?: string;
+  specimenNo?: string;
+  grossResult?: string;
+  resultContent?: string;
+}
+
+/** 회신서 정보 (referralReply) */
+export interface ReferralReplyItem {
+  patientName?: string;
+  frontResidentNo?: string;
+  backResidentNo?: string;
+  age?: string;
+  genderCode?: string;
+  phoneNo?: string;
+  departmentName?: string;
+  doctorName?: string;
+  diagnosisCode?: string;
+  diagnosisName?: string;
+  opinion?: string;
+  referralDate?: string;
+  replyDate?: string;
+  treatmentPeriod?: string;
+}
+
 /** 검사이미지 모델 */
 export interface ImagingRequestModel {
   id: string;
@@ -29,12 +60,16 @@ export interface ImagingRequestModel {
   orderCode: string;
   examDate: string;
   pacsAccessNo?: string | null;
+  refrSno?: string | null;
+  refrYmd?: string | null;
   status: ImagingRequestStatus;
   displayState: ImagingRequestDisplayState;
   requestedAt: string;
   approvedAt?: string | null;
   rejectedAt?: string | null;
   expiresAt: string;
+  examInfo?: SpecialExamResultItem | null;
+  referralReply?: ReferralReplyItem | null;
   attachments?: AttachmentModel[];
   createdAt: string;
   updatedAt: string;
