@@ -13,6 +13,7 @@ export const GET_IMAGING_REQUESTS = gql`
         ptntNo
         orderCode
         examDate
+        examType
         pacsAccessNo
         refrSno
         refrYmd

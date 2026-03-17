@@ -49,6 +49,13 @@ const CATEGORY_TITLE: Record<string, string> = {
   etc: '기타검사',
 };
 
+/** URL 카테고리 → GraphQL examType 필터값 매핑 */
+const EXAM_TYPE_FILTER: Record<string, string> = {
+  radiology: 'RADIOLOGY',
+  endoscopy: 'ENDOSCOPY',
+  etc: 'OTHER',
+};
+
 /* --- 공통 컴포넌트 --- */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -128,6 +135,8 @@ export default function ExamImagePage() {
   }>({});
 
   /* --- GraphQL 목록 조회 --- */
+  const examTypeFilter = EXAM_TYPE_FILTER[category];
+
   const { data, loading, refetch } = useQuery<ImagingRequestsResponse>(
     GET_IMAGING_REQUESTS,
     {
@@ -136,6 +145,7 @@ export default function ExamImagePage() {
           page: currentPage,
           limit: pageSize,
           filter: {
+            ...(examTypeFilter ? { examType: examTypeFilter } : {}),
             ...(appliedFilter.patientName ? { patientName: appliedFilter.patientName } : {}),
             ...(appliedFilter.ptntNo ? { ptntNo: appliedFilter.ptntNo } : {}),
             ...(appliedFilter.examName ? { examName: appliedFilter.examName } : {}),
@@ -279,13 +289,14 @@ export default function ExamImagePage() {
         page: 1,
         limit: pageSize,
         filter: {
+          ...(examTypeFilter ? { examType: examTypeFilter } : {}),
           ...(newFilter.patientName ? { patientName: newFilter.patientName } : {}),
           ...(newFilter.ptntNo ? { ptntNo: newFilter.ptntNo } : {}),
           ...(newFilter.examName ? { examName: newFilter.examName } : {}),
         },
       },
     });
-  }, [searchPatientName, searchPtntNo, searchExamName, pageSize, refetch]);
+  }, [searchPatientName, searchPtntNo, searchExamName, pageSize, examTypeFilter, refetch]);
 
   const handleReset = () => {
     setSearchPatientName('');
@@ -297,7 +308,9 @@ export default function ExamImagePage() {
       input: {
         page: 1,
         limit: pageSize,
-        filter: {},
+        filter: {
+          ...(examTypeFilter ? { examType: examTypeFilter } : {}),
+        },
       },
     });
   };
