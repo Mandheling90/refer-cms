@@ -241,7 +241,7 @@ function AdminManagementContent() {
     setAppliedFilter(newFilter);
     setCurrentPage(1);
     refetch({
-      filter: newFilter.search ? { search: newFilter.search } : {},
+      filter: { userType: 'ADMIN', ...(newFilter.search ? { search: newFilter.search } : {}) },
       pagination: { page: 1, limit: pageSize },
     });
   }, [searchUserId, searchUserName, refetch, pageSize]);
@@ -252,7 +252,7 @@ function AdminManagementContent() {
     setAppliedFilter({});
     setCurrentPage(1);
     refetch({
-      filter: {},
+      filter: { userType: 'ADMIN' },
       pagination: { page: 1, limit: pageSize },
     });
   };

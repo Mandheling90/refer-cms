@@ -375,34 +375,14 @@ export default function PermissionGroupHistoryPage() {
                   <ReadOnlyField label="IP주소" value={selectedLog.ipAddress || '-'} />
                 </div>
 
-                {/* 연결메뉴 등록/수정 내역 */}
+                {/* 상세내역 */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-semibold text-foreground">
-                    연결메뉴 등록/수정 내역
+                    상세내역
                   </label>
                   <textarea
                     className="w-full min-h-[140px] rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono disabled:cursor-not-allowed disabled:opacity-70"
-                    value={
-                      selectedLog.permissionMenuHistories?.length
-                        ? JSON.stringify(selectedLog.permissionMenuHistories, null, 2)
-                        : '-'
-                    }
-                    disabled
-                  />
-                </div>
-
-                {/* 연결관리자 등록/수정 내역 */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-semibold text-foreground">
-                    연결관리자 등록/수정 내역
-                  </label>
-                  <textarea
-                    className="w-full min-h-[140px] rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono disabled:cursor-not-allowed disabled:opacity-70"
-                    value={
-                      selectedLog.permissionMemberHistories?.length
-                        ? JSON.stringify(selectedLog.permissionMemberHistories, null, 2)
-                        : '-'
-                    }
+                    value={selectedLog.detail || '-'}
                     disabled
                   />
                 </div>

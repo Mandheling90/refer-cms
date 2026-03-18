@@ -308,11 +308,10 @@ function PermissionGroupContent() {
   });
 
   /* ─── 관리자 목록 조회 ─── */
-  const { data: adminData } = useQuery<{
-    adminUsers: { items: { id: string; userId: string; userName: string; status: string }[] };
+  const [fetchAdminUsers, { data: adminData, loading: adminLoading }] = useLazyQuery<{
+    adminUsers: { items: { id: string; userId: string; userName: string; status: string }[]; totalCount: number };
   }>(GET_ADMIN_USERS, {
-    variables: { filter: { userType: 'ADMIN' }, pagination: { page: 1, limit: 100 } },
-    fetchPolicy: 'cache-first',
+    fetchPolicy: 'network-only',
   });
 
   const allAdmins: AssignedAdmin[] = useMemo(() => {
@@ -606,6 +605,20 @@ function PermissionGroupContent() {
     );
   };
 
+  /* ─── 관리자 목록 검색 ─── */
+  const searchAdminUsers = useCallback((keyword?: string) => {
+    fetchAdminUsers({
+      variables: {
+        hospitalCode: formHospitalCode || undefined,
+        filter: {
+          userType: 'ADMIN',
+          ...(keyword?.trim() ? { search: keyword.trim() } : {}),
+        },
+        pagination: { page: 1, limit: 100 },
+      },
+    });
+  }, [fetchAdminUsers, formHospitalCode]);
+
   /* ─── 관리자 배정 열기 ─── */
   const handleOpenAdminAssign = () => {
     setAdminSearchKeyword('');
@@ -613,6 +626,12 @@ function PermissionGroupContent() {
     setCheckedAllAdmins(new Set());
     setCheckedSelectedAdmins(new Set());
     setAdminAssignDialogOpen(true);
+    searchAdminUsers();
+  };
+
+  /* ─── 관리자 검색 ─── */
+  const handleAdminSearch = () => {
+    searchAdminUsers(adminSearchKeyword);
   };
 
   /* ─── 관리자 추가/삭제 ─── */
@@ -631,14 +650,11 @@ function PermissionGroupContent() {
     setCheckedSelectedAdmins(new Set());
   };
 
-  /* ─── 필터된 관리자 목록 ─── */
+  /* ─── 필터된 관리자 목록 (이미 배정된 관리자 제외) ─── */
   const filteredAllAdmins = useMemo(() => {
-    if (!adminSearchKeyword.trim()) return allAdmins;
-    const keyword = adminSearchKeyword.toLowerCase();
-    return allAdmins.filter(
-      (a) => a.userName.toLowerCase().includes(keyword) || a.userId.toLowerCase().includes(keyword)
-    );
-  }, [allAdmins, adminSearchKeyword]);
+    const assignedIds = new Set(formAssignedAdmins.map((a) => a.id));
+    return allAdmins.filter((a) => !assignedIds.has(a.id));
+  }, [allAdmins, formAssignedAdmins]);
 
   const filteredSelectedAdmins = useMemo(() => {
     if (!selectedAdminSearchKeyword.trim()) return formAssignedAdmins;
@@ -919,11 +935,17 @@ function PermissionGroupContent() {
                 <p className="text-sm font-semibold">
                   전체 관리자 검색 (총 {filteredAllAdmins.length}명)
                 </p>
-                <Input
-                  value={adminSearchKeyword}
-                  onChange={(e) => setAdminSearchKeyword(e.target.value)}
-                  placeholder="관리자명 또는 아이디 검색"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    value={adminSearchKeyword}
+                    onChange={(e) => setAdminSearchKeyword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdminSearch()}
+                    placeholder="관리자명 또는 아이디 검색"
+                  />
+                  <Button variant="dark" size="sm" className="shrink-0" onClick={handleAdminSearch}>
+                    검색
+                  </Button>
+                </div>
                 <div className="rounded-md border border-gray-300 max-h-[300px] overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead>
