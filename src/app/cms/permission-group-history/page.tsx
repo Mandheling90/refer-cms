@@ -164,7 +164,7 @@ export default function PermissionGroupHistoryPage() {
   const hospitalCode = getEffectiveHospitalCode();
   const { data, loading, refetch } = useQuery<PermissionAuditLogsResponse>(GET_PERMISSION_AUDIT_LOGS, {
     variables: {
-      hospitalCode: hospitalCode === 'ALL' ? undefined : hospitalCode,
+      hospitalCode: hospitalCode,
       pagination: {
         page: currentPage,
         limit: pageSize,
@@ -305,7 +305,7 @@ export default function PermissionGroupHistoryPage() {
                   setPageSize(size);
                   setCurrentPage(1);
                   refetch({
-                    hospitalCode: hospitalCode === 'ALL' ? undefined : hospitalCode,
+                    hospitalCode: hospitalCode,
                     pagination: { page: 1, limit: size },
                   });
                 }}

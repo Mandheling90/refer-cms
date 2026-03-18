@@ -147,6 +147,8 @@ export default function AdminManagementPage() {
 }
 
 function AdminManagementContent() {
+  const hospitalCode = useAuthStore((s) => s.hospitalCode);
+
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -197,6 +199,7 @@ function AdminManagementContent() {
   const { data, loading, refetch } = useQuery<AdminUsersResponse>(GET_ADMIN_USERS, {
     variables: {
       filter: {
+        userType: 'ADMIN',
         ...(appliedFilter.search ? { search: appliedFilter.search } : {}),
       },
       pagination: {
@@ -392,7 +395,7 @@ function AdminManagementContent() {
     setDetailLoading(true);
     setDetailOpen(true);
     try {
-      const { data: detailData } = await fetchDetail({ variables: { id: row.id, hospitalCode: 'ALL' } });
+      const { data: detailData } = await fetchDetail({ variables: { id: row.id, hospitalCode } });
       if (detailData?.adminUserById) {
         const u = detailData.adminUserById;
         setSelectedUser(u);

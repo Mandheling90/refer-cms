@@ -60,8 +60,8 @@ export const ADMIN_DELETE_USER = gql`
 
 /** 관리자 상세 조회 */
 export const GET_ADMIN_USER_DETAIL = gql`
-  query AdminUserById($id: String!) {
-    adminUserById(id: $id) {
+  query AdminUserById($id: String!, $hospitalCode: HospitalCode) {
+    adminUserById(id: $id, hospitalCode: $hospitalCode) {
       id
       userId
       userName

@@ -254,7 +254,7 @@ function PermissionGroupContent() {
     menuPermissionGroups: PermissionGroupItem[];
   }>(GET_PERMISSION_GROUPS, {
     variables: {
-      hospitalCode: hospitalCode === 'ALL' ? undefined : hospitalCode,
+      hospitalCode,
     },
     fetchPolicy: 'network-only',
   });
@@ -283,7 +283,7 @@ function PermissionGroupContent() {
 
   /* ─── GraphQL 그룹 멤버 조회 ─── */
   const [fetchMembers] = useLazyQuery<{
-    permissionGroupMembers: { id: string; userId: string; userName: string }[];
+    permissionGroupMembers: { id: string; userId: string; userName: string; status: string }[];
   }>(GET_PERMISSION_GROUP_MEMBERS, {
     fetchPolicy: 'network-only',
   });
@@ -309,18 +309,20 @@ function PermissionGroupContent() {
 
   /* ─── 관리자 목록 조회 ─── */
   const { data: adminData } = useQuery<{
-    adminUsers: { items: { id: string; userId: string; userName: string }[] };
+    adminUsers: { items: { id: string; userId: string; userName: string; status: string }[] };
   }>(GET_ADMIN_USERS, {
-    variables: { pagination: { page: 1, limit: 100 } },
+    variables: { filter: { userType: 'ADMIN' }, pagination: { page: 1, limit: 100 } },
     fetchPolicy: 'cache-first',
   });
 
   const allAdmins: AssignedAdmin[] = useMemo(() => {
-    return (adminData?.adminUsers?.items ?? []).map((a: { id: string; userId: string; userName: string }) => ({
-      id: a.id,
-      userId: a.userId,
-      userName: a.userName,
-    }));
+    return (adminData?.adminUsers?.items ?? [])
+      .filter((a) => a.status !== 'WITHDRAWN')
+      .map((a) => ({
+        id: a.id,
+        userId: a.userId,
+        userName: a.userName,
+      }));
   }, [adminData]);
 
   /* ─── 메뉴 트리를 권한 배열로 변환 ─── */
@@ -384,8 +386,9 @@ function PermissionGroupContent() {
         fetchMembers({ variables: { groupId: row.id, hospitalCode } }),
       ]);
 
-      // 기존 배정된 관리자 로드
-      const members = memberData?.permissionGroupMembers ?? [];
+      // 기존 배정된 관리자 로드 (삭제된 관리자 제외)
+      const members = (memberData?.permissionGroupMembers ?? [])
+        .filter((m) => m.status !== 'WITHDRAWN');
       setFormAssignedAdmins(
         members.map((m) => ({ id: m.id, userId: m.userId, userName: m.userName }))
       );
