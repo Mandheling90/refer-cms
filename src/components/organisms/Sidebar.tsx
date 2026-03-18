@@ -4,143 +4,73 @@ import { Logo } from '@/components/atoms/Logo';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { useMenuStore } from '@/stores/menu-store';
-import type { LucideIcon } from 'lucide-react';
+import { useQuery } from '@apollo/client/react';
+import { ADMIN_MENUS } from '@/lib/graphql/queries/menu';
 import {
-  Building2,
   ChevronDown,
-  ClipboardList,
-  Columns3,
-  FileImage,
-  FileText,
-  History,
-  Image,
-  Mail,
-  PenLine,
-  Settings2,
-  ShieldCheck,
-  Stethoscope,
-  UserPlus,
-  Users
+  Menu as MenuIcon,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+
+interface ApiMenuItem {
+  id: string;
+  name: string;
+  menuTargetType: string;
+  externalUrl: string | null;
+  gnbExposure: boolean;
+  accessLevel: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  children?: ApiMenuItem[];
+}
 
 interface NavChild {
   title: string;
   href: string;
+  linkTarget: '_self' | '_blank';
 }
 
 interface NavItem {
   title: string;
   href?: string;
-  icon: LucideIcon;
   children?: NavChild[];
-  /** true이면 통합관리자(ALL)만 노출 */
-  adminOnly?: boolean;
+  linkTarget?: '_self' | '_blank';
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    title: '메뉴 관리',
-    href: '/cms/menu',
-    icon: Columns3,
-  },
-  {
-    title: '회원 관리',
-    href: '/cms/user',
-    icon: Users,
-  },
-  {
-    title: '회원가입 신청 관리',
-    href: '/cms/user/apply',
-    icon: UserPlus,
-  },
-  {
-    title: '배너관리',
-    icon: Image,
-    children: [
-      { title: '메인배너', href: '/cms/banner/main-banner' },
-      { title: '미니배너', href: '/cms/banner/mini-banner' },
-      { title: '팝업', href: '/cms/banner/popup' },
-    ],
-  },
-  {
-    title: '의료진',
-    href: '/cms/medical-staff',
-    icon: Stethoscope,
-  },
-  // {
-  //   title: '협력병의원 체결관리',
-  //   href: '/cms/cooperation/contract',
-  //   icon: Handshake,
-  // },
-  {
-    title: '협력병의원 신청 관리',
-    icon: Building2,
-    children: [
-      { title: '협력병원 신청 관리', href: '/cms/cooperation/hospital-apply' },
-      { title: '협력의원 신청 관리', href: '/cms/cooperation/clinic-apply' },
-    ],
-  },
-  {
-    title: '협력병의원 수정 관리',
-    icon: PenLine,
-    children: [
-      { title: '협력병원 수정 관리', href: '/cms/cooperation/hospital-edit' },
-      { title: '협력의원 수정 관리', href: '/cms/cooperation/clinic-edit' },
-    ],
-  },
-  {
-    title: '검사이미지 관리',
-    icon: FileImage,
-    children: [
-      { title: '영상검사', href: '/cms/exam-image/radiology' },
-      { title: '내시경검사', href: '/cms/exam-image/endoscopy' },
-      { title: '기타검사', href: '/cms/exam-image/etc' },
-    ],
-  },
-  {
-    title: '콘텐츠 설정',
-    href: '/cms/contents/config',
-    icon: Settings2,
-  },
-  {
-    title: '콘텐츠 관리',
-    href: '/cms/contents',
-    icon: FileText,
-  },
-  {
-    title: '게시판 설정',
-    href: '/cms/board/config',
-    icon: Settings2,
-  },
-  {
-    title: '게시판 관리',
-    href: '/cms/board',
-    icon: ClipboardList,
-  },
-  {
-    title: 'e-Consult',
-    href: '/cms/e-consult',
-    icon: Mail,
-  },
-  {
-    title: '시스템 관리',
-    icon: ShieldCheck,
-    adminOnly: true,
-    children: [
-      { title: '관리자 관리', href: '/cms/admin-management' },
-      { title: 'CMS 메뉴', href: '/cms/cms-menu' },
-      { title: '권한 그룹 관리', href: '/cms/permission-group' },
-      { title: '권한 수정 이력', href: '/cms/permission-group-history' },
-    ],
-  },
-  {
-    title: '로그내역',
-    href: '/cms/log',
-    icon: History,
-    adminOnly: true,
-  },
-];
+function mapMenuToNav(menus: ApiMenuItem[]): NavItem[] {
+  const result: NavItem[] = [];
+
+  for (const menu of menus) {
+    // NONE인 메뉴 숨김
+    if (menu.accessLevel === 'NONE') continue;
+
+    const linkTarget: '_self' | '_blank' = menu.gnbExposure ? '_blank' : '_self';
+
+    if (menu.menuTargetType === 'PARENT' && menu.children?.length) {
+      // 하위 메뉴 중 NONE이 아닌 것만 표시
+      const visibleChildren: NavChild[] = menu.children
+        .filter((child) => child.accessLevel !== 'NONE')
+        .map((child) => ({
+          title: child.name,
+          href: child.externalUrl || '',
+          linkTarget: (child.gnbExposure ? '_blank' : '_self') as '_self' | '_blank',
+        }));
+
+      // 하위 메뉴가 모두 NONE이면 상위도 숨김
+      if (visibleChildren.length === 0) continue;
+
+      result.push({ title: menu.name, children: visibleChildren });
+    } else {
+      result.push({
+        title: menu.name,
+        href: menu.externalUrl || undefined,
+        linkTarget,
+      });
+    }
+  }
+
+  return result;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -148,8 +78,11 @@ export function Sidebar() {
   const { hospitalCode } = useAuthStore();
   const { expandedGroups, toggleGroup, sidebarOpen } = useMenuStore();
 
-  const isAllAdmin = hospitalCode === 'ALL';
-  const visibleNavItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAllAdmin);
+  const { data } = useQuery<{ adminMenus: ApiMenuItem[] }>(ADMIN_MENUS, {
+    variables: { menuType: 'ADMIN' },
+  });
+
+  const navItems: NavItem[] = data?.adminMenus ? mapMenuToNav(data.adminMenus) : [];
 
   const isItemActive = (item: NavItem) => {
     if (item.href) return pathname === item.href;
@@ -157,11 +90,19 @@ export function Sidebar() {
     return false;
   };
 
+  const handleNavigation = (href: string, linkTarget?: '_self' | '_blank') => {
+    if (linkTarget === '_blank') {
+      window.open(href, '_blank');
+    } else {
+      router.push(href);
+    }
+  };
+
   const handleDepth1Click = (item: NavItem, idx: number) => {
     if (item.children) {
       toggleGroup(idx);
     } else if (item.href) {
-      router.push(item.href);
+      handleNavigation(item.href, item.linkTarget);
     }
   };
 
@@ -176,10 +117,9 @@ export function Sidebar() {
       <Logo />
       <nav className="flex-1 overflow-y-auto">
         <ul>
-          {visibleNavItems.map((item, idx) => {
+          {navItems.map((item, idx) => {
             const active = isItemActive(item);
             const expanded = expandedGroups.includes(idx);
-            const Icon = item.icon;
 
             return (
               <li key={idx}>
@@ -194,7 +134,7 @@ export function Sidebar() {
                     active && item.children && expanded && 'rounded-b-none'
                   )}
                 >
-                  <Icon
+                  <MenuIcon
                     className={cn(
                       'h-5 w-5 shrink-0 text-sidebar-foreground transition-colors',
                       active && 'text-sidebar-primary-foreground'
@@ -222,7 +162,7 @@ export function Sidebar() {
                         )}
                       >
                         <button
-                          onClick={() => router.push(child.href)}
+                          onClick={() => handleNavigation(child.href, child.linkTarget)}
                           className={cn(
                             'w-full text-left px-[30px] py-[12px] text-[16px] text-sidebar-accent-foreground rounded-[5px] transition-colors cursor-pointer',
                             pathname === child.href

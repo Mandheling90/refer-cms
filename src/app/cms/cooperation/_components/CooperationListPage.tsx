@@ -54,6 +54,8 @@ interface CooperationListPageProps {
   partnerType: 'H' | 'M';
   /** apply: 신청관리(승인/반려), edit: 수정관리 */
   mode: 'apply' | 'edit';
+  /** 편집 권한 여부 */
+  canEdit?: boolean;
 }
 
 /* ─── 검색 필드 공통 ─── */
@@ -123,7 +125,7 @@ function CheckItem({ label, checked }: { label: string; checked?: boolean | null
 /* ═══════════════════════════════════════
    협력병의원 공통 리스트 페이지
    ═══════════════════════════════════════ */
-export function CooperationListPage({ title, partnerType, mode }: CooperationListPageProps) {
+export function CooperationListPage({ title, partnerType, mode, canEdit = true }: CooperationListPageProps) {
   const isHospital = partnerType === 'H';
   const isApply = mode === 'apply';
 
@@ -1039,10 +1041,10 @@ export function CooperationListPage({ title, partnerType, mode }: CooperationLis
             
             {isApply && selectedItem?.status === 'PENDING' ? (
               <div className="flex gap-2">
-                <Button variant="blue" onClick={() => setApproveConfirmOpen(true)}>
+                <Button variant="blue" onClick={() => setApproveConfirmOpen(true)} disabled={!canEdit}>
                   체결 승인
                 </Button>
-                <Button variant="destructive" onClick={() => setRejectOpen(true)}>
+                <Button variant="destructive" onClick={() => setRejectOpen(true)} disabled={!canEdit}>
                   체결 반려
                 </Button>
               </div>

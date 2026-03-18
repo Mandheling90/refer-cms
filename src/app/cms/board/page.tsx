@@ -28,6 +28,7 @@ import {
   ATTACHMENTS,
   PRESIGNED_DOWNLOAD_URL,
 } from '@/lib/graphql/queries/board';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -156,6 +157,9 @@ export default function BoardPage() {
 
   // ── 삭제 확인 ──
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // ── 권한 ──
+  const { canEdit } = usePagePermission();
 
   // ── 인증 정보 ──
   const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
@@ -643,7 +647,7 @@ export default function BoardPage() {
                   }
                   setConfirmOpen(true);
                 }}
-                disabled={!selectedBoard || selectedRows.length === 0}
+                disabled={!canEdit || !selectedBoard || selectedRows.length === 0}
               >
                 <Trash2 className="h-4 w-4" />
                 선택한 항목 삭제
@@ -651,7 +655,7 @@ export default function BoardPage() {
               <Button
                 size="md"
                 onClick={handleOpenDialog}
-                disabled={!selectedBoard}
+                disabled={!canEdit || !selectedBoard}
               >
                 <Plus className="h-4 w-4" />
                 신규 등록
@@ -999,7 +1003,7 @@ export default function BoardPage() {
             <Button variant="outline" size="md" onClick={() => setDialogOpen(false)}>
               취소
             </Button>
-            <Button size="md" onClick={handleSave}>저장</Button>
+            <Button size="md" onClick={handleSave} disabled={!canEdit}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

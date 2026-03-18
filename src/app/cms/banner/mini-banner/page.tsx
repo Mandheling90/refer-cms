@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import {
   DndContext,
@@ -168,6 +169,7 @@ function BannerCardContent({
   selected,
   onSelect,
   index,
+  canEdit,
 }: {
   banner: Banner;
   onEdit: (banner: Banner) => void;
@@ -178,6 +180,7 @@ function BannerCardContent({
   selected?: boolean;
   onSelect?: (id: string) => void;
   index: number;
+  canEdit: boolean;
 }) {
   const isUsed = banner.USE_YN !== 'N';
 
@@ -217,7 +220,8 @@ function BannerCardContent({
           )}
         </div>
         <button
-          className="p-1 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+          className="p-1 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!canEdit}
           onClick={(e) => {
             e.stopPropagation();
             onDelete(banner);
@@ -298,6 +302,7 @@ function SortableBannerCard({
   selected,
   onSelect,
   index,
+  canEdit,
 }: {
   banner: Banner;
   onEdit: (banner: Banner) => void;
@@ -307,6 +312,7 @@ function SortableBannerCard({
   selected?: boolean;
   onSelect?: (id: string) => void;
   index: number;
+  canEdit: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: banner.BANNER_ID,
@@ -339,6 +345,7 @@ function SortableBannerCard({
         selected={selected}
         onSelect={onSelect}
         index={index}
+        canEdit={canEdit}
       />
     </div>
   );
@@ -356,6 +363,7 @@ function StaticBannerCard({
   selected,
   onSelect,
   index,
+  canEdit,
 }: {
   banner: Banner;
   onEdit: (banner: Banner) => void;
@@ -364,6 +372,7 @@ function StaticBannerCard({
   selected?: boolean;
   onSelect?: (id: string) => void;
   index: number;
+  canEdit: boolean;
 }) {
   return (
     <div className={cn(
@@ -378,6 +387,7 @@ function StaticBannerCard({
         selected={selected}
         onSelect={onSelect}
         index={index}
+        canEdit={canEdit}
       />
     </div>
   );
@@ -387,9 +397,9 @@ function StaticBannerCard({
 // AddBannerCard (+ 신규 등록 카드)
 // ---------------------------------------------------------------------------
 
-function AddBannerCard({ onClick }: { onClick: () => void }) {
+function AddBannerCard({ onClick, canEdit }: { onClick: () => void; canEdit: boolean }) {
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card overflow-hidden">
+    <div className={cn("flex flex-col rounded-lg border border-border bg-card overflow-hidden", !canEdit && 'opacity-50')}>
       {/* 상단: 배지 영역과 높이 맞춤 */}
       <div className="flex items-center px-3 py-2">
         <Badge className="gap-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/30" variant="outline">
@@ -400,8 +410,8 @@ function AddBannerCard({ onClick }: { onClick: () => void }) {
 
       {/* 중앙: 등록 영역 */}
       <div
-        className="relative mx-3 aspect-[16/9] bg-muted border-2 border-dashed border-border rounded cursor-pointer group overflow-hidden hover:border-primary hover:bg-primary/5 transition-colors"
-        onClick={onClick}
+        className={cn("relative mx-3 aspect-[16/9] bg-muted border-2 border-dashed border-border rounded cursor-pointer group overflow-hidden hover:border-primary hover:bg-primary/5 transition-colors", !canEdit && 'pointer-events-none cursor-not-allowed')}
+        onClick={canEdit ? onClick : undefined}
       >
         <div className="flex flex-col items-center justify-center h-full gap-2">
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
@@ -458,12 +468,14 @@ function BannerFormDialog({
   editBanner,
   onSaved,
   siteCd,
+  canEdit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editBanner: Banner | null;
   onSaved: () => void;
   siteCd: string;
+  canEdit: boolean;
 }) {
   const [form, setForm] = useState<BannerFormData>(INITIAL_FORM);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -781,7 +793,7 @@ function BannerFormDialog({
           <Button variant="outline" size="md" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button variant="dark" size="md" onClick={handleSave} disabled={saving}>
+          <Button variant="dark" size="md" onClick={handleSave} disabled={saving || !canEdit}>
             저장
           </Button>
         </DialogFooter>
@@ -796,6 +808,7 @@ function BannerFormDialog({
 
 export default function MiniBannerPage() {
   const { hospitalCode, activeHospitalCode } = useAuthStore();
+  const { canEdit } = usePagePermission();
   const isAllHospital = hospitalCode === 'ALL';
   const [allBanners, setAllBanners] = useState<Banner[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -1059,7 +1072,7 @@ export default function MiniBannerPage() {
         <div className="flex items-center gap-2">
           {mode === 'normal' && (
             <>
-              <Button variant="outline" size="md" className="gap-1.5" onClick={handleEnterSortMode}>
+              <Button variant="outline" size="md" className="gap-1.5" onClick={handleEnterSortMode} disabled={!canEdit}>
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 순서변경
               </Button>
@@ -1075,7 +1088,7 @@ export default function MiniBannerPage() {
                 <X className="h-3.5 w-3.5" />
                 취소
               </Button>
-              <Button variant="dark" size="md" className="gap-1.5" onClick={handleSaveSort}>
+              <Button variant="dark" size="md" className="gap-1.5" onClick={handleSaveSort} disabled={!canEdit}>
                 <Save className="h-3.5 w-3.5" />
                 순서저장
               </Button>
@@ -1095,7 +1108,7 @@ export default function MiniBannerPage() {
                 variant="dark"
                 size="md"
                 className="gap-1.5"
-                disabled={selectedIds.size === 0}
+                disabled={selectedIds.size === 0 || !canEdit}
                 onClick={() => setDeleteSelectedOpen(true)}
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1114,7 +1127,7 @@ export default function MiniBannerPage() {
         >
           <div className="grid grid-cols-4 gap-4">
             {/* 신규 등록 카드 (1페이지 + normal 모드에서만 표시) */}
-            {currentPage === 1 && mode === 'normal' && <AddBannerCard onClick={handleOpenAdd} />}
+            {currentPage === 1 && mode === 'normal' && <AddBannerCard onClick={handleOpenAdd} canEdit={canEdit} />}
 
             {/* 사용 배너 (DnD 참여) */}
             {banners.filter((b) => b.USE_YN !== 'N').map((banner, i) => (
@@ -1128,6 +1141,7 @@ export default function MiniBannerPage() {
                 selected={selectedIds.has(banner.BANNER_ID)}
                 onSelect={handleToggleSelect}
                 index={(currentPage - 1) * pageSize + i + 1}
+                canEdit={canEdit}
               />
             ))}
 
@@ -1144,6 +1158,7 @@ export default function MiniBannerPage() {
                   selected={selectedIds.has(banner.BANNER_ID)}
                   onSelect={handleToggleSelect}
                   index={(currentPage - 1) * pageSize + usedCount + i + 1}
+                  canEdit={canEdit}
                 />
               ));
             })()}
@@ -1171,6 +1186,7 @@ export default function MiniBannerPage() {
         editBanner={editBanner}
         onSaved={() => loadBanners()}
         siteCd={(activeHospitalCode || hospitalCode || 'ANAM').toLowerCase()}
+        canEdit={canEdit}
       />
 
       {/* 개별 삭제 확인 */}

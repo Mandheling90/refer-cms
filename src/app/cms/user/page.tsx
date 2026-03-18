@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
@@ -85,6 +86,8 @@ function FieldGroup({
    회원관리 페이지
    ═══════════════════════════════════════ */
 export default function MemberPage() {
+  const { canEdit } = usePagePermission();
+
   /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -544,8 +547,8 @@ export default function MemberPage() {
 
           <DialogFooter className="justify-between">
             <div className="flex gap-2">
-              <Button onClick={() => setPwResetOpen(true)}>비밀번호 초기화</Button>
-              <Button variant="destructive" onClick={() => setWithdrawOpen(true)}>
+              <Button disabled={!canEdit} onClick={() => setPwResetOpen(true)}>비밀번호 초기화</Button>
+              <Button variant="destructive" disabled={!canEdit} onClick={() => setWithdrawOpen(true)}>
                 탈퇴처리
               </Button>
             </div>
@@ -553,7 +556,7 @@ export default function MemberPage() {
               <Button variant="outline" onClick={() => setCancelConfirmOpen(true)}>
                 취소
               </Button>
-              <Button variant="dark" onClick={() => setSaveConfirmOpen(true)}>
+              <Button variant="dark" disabled={!canEdit} onClick={() => setSaveConfirmOpen(true)}>
                 저장
               </Button>
             </div>

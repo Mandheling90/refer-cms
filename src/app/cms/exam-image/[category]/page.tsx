@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
@@ -114,6 +115,7 @@ const formatDateTime = (val?: string | null) => {
    검사이미지 관리 페이지
    ═══════════════════════════════════════ */
 export default function ExamImagePage() {
+  const { canEdit } = usePagePermission();
   const params = useParams();
   const category = params.category as string;
   const pageTitle = CATEGORY_TITLE[category] ?? '검사이미지 관리';
@@ -641,6 +643,7 @@ export default function ExamImagePage() {
               <Button
                 size="sm"
                 className="h-7 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5"
+                disabled={!canEdit}
                 onClick={() => { setActionTargetId(id); setApproveConfirmOpen(true); }}
               >
                 승인
@@ -648,6 +651,7 @@ export default function ExamImagePage() {
               <Button
                 size="sm"
                 className="h-7 bg-red-500 hover:bg-red-600 text-white text-xs px-2.5"
+                disabled={!canEdit}
                 onClick={() => { setActionTargetId(id); setRejectReason(''); setRejectConfirmOpen(true); }}
               >
                 반려
@@ -679,6 +683,7 @@ export default function ExamImagePage() {
               <Button
                 size="sm"
                 className="h-7 bg-[#522AE9] hover:bg-[#4520d4] text-white text-xs px-2.5"
+                disabled={!canEdit}
                 onClick={() => handleRowClick(row.original)}
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />이미지 등록
@@ -692,6 +697,7 @@ export default function ExamImagePage() {
               <Button
                 size="sm"
                 className="h-7 bg-orange-500 hover:bg-orange-600 text-white text-xs px-2.5"
+                disabled={!canEdit}
                 onClick={() => handleRowClick(row.original)}
               >
                 수정
@@ -779,7 +785,7 @@ export default function ExamImagePage() {
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || !canEdit}
         >
           {uploading ? '업로드 중...' : '파일선택'}
         </Button>
@@ -837,7 +843,7 @@ export default function ExamImagePage() {
                   <Button
                     size="sm"
                     className="h-7 bg-orange-500 hover:bg-orange-600 text-white text-xs px-2.5"
-                    disabled={uploading}
+                    disabled={uploading || !canEdit}
                     onClick={() => {
                       setReplaceTargetId(att.id);
                       replaceFileInputRef.current?.click();
@@ -848,6 +854,7 @@ export default function ExamImagePage() {
                   <Button
                     size="sm"
                     className="h-7 bg-gray-500 hover:bg-gray-600 text-white text-xs px-2.5"
+                    disabled={!canEdit}
                     onClick={() => {
                       setDeleteTargetImageId(att.id);
                       setDeleteSingleImageOpen(true);
@@ -969,6 +976,7 @@ export default function ExamImagePage() {
                       <Button
                         size="sm"
                         className="bg-gray-600 hover:bg-gray-700 text-white"
+                        disabled={!canEdit}
                         onClick={() => setDeleteAllImagesOpen(true)}
                       >
                         전체이미지 삭제 &gt;

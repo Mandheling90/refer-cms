@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CmsLayout } from '@/components/templates/CmsLayout';
+import { PermissionGuard } from '@/components/molecules/PermissionGuard';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function CmsRootLayout({ children }: { children: React.ReactNode }) {
@@ -32,5 +33,9 @@ export default function CmsRootLayout({ children }: { children: React.ReactNode 
     return null;
   }
 
-  return <CmsLayout>{children}</CmsLayout>;
+  return (
+    <CmsLayout>
+      <PermissionGuard>{children}</PermissionGuard>
+    </CmsLayout>
+  );
 }

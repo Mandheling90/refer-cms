@@ -25,6 +25,7 @@ import {
   CREATE_CONTENT,
   UPDATE_CONTENT,
 } from '@/lib/graphql/queries/content';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -94,6 +95,8 @@ const columns: ColumnDef<Content, unknown>[] = [
 ];
 
 export default function ContentsPage() {
+  const { canEdit } = usePagePermission();
+
   // 그룹 상태
   const [selectedGroup, setSelectedGroup] = useState<ContentGroup | null>(null);
   const [groupSearchName, setGroupSearchName] = useState('');
@@ -413,7 +416,7 @@ export default function ContentsPage() {
               <Button
                 size="md"
                 onClick={handleOpenDialog}
-                disabled={!selectedGroup}
+                disabled={!canEdit || !selectedGroup}
               >
                 <Plus className="h-4 w-4" />
                 신규 등록
@@ -564,7 +567,7 @@ export default function ContentsPage() {
             <Button variant="outline" size="md" onClick={() => setDialogOpen(false)}>
               취소
             </Button>
-            <Button size="md" onClick={handleSave}>저장</Button>
+            <Button size="md" onClick={handleSave} disabled={!canEdit}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

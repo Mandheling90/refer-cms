@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { useState, useCallback } from 'react';
 import { useQuery, useLazyQuery, useMutation } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
@@ -79,6 +80,8 @@ function FieldGroup({
    회원가입 신청관리 페이지
    ═══════════════════════════════════════ */
 export default function MemberApplyPage() {
+  const { canEdit } = usePagePermission();
+
   /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -577,10 +580,10 @@ export default function MemberApplyPage() {
           <DialogFooter className="justify-between">
             {selectedUser?.status === 'PENDING' ? (
               <div className="flex gap-2">
-                <Button variant="blue" onClick={() => setApproveOpen(true)}>
+                <Button variant="blue" disabled={!canEdit} onClick={() => setApproveOpen(true)}>
                   가입승인
                 </Button>
-                <Button variant="destructive" onClick={() => setRejectOpen(true)}>
+                <Button variant="destructive" disabled={!canEdit} onClick={() => setRejectOpen(true)}>
                   가입반려
                 </Button>
               </div>
@@ -626,7 +629,7 @@ export default function MemberApplyPage() {
             <Button variant="outline" onClick={() => setRejectOpen(false)}>
               취소
             </Button>
-            <Button variant="destructive" onClick={handleReject}>
+            <Button variant="destructive" disabled={!canEdit} onClick={handleReject}>
               확인
             </Button>
           </DialogFooter>

@@ -24,6 +24,7 @@ import {
   UPDATE_CONTENT_GROUP,
   DELETE_CONTENT_GROUP,
 } from '@/lib/graphql/queries/content';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { Plus, Trash2 } from 'lucide-react';
@@ -77,6 +78,8 @@ const columns: ColumnDef<ContentGroup, unknown>[] = [
 ];
 
 export default function ContentsConfigPage() {
+  const { canEdit } = usePagePermission();
+
   // ── 리스트 상태 ──
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -212,12 +215,12 @@ export default function ContentsConfigPage() {
               }
               setConfirmOpen(true);
             }}
-            disabled={selectedRows.length === 0}
+            disabled={!canEdit || selectedRows.length === 0}
           >
             <Trash2 className="h-4 w-4" />
             선택한 항목 삭제
           </Button>
-          <Button size="md" onClick={handleOpenCreate}>
+          <Button size="md" onClick={handleOpenCreate} disabled={!canEdit}>
             <Plus className="h-4 w-4" />
             신규 등록
           </Button>
@@ -310,7 +313,7 @@ export default function ContentsConfigPage() {
             <Button variant="outline" size="md" onClick={() => setDialogOpen(false)}>
               취소
             </Button>
-            <Button size="md" onClick={handleSave}>저장</Button>
+            <Button size="md" onClick={handleSave} disabled={!canEdit}>저장</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

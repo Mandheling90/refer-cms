@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
@@ -80,6 +81,7 @@ function formatDateTime(val?: string | null) {
    e-Consult 관리 페이지 (Admin)
    ═══════════════════════════════════════ */
 export default function EConsultPage() {
+  const { canEdit } = usePagePermission();
   const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
 
   /* ─── 페이징 ─── */

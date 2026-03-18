@@ -25,6 +25,7 @@ import type { AdminUser, AdminUsersResponse, AdminUserByIdResponse, AdminUserDet
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { ShieldAlert } from 'lucide-react';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -148,6 +149,7 @@ export default function AdminManagementPage() {
 
 function AdminManagementContent() {
   const hospitalCode = useAuthStore((s) => s.hospitalCode);
+  const { canEdit } = usePagePermission();
 
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -433,7 +435,7 @@ function AdminManagementContent() {
           input: {
             userName: formUserName,
             email: formEmail,
-            ipAddress: formIpAddress || null,
+            ipAddress: formIpAddress.trim() || '',
             status: formIsActive ? 'ACTIVE' : 'REJECTED',
           },
         },
@@ -522,12 +524,13 @@ function AdminManagementContent() {
         }
         listHeaderActions={
           <div className="flex items-center gap-2">
-            <Button variant="dark" size="md" onClick={handleOpenRegister}>
+            <Button variant="dark" size="md" onClick={handleOpenRegister} disabled={!canEdit}>
               신규 등록
             </Button>
             <Button
               variant="outline-red"
               size="md"
+              disabled={!canEdit}
               onClick={() => {
                 if (!selectedRows.length) {
                   toast.error('삭제할 관리자를 선택하세요.');
@@ -691,6 +694,7 @@ function AdminManagementContent() {
               variant="dark"
               onClick={() => setSaveConfirmOpen(true)}
               className="rounded-md px-4"
+              disabled={!canEdit}
             >
               저장
             </Button>
@@ -766,6 +770,7 @@ function AdminManagementContent() {
                   variant="dark"
                   onClick={handleCheckDuplicate}
                   className="shrink-0 rounded-md px-5"
+                  disabled={!canEdit}
                 >
                   중복 확인
                 </Button>
@@ -874,6 +879,7 @@ function AdminManagementContent() {
               variant="dark"
               onClick={() => setRegSaveConfirmOpen(true)}
               className="rounded-md px-4"
+              disabled={!canEdit}
             >
               저장
             </Button>

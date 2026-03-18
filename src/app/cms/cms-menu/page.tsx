@@ -48,6 +48,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
@@ -235,6 +236,7 @@ function MenuColumn({
   onSaveOrders,
   onAddNew,
   showChildCount,
+  canEdit = true,
 }: {
   title: string;
   items: MenuItem[];
@@ -246,6 +248,7 @@ function MenuColumn({
   onSaveOrders: () => void;
   onAddNew: () => void;
   showChildCount?: boolean;
+  canEdit?: boolean;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -303,11 +306,11 @@ function MenuColumn({
 
       {/* Footer buttons */}
       <div className="flex items-center justify-end gap-2 px-3 py-3 border-t border-border">
-        <Button variant="outline" size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm" onClick={onSaveOrders}>
+        <Button variant="outline" size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm" onClick={onSaveOrders} disabled={!canEdit}>
           <Save className="h-4 w-4" />
           순서 저장
         </Button>
-        <Button size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm bg-primary hover:bg-primary/90 text-white" onClick={onAddNew}>
+        <Button size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm bg-primary hover:bg-primary/90 text-white" onClick={onAddNew} disabled={!canEdit}>
           <Plus className="h-4 w-4" />
           신규 메뉴 추가
         </Button>
@@ -378,6 +381,7 @@ function CmsMenuDialog({
   parentItem,
   itemCount,
   onSaved,
+  canEdit = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -386,6 +390,7 @@ function CmsMenuDialog({
   parentItem?: MenuItem | null;
   itemCount: number;
   onSaved: () => void;
+  canEdit?: boolean;
 }) {
   const isEditMode = !!editItem;
   const isTopLevel = !parentId && !editItem?.parentId;
@@ -618,7 +623,7 @@ function CmsMenuDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button className="bg-primary hover:bg-primary/90 text-white" onClick={handleSave} disabled={saving}>
+          <Button className="bg-primary hover:bg-primary/90 text-white" onClick={handleSave} disabled={saving || !canEdit}>
             저장
           </Button>
         </DialogFooter>
@@ -632,6 +637,7 @@ function CmsMenuDialog({
 // ---------------------------------------------------------------------------
 
 export default function CmsMenuPage() {
+  const { canEdit } = usePagePermission();
   const { hospitalCode } = useAuthStore();
   const isSuperAdmin = hospitalCode === 'ALL';
 
@@ -819,6 +825,7 @@ export default function CmsMenuPage() {
           onSaveOrders={() => handleSaveOrders(items1)}
           onAddNew={() => openAddDialog()}
           showChildCount
+          canEdit={canEdit}
         />
 
         {/* 하위 메뉴 */}
@@ -838,6 +845,7 @@ export default function CmsMenuPage() {
             }
             openAddDialog(selectedId ?? undefined);
           }}
+          canEdit={canEdit}
         />
       </div>
 
@@ -850,6 +858,7 @@ export default function CmsMenuPage() {
         parentItem={dialogParentId ? selected1 ?? null : null}
         itemCount={dialogItemCount}
         onSaved={handleDialogSaved}
+        canEdit={canEdit}
       />
 
       {/* 삭제 확인 */}

@@ -35,6 +35,7 @@ import {
 } from '@/lib/graphql/queries/medical-staff';
 import type { MedicalStaffItem, MedicalStaffListResponse } from '@/types/medical-staff';
 import { CONSULTANT_STATUS_OPTIONS, HOSPITAL_CODE_MAP } from '@/types/medical-staff';
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { Check, ImageIcon, Trash2, X } from 'lucide-react';
@@ -106,6 +107,7 @@ async function downloadImage(url: string, filename: string) {
    ═══════════════════════════════════════ */
 export default function MedicalStaffPage() {
   const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
+  const { canEdit } = usePagePermission();
 
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -475,6 +477,7 @@ export default function MedicalStaffPage() {
           <Button
             variant="outline-red"
             size="md"
+            disabled={!canEdit}
             onClick={() => {
               if (selectedRows.length === 0) {
                 toast.error('삭제할 항목을 선택해주세요.');
@@ -736,6 +739,7 @@ export default function MedicalStaffPage() {
             </Button>
             <Button
               variant="dark"
+              disabled={!canEdit}
               onClick={() => setSaveConfirmOpen(true)}
               className="rounded-md px-4"
             >

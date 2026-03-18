@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { useState, useCallback, useMemo } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
@@ -206,6 +207,7 @@ export default function PermissionGroupPage() {
 }
 
 function PermissionGroupContent() {
+  const { canEdit } = usePagePermission();
   const hospitalCode = useAuthStore((s) => s.hospitalCode);
   const activeHospitalCode = useAuthStore((s) => s.activeHospitalCode);
   const effectiveHospitalCode = hospitalCode === 'ALL' ? (activeHospitalCode ?? 'ANAM') : hospitalCode;
@@ -735,13 +737,14 @@ function PermissionGroupContent() {
         }
         listHeaderActions={
           <div className="flex items-center gap-2">
-            <Button variant="dark" size="md" onClick={handleOpenCreate}>
+            <Button variant="dark" size="md" disabled={!canEdit} onClick={handleOpenCreate}>
               <Plus className="h-4 w-4" />
               권한 그룹 추가
             </Button>
             <Button
               variant="outline-red"
               size="md"
+              disabled={!canEdit}
               onClick={() => {
                 if (!selectedRows.length) {
                   toast.error('삭제할 항목을 선택하세요.');
@@ -820,6 +823,7 @@ function PermissionGroupContent() {
               <Button
                 variant="dark"
                 className="flex-1"
+                disabled={!canEdit}
                 onClick={handleOpenMenuPerm}
               >
                 + 메뉴 별 권한 설정
@@ -827,6 +831,7 @@ function PermissionGroupContent() {
               <Button
                 variant="dark"
                 className="flex-1"
+                disabled={!canEdit}
                 onClick={handleOpenAdminAssign}
               >
                 + 관리자 배정
@@ -845,6 +850,7 @@ function PermissionGroupContent() {
             </Button>
             <Button
               variant="dark"
+              disabled={!canEdit}
               onClick={() => setSaveConfirmOpen(true)}
               className="rounded-md px-4"
             >
@@ -914,6 +920,7 @@ function PermissionGroupContent() {
             </Button>
             <Button
               variant="dark"
+              disabled={!canEdit}
               onClick={handleSaveMenuPermissions}
               className="rounded-md px-4"
             >
@@ -1011,7 +1018,7 @@ function PermissionGroupContent() {
                     variant="dark"
                     size="sm"
                     onClick={handleAddAdmins}
-                    disabled={checkedAllAdmins.size === 0}
+                    disabled={checkedAllAdmins.size === 0 || !canEdit}
                   >
                     + 체크한 항목추가
                   </Button>
@@ -1093,7 +1100,7 @@ function PermissionGroupContent() {
                     variant="outline-red"
                     size="sm"
                     onClick={handleRemoveAdmins}
-                    disabled={checkedSelectedAdmins.size === 0}
+                    disabled={checkedSelectedAdmins.size === 0 || !canEdit}
                   >
                     - 체크한 항목삭제
                   </Button>
@@ -1112,6 +1119,7 @@ function PermissionGroupContent() {
             </Button>
             <Button
               variant="dark"
+              disabled={!canEdit}
               onClick={handleSaveAdminAssignment}
               className="rounded-md px-4"
             >
