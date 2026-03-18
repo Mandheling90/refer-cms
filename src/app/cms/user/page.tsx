@@ -109,7 +109,7 @@ export default function MemberPage() {
   /* ─── GraphQL 목록 조회 ─── */
   const buildFilterVars = (filter: typeof appliedFilter) => ({
     ...(filter.search ? { search: filter.search } : {}),
-    ...(filter.userType ? { userType: filter.userType } : {}),
+    userType: filter.userType || 'DOCTOR',
   });
 
   const { data, loading, refetch } = useQuery<AdminUsersResponse>(GET_ADMIN_USERS_MEMBERS, {
@@ -179,7 +179,7 @@ export default function MemberPage() {
     setAppliedFilter({});
     setCurrentPage(1);
     refetch({
-      filter: {},
+      filter: buildFilterVars({}),
       pagination: { page: 1, limit: pageSize },
     });
   };

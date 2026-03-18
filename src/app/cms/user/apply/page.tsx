@@ -105,7 +105,7 @@ export default function MemberApplyPage() {
   /* ─── GraphQL 조회 ─── */
   const buildFilterVars = (filter: typeof appliedFilter) => ({
     ...(filter.search ? { search: filter.search } : {}),
-    ...(filter.userType ? { userType: filter.userType } : {}),
+    userType: filter.userType || 'DOCTOR',
     ...(filter.status ? { status: filter.status } : {}),
   });
 
@@ -176,7 +176,7 @@ export default function MemberApplyPage() {
     setAppliedFilter({});
     setCurrentPage(1);
     refetch({
-      filter: {},
+      filter: buildFilterVars({}),
       pagination: { page: 1, limit: pageSize },
     });
   };

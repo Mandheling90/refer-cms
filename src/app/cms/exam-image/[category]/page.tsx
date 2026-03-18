@@ -285,7 +285,6 @@ export default function ExamImagePage() {
     };
     setAppliedFilter(newFilter);
     setCurrentPage(1);
-    // 동일 조건 재검색 시에도 쿼리가 나가도록 명시적 refetch
     refetch({
       input: {
         page: 1,

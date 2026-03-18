@@ -59,7 +59,8 @@
       "Bash(find:*)",
       "Bash(tr '{' '\\\\n')",
       "Bash(tr '}' '\\\\n')",
-      "Bash(find /c/Users/LSY/Desktop/Propject/refer-cms -type f \\\\\\(-name introspection* -o -name schema* -o -name *.graphql \\\\\\))"
+      "Bash(find /c/Users/LSY/Desktop/Propject/refer-cms -type f \\\\\\(-name introspection* -o -name schema* -o -name *.graphql \\\\\\))",
+      "Bash(python3 -c \":*)"
     ]
   },
   "enableAllProjectMcpServers": true,

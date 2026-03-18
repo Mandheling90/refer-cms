@@ -145,6 +145,9 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
 
   if (!unauthError) return;
 
+  // Login mutation은 페이지에서 자체 에러 처리 — errorLink에서 개입하지 않음
+  if (operation.operationName === 'Login') return;
+
   // refreshToken mutation 자체가 실패한 경우 무한 루프 방지
   if (operation.operationName === 'RefreshToken') {
     clearAuth();

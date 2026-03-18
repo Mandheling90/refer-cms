@@ -1,39 +1,30 @@
 /* --- 의료진 타입 정의 --- */
 
-/** 의료진 목록 아이템 (API 응답 그대로) */
-export interface MedicalStaffItem {
-  doctorId: string;
-  doctorName: string;
-  photoUrl?: string;
-  departmentCode?: string;
+/** 의료진 목록 아이템 (adminDoctors API 응답) */
+export interface AdminDoctorItem {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  licenseNo?: string;
   departmentName?: string;
-  bio?: string;
+  specialty?: string;
+  photoUrl?: string;
   hospitalCode?: string;
-  /** 진료과 약어 코드 */
-  mcdpAbrvCd?: string;
-  /** 진료과 구분 코드 */
-  mcdpDvsnCd?: string;
-  /** 진료과 순서 */
-  mcdpSqncVl?: string;
-  /** 발령시작일 */
-  apstYmd?: string;
-  /** 발령종료일 */
-  apfnYmd?: string;
-  /** 자문의 여부 (Y/N) */
-  smcrYn?: string;
-  /** 초진 가능 여부 (Y/N) */
-  frvsMdcrPsblYn?: string;
-  /** 재진 가능 여부 (Y/N) */
-  revsMdcrPsblYn?: string;
-  /** 빠른진료일 */
-  fastMdcrDt?: string;
+  isActive: boolean;
+  status: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** 목록 응답 */
-export interface MedicalStaffListResponse {
-  medicalStaffList: {
-    items: MedicalStaffItem[];
+export interface AdminDoctorsResponse {
+  adminDoctors: {
+    items: AdminDoctorItem[];
     totalCount: number;
+    hasNextPage: boolean;
   };
 }
 

@@ -1,28 +1,28 @@
 import { gql } from '@apollo/client';
 
-/** 의료진 목록 조회 (전체 조회 후 프론트에서 필터/페이징) */
-export const GET_MEDICAL_STAFF_LIST = gql`
-  query MedicalStaffList($filter: AdmapMedicalStaffFilterInput) {
-    medicalStaffList(filter: $filter) {
+/** 의료진 목록 조회 (서버 페이지네이션) */
+export const GET_ADMIN_DOCTORS = gql`
+  query AdminDoctors($hospitalCode: HospitalCode, $pagination: PaginationInput) {
+    adminDoctors(hospitalCode: $hospitalCode, pagination: $pagination) {
       items {
-        doctorId
-        doctorName
-        photoUrl
-        departmentCode
+        id
+        userId
+        name
+        email
+        phone
+        licenseNo
         departmentName
-        bio
+        specialty
+        photoUrl
         hospitalCode
-        mcdpAbrvCd
-        mcdpDvsnCd
-        mcdpSqncVl
-        apstYmd
-        apfnYmd
-        smcrYn
-        frvsMdcrPsblYn
-        revsMdcrPsblYn
-        fastMdcrDt
+        isActive
+        status
+        sortOrder
+        createdAt
+        updatedAt
       }
       totalCount
+      hasNextPage
     }
   }
 `;

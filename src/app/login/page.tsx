@@ -61,6 +61,8 @@ export default function LoginPage() {
         );
         toast.success('로그인 성공');
         router.push('/cms/home');
+      } else {
+        toast.error('아이디 또는 비밀번호가 올바르지 않습니다.');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : '서버에 연결할 수 없습니다.';

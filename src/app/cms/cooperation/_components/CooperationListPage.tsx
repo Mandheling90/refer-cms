@@ -290,45 +290,45 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
   /* ─── 테이블 컬럼 ─── */
   const columns: ColumnDef<PartnerApplicationModel, unknown>[] = [
     {
-      id: 'classificationCode',
+      id: 'phisCode',
       header: '요양기관번호',
-      size: 130,
+      size: 110,
       cell: ({ row }) => row.original.hospital?.phisCode || '-',
     },
     {
       id: 'hospName',
       header: '병원명',
-      size: 160,
+      size: 120,
       cell: ({ row }) => row.original.hospital?.name || '-',
     },
     {
       id: 'hospPhone',
-      header: '병원 전화번호',
-      size: 140,
+      header: '병원전화번호',
+      size: 120,
       cell: ({ row }) => row.original.hospital?.phone || '-',
     },
     {
       id: 'directorName',
       header: '대표원장명',
-      size: 110,
+      size: 90,
       cell: ({ row }) => row.original.directorName || '-',
     },
     {
       accessorKey: 'createdAt',
       header: '신청일시',
-      size: 160,
+      size: 130,
       cell: ({ getValue }) => formatDateTime(getValue() as string),
     },
     {
       accessorKey: 'reviewedById',
-      header: '승인 담당자',
-      size: 120,
+      header: '승인담당자',
+      size: 100,
       cell: ({ getValue }) => getValue() as string || '-',
     },
     {
       accessorKey: 'status',
-      header: '승인 여부',
-      size: 90,
+      header: '승인여부',
+      size: 80,
       cell: ({ getValue }) => {
         const val = getValue() as string;
         if (val === 'APPROVED') return <span className="text-src-point text-lg">✓</span>;
@@ -339,7 +339,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     {
       accessorKey: 'approvedAt',
       header: '승인일시',
-      size: 160,
+      size: 130,
       cell: ({ getValue }) => formatDateTime(getValue() as string),
     },
   ];
@@ -371,7 +371,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
                 placeholder="대표원장명 검색"
               />
             </FieldGroup>
-            <FieldGroup label="승인여부">
+<FieldGroup label="승인여부">
               <Select value={searchStatus} onValueChange={setSearchStatus}>
                 <SelectTrigger>
                   <SelectValue placeholder="전체" />
