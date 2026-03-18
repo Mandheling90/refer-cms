@@ -85,7 +85,7 @@ interface MenuTreeNode {
 
 /* ─── 상수 ─── */
 const PERMISSION_OPTIONS: { value: PermissionLevel; label: string; color: string }[] = [
-  { value: 'CUSTOM', label: '개별설정', color: 'bg-gray-200 text-foreground border-border' },
+  { value: 'CUSTOM', label: '개별설정', color: 'bg-muted text-foreground border-border' },
   { value: 'FULL', label: '모두허용', color: 'bg-src-blue text-white border-border' },
   { value: 'READ', label: '읽기전용', color: 'bg-src-point text-white border-border' },
   { value: 'NONE', label: '접근불가', color: 'bg-destructive text-white border-border' },
@@ -207,6 +207,8 @@ export default function PermissionGroupPage() {
 
 function PermissionGroupContent() {
   const hospitalCode = useAuthStore((s) => s.hospitalCode);
+  const activeHospitalCode = useAuthStore((s) => s.activeHospitalCode);
+  const effectiveHospitalCode = hospitalCode === 'ALL' ? (activeHospitalCode ?? 'ANAM') : hospitalCode;
 
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -254,7 +256,7 @@ function PermissionGroupContent() {
     menuPermissionGroups: PermissionGroupItem[];
   }>(GET_PERMISSION_GROUPS, {
     variables: {
-      hospitalCode,
+      hospitalCode: effectiveHospitalCode,
     },
     fetchPolicy: 'network-only',
   });
@@ -795,7 +797,7 @@ function PermissionGroupContent() {
                       'h-[38px] rounded-md border px-5 text-sm transition-colors cursor-pointer',
                       formHospitalCode === h.code
                         ? 'bg-primary text-white border-primary'
-                        : 'border-gray-300 bg-card text-foreground hover:bg-gray-100'
+                        : 'border-border bg-card text-foreground hover:bg-accent'
                     )}
                   >
                     {h.label}
@@ -837,7 +839,7 @@ function PermissionGroupContent() {
             <Button
               variant="outline"
               onClick={() => setCancelConfirmOpen(true)}
-              className="rounded-md border-gray-500 px-4"
+              className="rounded-md border-border px-4"
             >
               취소
             </Button>
@@ -861,7 +863,7 @@ function PermissionGroupContent() {
 
           <DialogBody className="overflow-y-auto">
             {/* 전체 권한 설정 */}
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
               <span className="text-base font-semibold">전체 메뉴</span>
               <PermissionBadge
                 value={globalPermission}
@@ -881,9 +883,9 @@ function PermissionGroupContent() {
             </div>
 
             {/* 메뉴 트리 */}
-            <div className="rounded-md border border-gray-300 p-4 space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
+            <div className="rounded-md border border-border p-4 space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
               {formMenuPermissions.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-8">
+                <p className="text-sm text-muted-foreground text-center py-8">
                   메뉴 데이터가 없습니다.
                 </p>
               ) : (
@@ -906,7 +908,7 @@ function PermissionGroupContent() {
             <Button
               variant="outline"
               onClick={() => setMenuPermDialogOpen(false)}
-              className="rounded-md border-gray-500 px-4"
+              className="rounded-md border-border px-4"
             >
               취소
             </Button>
@@ -946,10 +948,10 @@ function PermissionGroupContent() {
                     검색
                   </Button>
                 </div>
-                <div className="rounded-md border border-gray-300 max-h-[300px] overflow-y-auto">
+                <div className="rounded-md border border-border max-h-[300px] overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gray-100 border-b border-gray-300">
+                      <tr className="bg-muted border-b border-border">
                         <th className="py-2 px-3 text-left w-10">
                           <Checkbox
                             checked={
@@ -975,7 +977,7 @@ function PermissionGroupContent() {
                       {filteredAllAdmins.map((admin) => (
                         <tr
                           key={admin.id}
-                          className="border-b border-gray-200 hover:bg-gray-300"
+                          className="border-b border-border hover:bg-accent"
                         >
                           <td className="py-2 px-3">
                             <Checkbox
@@ -996,7 +998,7 @@ function PermissionGroupContent() {
                       ))}
                       {filteredAllAdmins.length === 0 && (
                         <tr>
-                          <td colSpan={3} className="py-6 text-center text-gray-400">
+                          <td colSpan={3} className="py-6 text-center text-muted-foreground">
                             검색 결과가 없습니다.
                           </td>
                         </tr>
@@ -1026,10 +1028,10 @@ function PermissionGroupContent() {
                   onChange={(e) => setSelectedAdminSearchKeyword(e.target.value)}
                   placeholder="관리자명 또는 아이디 검색"
                 />
-                <div className="rounded-md border border-gray-300 max-h-[300px] overflow-y-auto">
+                <div className="rounded-md border border-border max-h-[300px] overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gray-100 border-b border-gray-300">
+                      <tr className="bg-muted border-b border-border">
                         <th className="py-2 px-3 text-left w-10">
                           <Checkbox
                             checked={
@@ -1057,7 +1059,7 @@ function PermissionGroupContent() {
                       {filteredSelectedAdmins.map((admin) => (
                         <tr
                           key={admin.id}
-                          className="border-b border-gray-200 hover:bg-gray-300"
+                          className="border-b border-border hover:bg-accent"
                         >
                           <td className="py-2 px-3">
                             <Checkbox
@@ -1078,7 +1080,7 @@ function PermissionGroupContent() {
                       ))}
                       {filteredSelectedAdmins.length === 0 && (
                         <tr>
-                          <td colSpan={3} className="py-6 text-center text-gray-400">
+                          <td colSpan={3} className="py-6 text-center text-muted-foreground">
                             선택된 관리자가 없습니다.
                           </td>
                         </tr>
@@ -1104,7 +1106,7 @@ function PermissionGroupContent() {
             <Button
               variant="outline"
               onClick={() => setAdminAssignDialogOpen(false)}
-              className="rounded-md border-gray-500 px-4"
+              className="rounded-md border-border px-4"
             >
               취소
             </Button>
@@ -1178,13 +1180,13 @@ function MenuPermissionRow({
   return (
     <div>
       {/* 부모 메뉴 */}
-      <div className="flex items-center justify-between py-1.5 hover:bg-gray-300 rounded px-2">
+      <div className="flex items-center justify-between py-1.5 hover:bg-accent rounded px-2">
         <div className="flex items-center gap-1.5">
           {hasChildren ? (
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="cursor-pointer text-gray-500"
+              className="cursor-pointer text-muted-foreground"
             >
               <ChevronRight
                 className={cn('h-4 w-4 transition-transform', expanded && 'rotate-90')}
@@ -1200,13 +1202,13 @@ function MenuPermissionRow({
 
       {/* 자식 메뉴 */}
       {expanded && hasChildren && (
-        <div className="ml-6 border-l border-gray-200 pl-3">
+        <div className="ml-6 border-l border-border pl-3">
           {item.children!.map((child) => (
               <div
                 key={child.menuId}
-                className="flex items-center justify-between py-1.5 hover:bg-gray-300 rounded px-2"
+                className="flex items-center justify-between py-1.5 hover:bg-accent rounded px-2"
               >
-                <span className="text-sm text-gray-700">{child.menuName}</span>
+                <span className="text-sm text-foreground">{child.menuName}</span>
                 <PermissionBadge
                   value={child.permission}
                   onChange={(val) => onChangeChild(child.menuId, val)}

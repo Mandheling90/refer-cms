@@ -474,7 +474,7 @@ export default function MemberPage() {
                 </div>
 
                 {/* ─── 병원정보 섹션 ─── */}
-                <div className="-mx-6 border-y border-gray-300 px-6 py-3">
+                <div className="-mx-6 border-y border-border px-6 py-3">
                   <h3 className="text-sm font-semibold">병원정보</h3>
                 </div>
                 <div className="space-y-4">

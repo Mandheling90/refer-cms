@@ -7,7 +7,7 @@ export function Logo() {
   return (
     <Link
       href="/cms/home"
-      className="flex items-center justify-center h-[75px] bg-background px-4 border-b border-gray-200 shrink-0"
+      className="flex items-center justify-center h-[75px] bg-background px-4 border-b border-border shrink-0"
     >
       <Image
         src="/images/logo_pc_orgin.png"

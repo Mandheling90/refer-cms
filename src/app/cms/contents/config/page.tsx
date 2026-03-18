@@ -274,7 +274,7 @@ export default function ContentsConfigPage() {
                 <Input
                   value={editingId}
                   readOnly
-                  className="bg-gray-200 text-muted-foreground"
+                  className="bg-muted text-muted-foreground"
                 />
               </div>
             )}

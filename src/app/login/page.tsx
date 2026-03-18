@@ -131,7 +131,7 @@ export default function LoginPage() {
                   if (errors.userId) setErrors((p) => ({ ...p, userId: undefined }));
                 }}
                 placeholder="아이디를 입력해 주세요"
-                className="h-[50px] w-full rounded-lg border border-border bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
+                className="h-[50px] w-full rounded-lg border border-border bg-background px-4 text-base outline-none placeholder:text-muted-foreground focus:border-primary"
                 autoFocus
               />
               {errors.userId && (
@@ -152,7 +152,7 @@ export default function LoginPage() {
                   if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
                 }}
                 placeholder="비밀번호를 입력해 주세요"
-                className="h-[50px] w-full rounded-lg border border-border bg-background px-4 text-base outline-none placeholder:text-gray-600 focus:border-primary"
+                className="h-[50px] w-full rounded-lg border border-border bg-background px-4 text-base outline-none placeholder:text-muted-foreground focus:border-primary"
               />
               {errors.password && (
                 <p className="mt-1.5 text-sm text-src-red">{errors.password}</p>
@@ -173,7 +173,7 @@ export default function LoginPage() {
 
       {/* 하단 푸터 바 */}
       <footer className="flex h-10 shrink-0 items-center justify-center bg-src-darken">
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           &copy; EHR CMS Admin System. All rights reserved.
         </p>
       </footer>

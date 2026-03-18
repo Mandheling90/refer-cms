@@ -79,10 +79,10 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
 /* --- 표시 상태 뱃지 --- */
 function DisplayStateBadge({ state }: { state: ImagingRequestDisplayState }) {
   const config: Record<ImagingRequestDisplayState, { label: string; className: string }> = {
-    REQUESTABLE: { label: '요청가능', className: 'bg-blue-50 text-blue-700 border-blue-300' },
-    PENDING_IMAGE: { label: '이미지 대기', className: 'bg-gray-100 text-gray-600 border-gray-300' },
-    VIEWABLE: { label: '조회가능', className: 'bg-green-50 text-green-700 border-green-300' },
-    REJECTED: { label: '반려', className: 'bg-red-50 text-red-600 border-red-300' },
+    REQUESTABLE: { label: '요청가능', className: 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700' },
+    PENDING_IMAGE: { label: '이미지 대기', className: 'bg-gray-100 text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600' },
+    VIEWABLE: { label: '조회가능', className: 'bg-green-50 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300 dark:border-green-700' },
+    REJECTED: { label: '반려', className: 'bg-red-50 text-red-600 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700' },
     EXPIRED: { label: '만료', className: 'text-muted-foreground' },
   };
   const { label, className } = config[state] ?? config.REQUESTABLE;
@@ -767,11 +767,11 @@ export default function ExamImagePage() {
         - 용량관계상 한 압축파일에 {maxImages}장 이상 사진 업로드 시 업로드가 불가합니다.
       </p>
       <div
-        className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-gray-400 bg-gray-50 px-6 py-8"
+        className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border bg-muted px-6 py-8"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
-        <Upload className="h-6 w-6 text-gray-400" />
+        <Upload className="h-6 w-6 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
           {uploading ? '업로드 중...' : '첨부할 파일을 여기에 끌어다 놓거나, 파일 선택 버튼을 직접 선택해주세요.'}
         </p>
@@ -804,10 +804,10 @@ export default function ExamImagePage() {
 
   /* --- 첨부파일 목록 테이블 렌더링 --- */
   const renderAttachmentTable = (attachments: AttachmentModel[]) => (
-    <div className="rounded-md border border-gray-300 overflow-hidden">
+    <div className="rounded-md border border-border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-300 bg-gray-50">
+          <tr className="border-b border-border bg-muted">
             <th className="px-4 py-2.5 text-left font-semibold w-16">번호</th>
             <th className="px-4 py-2.5 text-left font-semibold">파일명</th>
             <th className="px-4 py-2.5 text-right font-semibold w-48"></th>
@@ -815,7 +815,7 @@ export default function ExamImagePage() {
         </thead>
         <tbody>
           {attachments.map((att, idx) => (
-            <tr key={att.id} className="border-b border-gray-200 last:border-b-0">
+            <tr key={att.id} className="border-b border-border last:border-b-0">
               <td className="px-4 py-2.5">{idx + 1}</td>
               <td className="px-4 py-2.5">
                 <span
@@ -947,7 +947,7 @@ export default function ExamImagePage() {
                     <p className="text-sm font-semibold text-foreground">
                       업로드 중... ({uploadProgress.current} / {uploadProgress.total})
                     </p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
@@ -1038,7 +1038,7 @@ export default function ExamImagePage() {
       <Dialog open={allImagesOpen} onOpenChange={setAllImagesOpen}>
         <DialogContent size="lg" showCloseButton={false} className="p-10 flex flex-col gap-10 max-h-[90vh]">
           {/* 헤더 */}
-          <div className="flex items-center justify-between border-b border-gray-400 pb-5">
+          <div className="flex items-center justify-between border-b border-border pb-5">
             <div className="flex items-center gap-4">
               <span className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-1 text-xl font-semibold text-white tracking-tight">
                 {pageTitle}
@@ -1049,9 +1049,9 @@ export default function ExamImagePage() {
             </div>
             <button
               onClick={() => setAllImagesOpen(false)}
-              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 cursor-pointer"
+              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent cursor-pointer"
             >
-              <X className="w-6 h-6 text-gray-600" />
+              <X className="w-6 h-6 text-muted-foreground" />
             </button>
           </div>
 
@@ -1069,7 +1069,7 @@ export default function ExamImagePage() {
               ) : (
                 <div className="grid grid-cols-5 gap-4">
                   {(selectedItem?.attachments ?? []).map((att) => (
-                    <div key={att.id} className="relative aspect-square rounded-[5px] overflow-hidden bg-gray-100">
+                    <div key={att.id} className="relative aspect-square rounded-[5px] overflow-hidden bg-muted">
                       {allImageUrls[att.id] ? (
                         <img
                           src={allImageUrls[att.id]}
@@ -1095,7 +1095,7 @@ export default function ExamImagePage() {
       <Dialog open={singleImageOpen} onOpenChange={setSingleImageOpen}>
         <DialogContent size="lg" showCloseButton={false} className="p-10 flex flex-col gap-10 max-h-[90vh]">
           {/* 헤더 */}
-          <div className="flex items-center justify-between border-b border-gray-400 pb-5">
+          <div className="flex items-center justify-between border-b border-border pb-5">
             <div className="flex items-center gap-4">
               <span className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-1 text-xl font-semibold text-white tracking-tight">
                 {pageTitle}
@@ -1106,9 +1106,9 @@ export default function ExamImagePage() {
             </div>
             <button
               onClick={() => setSingleImageOpen(false)}
-              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 cursor-pointer"
+              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent cursor-pointer"
             >
-              <X className="w-6 h-6 text-gray-600" />
+              <X className="w-6 h-6 text-muted-foreground" />
             </button>
           </div>
 

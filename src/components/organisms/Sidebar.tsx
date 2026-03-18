@@ -168,7 +168,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'bg-gray-200 border-r border-gray-600 flex flex-col overflow-hidden transition-all duration-300',
+        'bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden transition-all duration-300',
         !sidebarOpen && 'w-0 border-r-0'
       )}
       style={{ gridArea: 'aside' }}
@@ -187,17 +187,17 @@ export function Sidebar() {
                 <button
                   onClick={() => handleDepth1Click(item, idx)}
                   className={cn(
-                    'flex items-center gap-[10px] w-full px-5 py-[15px] text-[18px] text-foreground transition-colors rounded-[5px] cursor-pointer',
-                    'border-b border-white/10',
-                    'hover:bg-primary hover:font-bold hover:text-white [&:hover_svg]:text-white',
-                    active && 'bg-primary font-bold text-white',
+                    'flex items-center gap-[10px] w-full px-5 py-[15px] text-[18px] text-sidebar-foreground transition-colors rounded-[5px] cursor-pointer',
+                    'border-b border-sidebar-border/30',
+                    'hover:bg-sidebar-primary hover:font-bold hover:text-sidebar-primary-foreground [&:hover_svg]:text-sidebar-primary-foreground',
+                    active && 'bg-sidebar-primary font-bold text-sidebar-primary-foreground',
                     active && item.children && expanded && 'rounded-b-none'
                   )}
                 >
                   <Icon
                     className={cn(
-                      'h-5 w-5 shrink-0 text-gray-900 transition-colors',
-                      active && 'text-white'
+                      'h-5 w-5 shrink-0 text-sidebar-foreground transition-colors',
+                      active && 'text-sidebar-primary-foreground'
                     )}
                   />
                   <span className="flex-1 text-left">{item.title}</span>
@@ -213,21 +213,21 @@ export function Sidebar() {
 
                 {/* Depth 2 */}
                 {item.children && expanded && (
-                  <ul className="bg-src-darken rounded-b-[5px] overflow-hidden">
+                  <ul className="bg-sidebar-accent rounded-b-[5px] overflow-hidden">
                     {item.children.map((child, childIdx) => (
                       <li
                         key={child.href}
                         className={cn(
-                          childIdx > 0 && 'border-t border-white/[0.04]'
+                          childIdx > 0 && 'border-t border-sidebar-border/10'
                         )}
                       >
                         <button
                           onClick={() => router.push(child.href)}
                           className={cn(
-                            'w-full text-left px-[30px] py-[12px] text-[16px] text-white rounded-[5px] transition-colors cursor-pointer',
+                            'w-full text-left px-[30px] py-[12px] text-[16px] text-sidebar-accent-foreground rounded-[5px] transition-colors cursor-pointer',
                             pathname === child.href
-                              ? 'bg-primary/50 font-medium'
-                              : 'hover:bg-primary/50'
+                              ? 'bg-sidebar-primary/50 font-medium'
+                              : 'hover:bg-sidebar-primary/50'
                           )}
                         >
                           {child.title}

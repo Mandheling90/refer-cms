@@ -120,7 +120,7 @@ export default function ContentsPage() {
   const pageEditorRef = useRef<PageEditorHandle>(null);
 
   // 인증 정보
-  const hospitalCode = useAuthStore((s: { hospitalCode: string | null }) => s.hospitalCode);
+  const getEffectiveHospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode);
 
   // ── GraphQL ──
   const { data: groupsData, refetch: refetchGroups } = useQuery<{
@@ -223,7 +223,7 @@ export default function ContentsPage() {
               title: formTitle.trim(),
               body: formBody,
               contentGroupId: selectedGroup?.id,
-              hospitalCode: hospitalCode?.toUpperCase(),
+              hospitalCode: getEffectiveHospitalCode()?.toUpperCase(),
             },
           },
         });
@@ -304,7 +304,7 @@ export default function ContentsPage() {
           {/* 그룹명 검색 */}
           <div className="px-3 pt-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={groupSearchName}
                 onChange={(e) => {
@@ -334,7 +334,7 @@ export default function ContentsPage() {
                       'flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left text-sm transition-colors cursor-pointer',
                       isSelected
                         ? 'bg-primary text-white font-semibold'
-                        : 'hover:bg-gray-300 text-foreground',
+                        : 'hover:bg-accent text-foreground',
                     )}
                   >
                     <FolderOpen className="h-4 w-4 shrink-0" />
@@ -345,7 +345,7 @@ export default function ContentsPage() {
                           'text-xs px-2 py-0.5 rounded-full',
                           isSelected
                             ? 'bg-white/20 text-white'
-                            : 'bg-gray-400 text-foreground',
+                            : 'bg-muted text-foreground',
                         )}
                       >
                         {group.contentCount}
@@ -358,7 +358,7 @@ export default function ContentsPage() {
           </nav>
 
           {/* 그룹 페이징 */}
-          <div className="border-t border-gray-300 px-3 py-2 space-y-2">
+          <div className="border-t border-border px-3 py-2 space-y-2">
             <div className="flex items-center justify-between">
               <select
                 value={groupPageSize}
@@ -366,7 +366,7 @@ export default function ContentsPage() {
                   setGroupPageSize(Number(e.target.value));
                   setGroupPage(1);
                 }}
-                className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-card"
+                className="text-xs border border-border rounded px-1.5 py-1 bg-card"
               >
                 {[5, 10, 20, 50].map((n) => (
                   <option key={n} value={n}>{n}건</option>
@@ -376,17 +376,17 @@ export default function ContentsPage() {
                 <button
                   onClick={() => setGroupPage((p) => Math.max(1, p - 1))}
                   disabled={groupPage <= 1}
-                  className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="text-xs text-gray-600 min-w-[60px] text-center">
+                <span className="text-xs text-muted-foreground min-w-[60px] text-center">
                   {groupPage} / {groupTotalPages}
                 </span>
                 <button
                   onClick={() => setGroupPage((p) => Math.min(groupTotalPages, p + 1))}
                   disabled={groupPage >= groupTotalPages}
-                  className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>

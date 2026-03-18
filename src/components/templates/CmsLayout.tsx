@@ -29,7 +29,7 @@ export function CmsLayout({ children }: CmsLayoutProps) {
       <Sidebar />
       <TopBar />
       <main
-        className="overflow-auto bg-gray-200 p-6"
+        className="overflow-auto bg-muted p-6"
         style={{ gridArea: 'contents' }}
       >
         {children}

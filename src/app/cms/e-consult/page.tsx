@@ -47,9 +47,9 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 /* ─── 답변 상태 배지 ─── */
 function StatusBadge({ status }: { status: EConsultStatus }) {
   const colorMap: Record<EConsultStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800',
-    ANSWERED: 'bg-green-100 text-green-800',
-    EXPIRED: 'bg-red-100 text-red-800',
+    PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    ANSWERED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    EXPIRED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   };
   return (
     <span
@@ -419,7 +419,7 @@ export default function EConsultPage() {
                 {selectedItem.reply && (
                   <>
                     <FieldGroup label="자문의 답변">
-                      <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm whitespace-pre-wrap min-h-[120px]">
+                      <div className="rounded-md border border-border bg-muted p-3 text-sm whitespace-pre-wrap min-h-[120px]">
                         {selectedItem.reply.content}
                       </div>
                     </FieldGroup>
@@ -431,7 +431,7 @@ export default function EConsultPage() {
 
                 {!selectedItem.reply && selectedItem.status === 'EXPIRED' && (
                   <FieldGroup label="자문의 답변">
-                    <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-muted-foreground min-h-[120px]">
+                    <div className="rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground min-h-[120px]">
                       답변 기한이 만료되었습니다.
                     </div>
                   </FieldGroup>
@@ -439,7 +439,7 @@ export default function EConsultPage() {
 
                 {!selectedItem.reply && selectedItem.status === 'PENDING' && (
                   <FieldGroup label="자문의 답변">
-                    <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-muted-foreground min-h-[120px]">
+                    <div className="rounded-md border border-border bg-muted p-3 text-sm text-muted-foreground min-h-[120px]">
                       아직 답변이 등록되지 않았습니다.
                     </div>
                   </FieldGroup>

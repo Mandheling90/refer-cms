@@ -576,7 +576,7 @@ function AdminManagementContent() {
                   <Input
                     value={selectedUser.id || '-'}
                     readOnly
-                    className="bg-gray-200 text-gray-500 border-gray-300"
+                    className="bg-muted text-muted-foreground border-border"
                   />
                 </FormField>
 
@@ -598,7 +598,7 @@ function AdminManagementContent() {
                   <Input
                     value={selectedUser.userId || '-'}
                     readOnly
-                    className="bg-gray-200 text-gray-500 border-gray-300"
+                    className="bg-muted text-muted-foreground border-border"
                   />
                 </FormField>
 
@@ -630,7 +630,7 @@ function AdminManagementContent() {
                 </div>
 
                 {/* 비밀번호 규칙 안내 */}
-                <div className="text-sm text-gray-500 leading-relaxed space-y-0.5">
+                <div className="text-sm text-muted-foreground leading-relaxed space-y-0.5">
                   <p>
                     비밀번호는 영문, 숫자, 특수문자 중 2종류를 조합하여 최소 10자리 이상
                     또는 3가지 조합하여 8자리 이상으로 만들어 주세요.
@@ -661,7 +661,7 @@ function AdminManagementContent() {
 
                 {/* 소속 기관 (읽기전용) */}
                 <FormField label="소속 기관" required>
-                  <div className="flex h-[38px] items-center justify-center rounded-md border border-gray-300 bg-gray-200 px-5 text-sm text-gray-500">
+                  <div className="flex h-[38px] items-center justify-center rounded-md border border-border bg-muted px-5 text-sm text-muted-foreground">
                     {selectedUser.hospitalCode || '-'}
                   </div>
                 </FormField>
@@ -733,7 +733,7 @@ function AdminManagementContent() {
               <Input
                 value="(자동생성)"
                 readOnly
-                className="bg-gray-200 text-gray-500 border-gray-300"
+                className="bg-muted text-muted-foreground border-border"
               />
             </FormField>
 
@@ -801,7 +801,7 @@ function AdminManagementContent() {
             </div>
 
             {/* 비밀번호 규칙 안내 */}
-            <div className="text-sm text-gray-500 leading-relaxed space-y-0.5">
+            <div className="text-sm text-muted-foreground leading-relaxed space-y-0.5">
               <p>
                 비밀번호는 영문, 숫자, 특수문자 중 2종류를 조합하여 최소 10자리 이상
                 또는 3가지 조합하여 8자리 이상으로 만들어 주세요.
@@ -842,7 +842,7 @@ function AdminManagementContent() {
                       'flex-1 h-[38px] rounded-md border text-sm transition-colors cursor-pointer',
                       regHospitalCode === code
                         ? 'border-primary bg-primary/10 text-primary font-medium'
-                        : 'border-gray-300 bg-card text-gray-500 hover:bg-gray-100'
+                        : 'border-border bg-card text-muted-foreground hover:bg-accent'
                     )}
                   >
                     {code === 'ALL' ? '통합관리자' : code === 'ANAM' ? '안암' : code === 'GURO' ? '구로' : '안산'}

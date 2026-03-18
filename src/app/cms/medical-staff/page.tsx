@@ -371,7 +371,7 @@ export default function MedicalStaffPage() {
             <img
               src={row.original.photoUrl}
               alt={row.original.doctorName}
-              className="h-16 w-14 rounded object-cover border border-gray-300"
+              className="h-16 w-14 rounded object-cover border border-border"
               onError={(e) => {
                 const target = e.currentTarget;
                 target.style.display = 'none';
@@ -380,9 +380,9 @@ export default function MedicalStaffPage() {
             />
           ) : null}
           <div
-            className={`flex h-16 w-14 items-center justify-center rounded border border-gray-300 bg-gray-100 img-fallback ${row.original.photoUrl ? 'hidden' : ''}`}
+            className={`flex h-16 w-14 items-center justify-center rounded border border-border bg-muted img-fallback ${row.original.photoUrl ? 'hidden' : ''}`}
           >
-            <ImageIcon className="h-5 w-5 text-gray-400" />
+            <ImageIcon className="h-5 w-5 text-muted-foreground" />
           </div>
         </div>
       ),
@@ -620,12 +620,12 @@ export default function MedicalStaffPage() {
                       <img
                         src={selectedItem.photoUrl}
                         alt={selectedItem.doctorName}
-                        className="h-[274px] w-[188px] shrink-0 rounded border border-gray-300 object-cover"
+                        className="h-[274px] w-[188px] shrink-0 rounded border border-border object-cover"
                         onError={() => setImageLoaded(false)}
                       />
                     ) : (
-                      <div className="flex h-[274px] w-[188px] shrink-0 items-center justify-center rounded border border-gray-300 bg-gray-100">
-                        <ImageIcon className="h-8 w-8 text-gray-400" />
+                      <div className="flex h-[274px] w-[188px] shrink-0 items-center justify-center rounded border border-border bg-muted">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
                       </div>
                     )}
                     {/* 이미지 로드 성공 시에만 파일명 표시 */}
@@ -645,13 +645,13 @@ export default function MedicalStaffPage() {
                             {buildProfileFilename(selectedItem)}
                           </button>
                           {imageFileSize > 0 && (
-                            <span className="text-gray-500">
+                            <span className="text-muted-foreground">
                               {' '}
                               ({formatFileSize(imageFileSize)})
                             </span>
                           )}
                         </span>
-                        <div className="h-px w-full min-w-[250px] bg-gray-300" />
+                        <div className="h-px w-full min-w-[250px] bg-border" />
                       </div>
                     )}
                     {/* 숨겨진 img로 로드 성공 여부 판별 */}
@@ -700,7 +700,7 @@ export default function MedicalStaffPage() {
                 {/* 약력 */}
                 {selectedItem.bio && (
                   <FieldGroup label="약력">
-                    <div className="rounded-md border border-gray-300 bg-gray-50 p-3 text-sm whitespace-pre-wrap">
+                    <div className="rounded-md border border-border bg-muted p-3 text-sm whitespace-pre-wrap">
                       {selectedItem.bio}
                     </div>
                   </FieldGroup>

@@ -202,7 +202,7 @@ function BannerCardContent({
               className="mr-1"
             />
           )}
-          <span className="flex items-center justify-center h-5 w-5 rounded-full bg-gray-900 text-white text-[11px] font-bold shrink-0">
+          <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-white text-[11px] font-bold shrink-0">
             {index}
           </span>
           {isUsed ? (
@@ -218,7 +218,7 @@ function BannerCardContent({
           )}
         </div>
         <button
-          className="p-1 text-gray-500 hover:text-red-500 transition-colors cursor-pointer"
+          className="p-1 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onDelete(banner);
@@ -230,7 +230,7 @@ function BannerCardContent({
 
       {/* 이미지 영역 */}
       <div
-        className="relative mx-3 aspect-[16/9] bg-gray-200 rounded cursor-pointer group overflow-hidden"
+        className="relative mx-3 aspect-[16/9] bg-muted rounded cursor-pointer group overflow-hidden"
         onClick={() => onEdit(banner)}
       >
         {banner.IMAGE_URL ? (
@@ -240,7 +240,7 @@ function BannerCardContent({
             className="h-full w-full object-contain"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
             <Pencil className="h-5 w-5 mb-1" />
             <span>팝업 이미지</span>
             <span>조회 및 수정</span>
@@ -253,7 +253,7 @@ function BannerCardContent({
       <div className="flex items-center px-3 py-2.5 min-h-[52px]">
         {dragHandleProps ? (
           <button
-            className="cursor-grab active:cursor-grabbing p-0.5 text-gray-400 hover:text-gray-600 touch-none shrink-0"
+            className="cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground hover:text-foreground touch-none shrink-0"
             {...dragHandleProps.attributes}
             {...dragHandleProps.listeners}
           >
@@ -261,7 +261,7 @@ function BannerCardContent({
           </button>
         ) : (
           <div
-            className="p-0.5 text-gray-300 shrink-0"
+            className="p-0.5 text-muted-foreground shrink-0"
             title={banner.USE_YN === 'N' ? '미사용 팝업은 순서변경이 불가합니다' : ''}
           >
             <GripVertical className="h-4 w-4" />
@@ -271,10 +271,10 @@ function BannerCardContent({
           {(() => {
             const period = formatPeriod();
             if (typeof period === 'string') {
-              return <span className="text-xs text-gray-600">{period}</span>;
+              return <span className="text-xs text-muted-foreground">{period}</span>;
             }
             return (
-              <div className="text-xs text-gray-600 leading-relaxed">
+              <div className="text-xs text-muted-foreground leading-relaxed">
                 <div>시작일 : {period.start}</div>
                 <div>종료일 : {period.end}</div>
               </div>
@@ -327,7 +327,7 @@ function SortableBannerCard({
       style={style}
       className={cn(
         'flex flex-col rounded-lg border bg-card overflow-hidden',
-        selected ? 'border-primary border-2' : 'border-gray-300',
+        selected ? 'border-primary border-2' : 'border-border',
         isDragging && 'shadow-lg'
       )}
     >
@@ -369,7 +369,7 @@ function StaticBannerCard({
   return (
     <div className={cn(
       'flex flex-col rounded-lg border bg-card overflow-hidden',
-      selected ? 'border-primary border-2' : 'border-gray-300',
+      selected ? 'border-primary border-2' : 'border-border',
     )}>
       <BannerCardContent
         banner={banner}
@@ -390,7 +390,7 @@ function StaticBannerCard({
 
 function AddBannerCard({ onClick }: { onClick: () => void }) {
   return (
-    <div className="flex flex-col rounded-lg border border-gray-300 bg-card overflow-hidden">
+    <div className="flex flex-col rounded-lg border border-border bg-card overflow-hidden">
       {/* 상단: 배지 영역과 높이 맞춤 */}
       <div className="flex items-center px-3 py-2">
         <Badge className="gap-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/30" variant="outline">
@@ -401,14 +401,14 @@ function AddBannerCard({ onClick }: { onClick: () => void }) {
 
       {/* 중앙: 등록 영역 */}
       <div
-        className="relative mx-3 aspect-[16/9] bg-gray-100 border-2 border-dashed border-gray-300 rounded cursor-pointer group overflow-hidden hover:border-primary hover:bg-primary/5 transition-colors"
+        className="relative mx-3 aspect-[16/9] bg-muted border-2 border-dashed border-border rounded cursor-pointer group overflow-hidden hover:border-primary hover:bg-primary/5 transition-colors"
         onClick={onClick}
       >
         <div className="flex flex-col items-center justify-center h-full gap-2">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 group-hover:bg-primary/10 transition-colors">
-            <Plus className="h-5 w-5 text-gray-500 group-hover:text-primary transition-colors" />
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
+            <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
-          <span className="text-sm font-medium text-gray-500 group-hover:text-primary transition-colors">
+          <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
             팝업 등록
           </span>
         </div>
@@ -416,7 +416,7 @@ function AddBannerCard({ onClick }: { onClick: () => void }) {
 
       {/* 하단: 높이 맞춤 */}
       <div className="px-3 py-2.5 min-h-[52px] flex items-center">
-        <span className="text-xs text-gray-400">새로운 팝업을 등록합니다.</span>
+        <span className="text-xs text-muted-foreground">새로운 팝업을 등록합니다.</span>
       </div>
     </div>
   );
@@ -624,7 +624,7 @@ function BannerFormDialog({
             <div className="flex-1 space-y-2">
               <Label className="text-sm font-bold">
                 연결 방식 <span className="text-destructive">*</span>
-                <span className="text-gray-500 font-normal text-xs ml-1">(현재 창 / 새 창)</span>
+                <span className="text-muted-foreground font-normal text-xs ml-1">(현재 창 / 새 창)</span>
               </Label>
               <LinkTypeToggle
                 value={form.LINK_TYPE}
@@ -633,7 +633,7 @@ function BannerFormDialog({
             </div>
           </div>
 
-          <hr className="border-gray-300" />
+          <hr className="border-border" />
 
           {/* 기간 */}
           <div className="px-6 py-5 space-y-2">
@@ -688,7 +688,7 @@ function BannerFormDialog({
             )}
           </div>
 
-          <hr className="border-gray-300" />
+          <hr className="border-border" />
 
           {/* 팝업 이미지 */}
           <div className="px-6 py-5 space-y-2">
@@ -698,7 +698,7 @@ function BannerFormDialog({
             <div
               className={cn(
                 'flex flex-col items-center justify-center w-full min-h-[180px] border-2 border-dashed rounded-lg cursor-pointer transition-colors',
-                dragOver ? 'border-primary bg-primary/5' : 'border-gray-400 hover:border-primary'
+                dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground hover:border-primary'
               )}
               onClick={() => fileInputRef.current?.click()}
               onDrop={(e) => {
@@ -722,32 +722,32 @@ function BannerFormDialog({
                     alt="미리보기"
                     className="max-w-full object-contain rounded-lg my-2"
                   />
-                  <p className="text-sm text-gray-700 font-medium">
+                  <p className="text-sm text-foreground font-medium">
                     {pendingFile
                       ? `${pendingFile.name} (${pendingFile.size < 1024 * 1024 ? `${(pendingFile.size / 1024).toFixed(0)}KB` : `${(pendingFile.size / (1024 * 1024)).toFixed(1)}MB`})`
                       : form.IMAGE_URL ? decodeURIComponent(form.IMAGE_URL.split('/').pop() || '') : ''}
                   </p>
                   <button
                     type="button"
-                    className="mt-2 px-4 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-100 cursor-pointer"
+                    className="mt-2 px-4 py-1.5 text-sm border border-border rounded-md hover:bg-accent cursor-pointer"
                     onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                   >
                     파일선택
                   </button>
-                  <p className="mt-1.5 text-xs text-gray-400">
+                  <p className="mt-1.5 text-xs text-muted-foreground">
                     이곳에 파일을 드래그&드롭 하거나 버튼으로 선택하세요
                   </p>
                 </>
               ) : (
                 <>
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">
+                  <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
                     {dragOver ? '여기에 파일을 놓으세요.' : '이곳에 파일을 드래그&드롭 하거나 버튼으로 선택하세요.'}
                   </p>
                 </>
               )}
             </div>
-            <div className="space-y-0.5 text-xs text-gray-500">
+            <div className="space-y-0.5 text-xs text-muted-foreground">
               <p>이미지 사이즈: 가로 408px, 세로 440px / 파일 형식: png, jpg</p>
               <p>※ 해상도 408 x 440 고정입니다.</p>
               <p>※ 최대 1개 까지 첨부 가능합니다.</p>
@@ -762,7 +762,7 @@ function BannerFormDialog({
             />
           </div>
 
-          <hr className="border-gray-300" />
+          <hr className="border-border" />
 
           {/* 연결 링크 주소 */}
           <div className="px-6 py-5 space-y-2">
@@ -774,17 +774,17 @@ function BannerFormDialog({
             />
           </div>
 
-          <hr className="border-gray-300" />
+          <hr className="border-border" />
 
           {/* 등록일 / 수정일 */}
           <div className="flex gap-4 px-6 py-5">
             <div className="flex-1 space-y-2">
               <Label className="text-sm font-bold">최초등록일</Label>
-              <Input value={isEdit ? form.INSERT_DTTM || '-' : '-'} readOnly className="bg-gray-100" />
+              <Input value={isEdit ? form.INSERT_DTTM || '-' : '-'} readOnly className="bg-muted" />
             </div>
             <div className="flex-1 space-y-2">
               <Label className="text-sm font-bold">마지막 수정일</Label>
-              <Input value={isEdit ? form.UPDATE_DTTM || '-' : '-'} readOnly className="bg-gray-100" />
+              <Input value={isEdit ? form.UPDATE_DTTM || '-' : '-'} readOnly className="bg-muted" />
             </div>
           </div>
         </DialogBody>
@@ -1013,12 +1013,12 @@ export default function PopupBannerPage() {
     <div className="p-6 space-y-5">
       {/* 페이지 헤더 */}
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">팝업</h1>
+        <h1 className="text-2xl font-bold text-foreground">팝업</h1>
         <HospitalSelector />
       </div>
 
       {/* 검색 필터 영역 */}
-      <div className="rounded-lg border border-gray-300 bg-gray-50 p-5 space-y-4">
+      <div className="rounded-lg border border-border bg-muted p-5 space-y-4">
         {/* 사용여부 선택 */}
         <div className="flex items-center gap-4">
           <Label className="text-sm font-bold whitespace-nowrap w-[90px]">사용여부</Label>
@@ -1048,19 +1048,19 @@ export default function PopupBannerPage() {
       </div>
 
       {/* 검색 결과 */}
-      <div className="flex items-center justify-between border-b border-gray-300 pb-3">
-        <p className="text-sm text-gray-900">
+      <div className="flex items-center justify-between border-b border-border pb-3">
+        <p className="text-sm text-foreground">
           <strong className="text-primary">{totalItems}</strong> 건이 조회되었습니다.
         </p>
         {isSortMode && (
-          <p className="flex items-center gap-1 text-sm text-gray-500">
-            각 항목의 <GripVertical className="inline h-4 w-4 text-gray-400" /> 을 드래그 &amp; 드롭하여 순서를 변경 후
-            <strong className="text-gray-700 ml-0.5">순서저장</strong> 버튼을 눌러주세요.
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            각 항목의 <GripVertical className="inline h-4 w-4 text-muted-foreground" /> 을 드래그 &amp; 드롭하여 순서를 변경 후
+            <strong className="text-foreground ml-0.5">순서저장</strong> 버튼을 눌러주세요.
           </p>
         )}
         {isSelectMode && (
-          <p className="text-sm text-gray-500">
-            삭제할 팝업을 선택 후 <strong className="text-gray-700">선택 삭제</strong> 버튼을 눌러주세요.
+          <p className="text-sm text-muted-foreground">
+            삭제할 팝업을 선택 후 <strong className="text-foreground">선택 삭제</strong> 버튼을 눌러주세요.
           </p>
         )}
       </div>

@@ -150,8 +150,8 @@ function SortableMenuRow({
         isSelected
           ? 'border-primary bg-primary/5'
           : item.isActive
-            ? 'border-gray-200 bg-card hover:border-primary'
-            : 'border-gray-200 bg-gray-100 hover:border-primary'
+            ? 'border-border bg-card hover:border-primary'
+            : 'border-border bg-muted hover:border-primary'
       )}
       onClick={onClick}
     >
@@ -159,7 +159,7 @@ function SortableMenuRow({
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab flex items-center justify-center text-gray-600"
+        className="cursor-grab flex items-center justify-center text-muted-foreground"
         onClick={(e) => e.stopPropagation()}
       >
         <GripVertical className="h-5 w-5" />
@@ -177,12 +177,12 @@ function SortableMenuRow({
         </span>
         <span className={cn(
           'text-sm font-semibold truncate',
-          !item.isActive && 'text-gray-400'
+          !item.isActive && 'text-muted-foreground'
         )}>
           {item.name}
         </span>
         {showChildCount && (
-          <span className="ml-auto text-xs text-gray-500 tabular-nums shrink-0">
+          <span className="ml-auto text-xs text-muted-foreground tabular-nums shrink-0">
             {countStr}건
           </span>
         )}
@@ -190,7 +190,7 @@ function SortableMenuRow({
 
       {/* 수정 버튼 */}
       <button
-        className="flex items-center justify-center text-gray-600 hover:text-primary transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
+        className="flex items-center justify-center text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-accent cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           onEdit();
@@ -201,7 +201,7 @@ function SortableMenuRow({
 
       {/* 삭제 버튼 */}
       <button
-        className="flex items-center justify-center text-gray-600 hover:text-destructive transition-colors rounded-lg hover:bg-gray-100 cursor-pointer"
+        className="flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-accent cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
@@ -212,7 +212,7 @@ function SortableMenuRow({
 
       {/* 하위 메뉴 화살표 (최상위 메뉴만) */}
       {showChildCount && (
-        <div className="flex items-center justify-center text-gray-600 cursor-pointer">
+        <div className="flex items-center justify-center text-muted-foreground cursor-pointer">
           <ChevronRight className="h-4 w-4" />
         </div>
       )}
@@ -269,11 +269,11 @@ function MenuColumn({
   const countText = `${String(items.length).padStart(2, '0')} 건`;
 
   return (
-    <div className="flex flex-col border border-gray-200 rounded-xl bg-card flex-1 shadow-[0_0_12px_rgba(0,0,0,0.06)]">
+    <div className="flex flex-col border border-border rounded-xl bg-card flex-1 shadow-[0_0_12px_rgba(0,0,0,0.06)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-primary/10 rounded-t-xl">
-        <h4 className="text-base font-semibold text-gray-900">{title}</h4>
-        <span className="text-sm font-semibold text-gray-700">{countText}</span>
+        <h4 className="text-base font-semibold text-foreground">{title}</h4>
+        <span className="text-sm font-semibold text-foreground">{countText}</span>
       </div>
 
       {/* List */}
@@ -297,12 +297,12 @@ function MenuColumn({
           </SortableContext>
         </DndContext>
         {items.length === 0 && (
-          <div className="p-8 text-center text-gray-500 text-sm">메뉴가 없습니다.</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">메뉴가 없습니다.</div>
         )}
       </div>
 
       {/* Footer buttons */}
-      <div className="flex items-center justify-end gap-2 px-3 py-3 border-t border-gray-200">
+      <div className="flex items-center justify-end gap-2 px-3 py-3 border-t border-border">
         <Button variant="outline" size="sm" className="gap-1.5 h-9 rounded-lg px-4 text-sm" onClick={onSaveOrders}>
           <Save className="h-4 w-4" />
           순서 저장
@@ -506,7 +506,7 @@ function CmsMenuDialog({
                   <span
                     className={cn(
                       'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
-                      form.hospitalCode === opt.value ? 'border-primary' : 'border-gray-400'
+                      form.hospitalCode === opt.value ? 'border-primary' : 'border-muted-foreground'
                     )}
                   >
                     {form.hospitalCode === opt.value && (
@@ -518,7 +518,7 @@ function CmsMenuDialog({
               ))}
             </div>
             {isChildMenu && (
-              <p className="text-xs text-gray-500">하위메뉴는 상위메뉴의 기관을 따릅니다.</p>
+              <p className="text-xs text-muted-foreground">하위메뉴는 상위메뉴의 기관을 따릅니다.</p>
             )}
           </div>
 
@@ -552,7 +552,7 @@ function CmsMenuDialog({
                   <span
                     className={cn(
                       'flex items-center justify-center size-4 rounded-full border-2 shrink-0',
-                      form.menuTargetType === opt.value ? 'border-primary' : 'border-gray-400'
+                      form.menuTargetType === opt.value ? 'border-primary' : 'border-muted-foreground'
                     )}
                   >
                     {form.menuTargetType === opt.value && (
@@ -564,7 +564,7 @@ function CmsMenuDialog({
               ))}
             </div>
             {isChildMenu && (
-              <p className="text-xs text-gray-500">하위메뉴는 항상 링크 타입입니다.</p>
+              <p className="text-xs text-muted-foreground">하위메뉴는 항상 링크 타입입니다.</p>
             )}
           </div>
 
@@ -756,7 +756,7 @@ export default function CmsMenuPage() {
   if (!isSuperAdmin) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">접근 권한이 없습니다.</p>
+        <p className="text-muted-foreground">접근 권한이 없습니다.</p>
       </div>
     );
   }
@@ -776,22 +776,22 @@ export default function CmsMenuPage() {
     <div className="p-6 space-y-6">
       {/* Page header */}
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">CMS 메뉴관리</h1>
+        <h1 className="text-2xl font-bold text-foreground">CMS 메뉴관리</h1>
         <HospitalSelector />
       </div>
 
       {/* Guide text + Legend */}
-      <div className="bg-card border border-gray-300 rounded-xl px-4 py-3 space-y-2">
-        <p className="text-sm text-gray-600">
+      <div className="bg-card border border-border rounded-xl px-4 py-3 space-y-2">
+        <p className="text-sm text-muted-foreground">
           각 항목의 아이콘을 드래그 &amp; 드롭 하시면 순서를 변경하실 수 있습니다.
         </p>
-        <div className="flex items-center gap-5 flex-wrap text-sm text-gray-600">
+        <div className="flex items-center gap-5 flex-wrap text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
-            <Pencil className="h-4 w-4 text-gray-400" />
+            <Pencil className="h-4 w-4 text-muted-foreground" />
             <span>= 설정하기</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
             <span>= 하위메뉴 보기</span>
           </span>
           <span className="inline-flex items-center gap-1.5">

@@ -20,13 +20,13 @@ const buttonVariants = cva(
         blue:
           "bg-src-blue text-white hover:bg-src-blue/85 active:bg-src-blue/70",
         dark:
-          "bg-src-darken text-src-white hover:bg-src-darken/85 active:bg-src-darken/70",
+          "bg-src-darken text-src-white hover:bg-src-darken/85 active:bg-src-darken/70 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 dark:active:bg-gray-500",
         outline:
-          "border border-src-darken bg-background text-foreground hover:bg-gray-200 active:bg-gray-300",
+          "border border-src-darken bg-background text-foreground hover:bg-accent active:bg-accent/70",
         "outline-red":
-          "border border-src-red bg-background text-src-red hover:bg-gray-200 active:bg-gray-300",
+          "border border-src-red bg-background text-src-red hover:bg-accent active:bg-accent/70",
         "outline-blue":
-          "border border-src-blue bg-background text-src-blue hover:bg-gray-200 active:bg-gray-300",
+          "border border-src-blue bg-background text-src-blue hover:bg-accent active:bg-accent/70",
         ghost:
           "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",

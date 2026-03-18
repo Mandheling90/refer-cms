@@ -524,7 +524,7 @@ export default function BoardPage() {
           {/* 그룹명 검색 */}
           <div className="px-3 pt-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={groupSearchName}
                 onChange={(e) => {
@@ -559,7 +559,7 @@ export default function BoardPage() {
                       'flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left text-sm transition-colors cursor-pointer',
                       isSelected
                         ? 'bg-primary text-white font-semibold'
-                        : 'hover:bg-gray-300 text-foreground',
+                        : 'hover:bg-accent text-foreground',
                     )}
                   >
                     <FolderOpen className="h-4 w-4 shrink-0" />
@@ -569,7 +569,7 @@ export default function BoardPage() {
                         'text-xs px-2 py-0.5 rounded-full shrink-0',
                         isSelected
                           ? 'bg-white/20 text-white'
-                          : 'bg-gray-400 text-foreground',
+                          : 'bg-muted text-foreground',
                       )}
                     >
                       {templateLabel(board.templateType)}
@@ -581,7 +581,7 @@ export default function BoardPage() {
           </nav>
 
           {/* 그룹 페이징 */}
-          <div className="border-t border-gray-300 px-3 py-2">
+          <div className="border-t border-border px-3 py-2">
             <div className="flex items-center justify-between">
               <select
                 value={groupPageSize}
@@ -589,7 +589,7 @@ export default function BoardPage() {
                   setGroupPageSize(Number(e.target.value));
                   setGroupPage(1);
                 }}
-                className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-card"
+                className="text-xs border border-border rounded px-1.5 py-1 bg-card"
               >
                 {[5, 10, 20, 50].map((n) => (
                   <option key={n} value={n}>{n}건</option>
@@ -599,17 +599,17 @@ export default function BoardPage() {
                 <button
                   onClick={() => setGroupPage((p) => Math.max(1, p - 1))}
                   disabled={groupPage <= 1}
-                  className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="text-xs text-gray-600 min-w-[60px] text-center">
+                <span className="text-xs text-muted-foreground min-w-[60px] text-center">
                   {groupPage} / {groupTotalPages}
                 </span>
                 <button
                   onClick={() => setGroupPage((p) => Math.min(groupTotalPages, p + 1))}
                   disabled={groupPage >= groupTotalPages}
-                  className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -901,7 +901,7 @@ export default function BoardPage() {
                     {formAttachments.map((file, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-300 bg-gray-50"
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted"
                       >
                         <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -925,7 +925,7 @@ export default function BoardPage() {
                 ) : (
                   <p className="text-sm text-muted-foreground">등록된 첨부파일이 없습니다.</p>
                 )}
-                <div className="border-t border-gray-200" />
+                <div className="border-t border-border" />
                 <input
                   ref={attachmentInputRef}
                   type="file"

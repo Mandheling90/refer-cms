@@ -225,6 +225,41 @@
     border-radius: 8px 8px 0 0 !important;
   }
 
+  /* CKEditor 다크모드 — CKEditor 자체 CSS 변수를 오버라이드 */
+  [data-theme="dark"] .ck-editor-wrapper .ck.ck-editor {
+    --ck-color-base-background: #1e1e1e;
+    --ck-color-base-foreground: #282830;
+    --ck-color-base-border: #3a3a44;
+    --ck-color-base-text: #f5f5f5;
+    --ck-color-toolbar-background: #282830;
+    --ck-color-toolbar-border: #3a3a44;
+    --ck-color-text: #f5f5f5;
+    --ck-color-button-default-background: transparent;
+    --ck-color-button-default-hover-background: #3a3a44;
+    --ck-color-button-on-background: #3a3a44;
+    --ck-color-button-on-hover-background: #44444e;
+    --ck-color-button-on-color: #f5f5f5;
+    --ck-color-dropdown-panel-background: #282830;
+    --ck-color-dropdown-panel-border: #3a3a44;
+    --ck-color-input-background: #1e1e1e;
+    --ck-color-input-border: #3a3a44;
+    --ck-color-input-text: #f5f5f5;
+    --ck-color-list-background: #282830;
+    --ck-color-list-button-hover-background: #3a3a44;
+    --ck-color-list-button-on-background: #3a3a44;
+    --ck-color-list-button-on-text: #f5f5f5;
+  }
+  [data-theme="dark"] .ck-editor-wrapper .ck.ck-editor__main > .ck-editor__editable {
+    background: #1e1e1e !important;
+    color: #f5f5f5 !important;
+  }
+  [data-theme="dark"] .ck-editor-wrapper .ck.ck-toolbar .ck-button .ck-icon {
+    color: #f5f5f5 !important;
+  }
+  [data-theme="dark"] .ck-editor-wrapper .ck.ck-toolbar .ck-button .ck-button__label {
+    color: #f5f5f5 !important;
+  }
+
   /* CKEditor 팝업이 Radix Dialog 위에서 조작 가능하도록 */
   body > .ck-body-wrapper {
     z-index: 9999 !important;
