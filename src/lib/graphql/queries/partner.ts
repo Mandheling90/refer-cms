@@ -26,6 +26,7 @@ export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
           id
           name
           phisCode
+          classificationCode
           address
           addressDetail
           phone
