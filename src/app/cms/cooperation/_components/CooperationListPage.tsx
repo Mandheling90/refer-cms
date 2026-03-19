@@ -150,6 +150,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     GET_ADMIN_PARTNER_APPLICATIONS,
     {
       variables: {
+        partnerType,
         ...(appliedFilter.status ? { status: appliedFilter.status } : {}),
       },
       fetchPolicy: 'network-only',
@@ -160,7 +161,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
   const allItems = data?.adminPartnerApplications?.items ?? [];
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
-      if (item.hospital?.classificationCode !== partnerType) return false;
+      if (item.hospital?.partnerType !== partnerType) return false;
       if (appliedFilter.hospName && !item.hospital?.name?.includes(appliedFilter.hospName)) return false;
       if (appliedFilter.directorName && !item.directorName?.includes(appliedFilter.directorName)) return false;
       return true;
@@ -211,9 +212,10 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     setAppliedFilter(newFilter);
     setCurrentPage(1);
     refetch({
+      partnerType,
       ...(status ? { status } : {}),
     });
-  }, [searchHospName, searchDirectorName, searchStatus, refetch]);
+  }, [searchHospName, searchDirectorName, searchStatus, partnerType, refetch]);
 
   /* ─── 초기화 ─── */
   const handleReset = () => {
@@ -222,7 +224,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     setSearchStatus('');
     setAppliedFilter({});
     setCurrentPage(1);
-    refetch();
+    refetch({ partnerType });
   };
 
   /* ─── 행 클릭 → 상세 조회 ─── */
@@ -250,7 +252,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       toast.success('승인 처리되었습니다.');
       setApproveConfirmOpen(false);
       setDetailOpen(false);
-      refetch();
+      refetch({ partnerType });
     } catch (err) {
       const msg = err instanceof Error ? err.message : '승인 처리 중 오류가 발생했습니다.';
       toast.error(msg);
@@ -268,7 +270,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       toast.success('반려 처리되었습니다.');
       setRejectOpen(false);
       setDetailOpen(false);
-      refetch();
+      refetch({ partnerType });
     } catch (err) {
       const msg = err instanceof Error ? err.message : '반려 처리 중 오류가 발생했습니다.';
       toast.error(msg);

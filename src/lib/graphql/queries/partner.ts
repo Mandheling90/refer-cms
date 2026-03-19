@@ -2,8 +2,8 @@ import { gql } from '@apollo/client';
 
 /** 관리자 협력병의원 신청 목록 조회 */
 export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
-  query AdminPartnerApplications($status: PartnerStatus, $hospitalCode: HospitalCode, $pagination: PaginationInput) {
-    adminPartnerApplications(status: $status, hospitalCode: $hospitalCode, pagination: $pagination) {
+  query AdminPartnerApplications($status: PartnerStatus, $hospitalCode: HospitalCode, $partnerType: PartnerType, $pagination: PaginationInput) {
+    adminPartnerApplications(status: $status, hospitalCode: $hospitalCode, partnerType: $partnerType, pagination: $pagination) {
       items {
         id
         hospitalId
