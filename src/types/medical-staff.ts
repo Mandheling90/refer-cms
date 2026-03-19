@@ -1,6 +1,38 @@
 /* --- 의료진 타입 정의 --- */
 
-/** 의료진 목록 아이템 (adminDoctors API 응답) */
+/** 의료진 목록 아이템 (medicalStaffList API 응답) */
+export interface MedicalStaffItem {
+  doctorId: string;
+  doctorName: string;
+  photoUrl?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  bio?: string;
+  specialty?: string;
+  hospitalCode?: string;
+  mcdpAbrvCd?: string;
+  mcdpDvsnCd?: string;
+  mcdpSqncVl?: string;
+  apstYmd?: string;
+  apfnYmd?: string;
+  smcrYn?: string;
+  frvsMdcrPsblYn?: string;
+  revsMdcrPsblYn?: string;
+  fastMdcrDt?: string;
+  drNo?: string;
+  isVisible?: boolean;
+  updatedAt?: string;
+}
+
+/** 목록 응답 */
+export interface MedicalStaffListResponse {
+  medicalStaffList: {
+    items: MedicalStaffItem[];
+    totalCount: number;
+  };
+}
+
+/** @deprecated adminDoctors용 - 호환용 */
 export interface AdminDoctorItem {
   id: string;
   userId: string;
@@ -19,7 +51,7 @@ export interface AdminDoctorItem {
   updatedAt: string;
 }
 
-/** 목록 응답 */
+/** @deprecated */
 export interface AdminDoctorsResponse {
   adminDoctors: {
     items: AdminDoctorItem[];

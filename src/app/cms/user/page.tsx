@@ -135,7 +135,7 @@ export default function MemberPage() {
 
   /* ─── GraphQL 수정 ─── */
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
-  const [resetPassword] = useMutation(ADMIN_RESET_PASSWORD);
+  const [resetPassword] = useMutation<{ adminResetPassword: { success: boolean; message: string } }>(ADMIN_RESET_PASSWORD);
 
   /* ─── 상세 다이얼로그 ─── */
   const [detailOpen, setDetailOpen] = useState(false);

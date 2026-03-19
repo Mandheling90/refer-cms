@@ -44,7 +44,7 @@ import {
 } from '@/types/cooperation';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 /* ─── Props ─── */
@@ -145,12 +145,11 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     status?: PartnerStatus;
   }>({});
 
-  /* ─── GraphQL 목록 조회 ─── */
+  /* ─── GraphQL 목록 조회 (전체 조회 후 클라이언트 필터링) ─── */
   const { data, loading, refetch } = useQuery<AdminPartnerApplicationsResponse>(
     GET_ADMIN_PARTNER_APPLICATIONS,
     {
       variables: {
-        pagination: { page: currentPage, limit: pageSize },
         ...(appliedFilter.status ? { status: appliedFilter.status } : {}),
       },
       fetchPolicy: 'network-only',
@@ -159,13 +158,27 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
 
   /* 클라이언트측 필터링 (partnerType + 검색 조건) */
   const allItems = data?.adminPartnerApplications?.items ?? [];
-  const filteredItems = allItems.filter((item) => {
-    if (item.hospital?.partnerType !== partnerType) return false;
-    if (appliedFilter.hospName && !item.hospital?.name?.includes(appliedFilter.hospName)) return false;
-    if (appliedFilter.directorName && !item.directorName?.includes(appliedFilter.directorName)) return false;
-    return true;
-  });
-  const totalCount = data?.adminPartnerApplications?.totalCount ?? 0;
+  const filteredItems = useMemo(() => {
+    return allItems.filter((item) => {
+      if (item.hospital?.classificationCode !== partnerType) return false;
+      if (appliedFilter.hospName && !item.hospital?.name?.includes(appliedFilter.hospName)) return false;
+      if (appliedFilter.directorName && !item.directorName?.includes(appliedFilter.directorName)) return false;
+      return true;
+    });
+  }, [allItems, partnerType, appliedFilter]);
+  const totalCount = filteredItems.length;
+
+  /* ─── 클라이언트 페이징 ─── */
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const pagedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage, pageSize]);
+
+  /* 필터 변경 시 1페이지로 리셋 */
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedFilter]);
 
   /* ─── GraphQL 상세 조회 ─── */
   const [fetchDetail] = useLazyQuery<AdminPartnerApplicationByIdResponse>(
@@ -198,10 +211,9 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     setAppliedFilter(newFilter);
     setCurrentPage(1);
     refetch({
-      pagination: { page: 1, limit: pageSize },
       ...(status ? { status } : {}),
     });
-  }, [searchHospName, searchDirectorName, searchStatus, refetch, pageSize]);
+  }, [searchHospName, searchDirectorName, searchStatus, refetch]);
 
   /* ─── 초기화 ─── */
   const handleReset = () => {
@@ -210,9 +222,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     setSearchStatus('');
     setAppliedFilter({});
     setCurrentPage(1);
-    refetch({
-      pagination: { page: 1, limit: pageSize },
-    });
+    refetch();
   };
 
   /* ─── 행 클릭 → 상세 조회 ─── */
@@ -390,12 +400,12 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
         listContent={
           <DataTable
             columns={columns}
-            data={filteredItems}
+            data={pagedItems}
             loading={loading}
             totalItems={totalCount}
             currentPage={currentPage}
             pageSize={pageSize}
-            totalPages={Math.ceil(totalCount / pageSize) || 1}
+            totalPages={totalPages}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             onRowClick={handleRowClick}

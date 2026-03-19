@@ -1,6 +1,35 @@
 import { gql } from '@apollo/client';
 
-/** 의료진 목록 조회 (서버 페이지네이션) */
+/** 의료진 목록 조회 (ADMAP 전체 의사 리스트) */
+export const GET_MEDICAL_STAFF_LIST = gql`
+  query MedicalStaffList($filter: AdmapMedicalStaffFilterInput) {
+    medicalStaffList(filter: $filter) {
+      items {
+        doctorId
+        doctorName
+        photoUrl
+        departmentCode
+        departmentName
+        bio
+        specialty
+        hospitalCode
+        mcdpAbrvCd
+        mcdpDvsnCd
+        mcdpSqncVl
+        apstYmd
+        apfnYmd
+        smcrYn
+        frvsMdcrPsblYn
+        revsMdcrPsblYn
+        fastMdcrDt
+        drNo
+      }
+      totalCount
+    }
+  }
+`;
+
+/** @deprecated adminDoctors용 */
 export const GET_ADMIN_DOCTORS = gql`
   query AdminDoctors($hospitalCode: HospitalCode, $pagination: PaginationInput) {
     adminDoctors(hospitalCode: $hospitalCode, pagination: $pagination) {
