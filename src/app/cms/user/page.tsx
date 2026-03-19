@@ -25,6 +25,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import {
+  ADMIN_RESET_PASSWORD,
   ADMIN_UPDATE_USER,
   GET_ADMIN_USERS_MEMBERS,
 } from '@/lib/graphql/queries/member';
@@ -110,6 +111,7 @@ export default function MemberPage() {
   const buildFilterVars = (filter: typeof appliedFilter) => ({
     ...(filter.search ? { search: filter.search } : {}),
     userType: filter.userType || 'DOCTOR',
+    status: 'ACTIVE',
   });
 
   const { data, loading, refetch } = useQuery<AdminUsersResponse>(GET_ADMIN_USERS_MEMBERS, {
@@ -133,6 +135,7 @@ export default function MemberPage() {
 
   /* ─── GraphQL 수정 ─── */
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
+  const [resetPassword] = useMutation(ADMIN_RESET_PASSWORD);
 
   /* ─── 상세 다이얼로그 ─── */
   const [detailOpen, setDetailOpen] = useState(false);
@@ -570,9 +573,23 @@ export default function MemberPage() {
         onOpenChange={setPwResetOpen}
         title="비밀번호 초기화"
         description="비밀번호를 초기화하시겠습니까? 초기화된 비밀번호는 회원의 휴대전화번호로 전송됩니다."
-        onConfirm={() => {
-          toast.success('비밀번호가 초기화되었습니다. 회원의 휴대전화번호로 전송되었습니다.');
-          setPwResetOpen(false);
+        onConfirm={async () => {
+          if (!selectedUser) return;
+          try {
+            const { data: result } = await resetPassword({
+              variables: { id: selectedUser.id },
+            });
+            if (result?.adminResetPassword?.success) {
+              toast.success(result.adminResetPassword.message || '비밀번호가 초기화되었습니다.');
+            } else {
+              toast.error(result?.adminResetPassword?.message || '비밀번호 초기화에 실패했습니다.');
+            }
+            setPwResetOpen(false);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : '비밀번호 초기화 중 오류가 발생했습니다.';
+            toast.error(message);
+            setPwResetOpen(false);
+          }
         }}
         destructive
       />

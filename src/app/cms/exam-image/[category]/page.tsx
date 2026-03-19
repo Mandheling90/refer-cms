@@ -675,7 +675,10 @@ export default function ExamImagePage() {
       header: () => <span className="block text-center">이미지 등록/조회</span>,
       size: 160,
       cell: ({ row }) => {
-        const { displayState } = row.original;
+        const { displayState, status } = row.original;
+        if (status === 'REJECTED' || status === 'REQUESTED') {
+          return null;
+        }
         if (displayState === 'PENDING_IMAGE') {
           return (
             <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
@@ -945,7 +948,7 @@ export default function ExamImagePage() {
             ) : selectedItem ? (
               <>
                 {renderInfoFields(selectedItem)}
-                {renderUploadSection(800)}
+                {selectedItem.status !== 'REJECTED' && selectedItem.status !== 'REQUESTED' && renderUploadSection(800)}
 
                 {/* 업로드 진행 중 프로그레스 */}
                 {uploading && uploadProgress.total > 0 && (

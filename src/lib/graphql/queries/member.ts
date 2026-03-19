@@ -70,6 +70,16 @@ export const GET_ADMIN_USER_BY_ID = gql`
   }
 `;
 
+/** 비밀번호 초기화 (관리자) */
+export const ADMIN_RESET_PASSWORD = gql`
+  mutation AdminResetPassword($id: String!) {
+    adminResetPassword(id: $id) {
+      success
+      message
+    }
+  }
+`;
+
 /** 회원 정보 수정 */
 export const ADMIN_UPDATE_USER = gql`
   mutation AdminUpdateUser($id: String!, $input: AdminUpdateUserInput!) {
