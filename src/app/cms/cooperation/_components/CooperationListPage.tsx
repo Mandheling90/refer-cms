@@ -200,6 +200,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [mutating, setMutating] = useState(false);
 
   /* ─── 재검색 ─── */
   const handleSearch = useCallback(() => {
@@ -247,6 +248,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
   /* ─── 승인 ─── */
   const handleApprove = async () => {
     if (!selectedItem) return;
+    setMutating(true);
     try {
       await approvePartner({ variables: { id: selectedItem.id } });
       toast.success('승인 처리되었습니다.');
@@ -257,12 +259,15 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       const msg = err instanceof Error ? err.message : '승인 처리 중 오류가 발생했습니다.';
       toast.error(msg);
       setApproveConfirmOpen(false);
+    } finally {
+      setMutating(false);
     }
   };
 
   /* ─── 반려 ─── */
   const handleReject = async () => {
     if (!selectedItem) return;
+    setMutating(true);
     try {
       await rejectPartner({
         variables: { id: selectedItem.id, reason: rejectReason.trim() || '반려 처리' },
@@ -275,6 +280,8 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       const msg = err instanceof Error ? err.message : '반려 처리 중 오류가 발생했습니다.';
       toast.error(msg);
       setRejectOpen(false);
+    } finally {
+      setMutating(false);
     }
   };
 
@@ -1050,14 +1057,14 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
           </DialogBody>
 
           <DialogFooter className="justify-between">
-            
-            {isApply && selectedItem?.status === 'PENDING' ? (
+
+            {selectedItem?.status === 'PENDING' ? (
               <div className="flex gap-2">
                 <Button variant="blue" onClick={() => setApproveConfirmOpen(true)} disabled={!canEdit}>
-                  체결 승인
+                  {isApply ? '체결 승인' : '수정 승인'}
                 </Button>
                 <Button variant="destructive" onClick={() => setRejectOpen(true)} disabled={!canEdit}>
-                  체결 반려
+                  {isApply ? '체결 반려' : '수정 반려'}
                 </Button>
               </div>
             ) : (
@@ -1076,35 +1083,53 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       <ConfirmDialog
         open={approveConfirmOpen}
         onOpenChange={setApproveConfirmOpen}
-        title="체결 승인 처리"
+        title={isApply ? '체결 승인 처리' : '수정 승인 처리'}
         description={
-          <>
-            해당 협력병원 체결 신청을 승인하시겠습니까?
-            <br />
-            승인 사실은 협력병원에 안내되며,
-            <br />
-            승인 후에는 신청 정보가 PHIS에 등록됩니다.
-          </>
+          isApply ? (
+            <>
+              해당 협력병원 체결 신청을 승인하시겠습니까?
+              <br />
+              승인 사실은 협력병원에 안내되며,
+              <br />
+              승인 후에는 신청 정보가 PHIS에 등록됩니다.
+            </>
+          ) : (
+            <>
+              해당 수정 요청을 승인하시겠습니까?
+              <br />
+              승인 시 변경된 정보가 반영됩니다.
+            </>
+          )
         }
         onConfirm={handleApprove}
+        loading={mutating}
       />
 
       {/* ═══ 반려 확인 ═══ */}
       <ConfirmDialog
         open={rejectOpen}
         onOpenChange={setRejectOpen}
-        title="체결 반려 처리"
+        title={isApply ? '체결 반려 처리' : '수정 반려 처리'}
         description={
-          <>
-            해당 협력병원 체결 신청을 반려하시겠습니까?
-            <br />
-            반려 사실은 협력병원에 안내되며,
-            <br />
-            반려 후에는 동일 신청 건으로 재처리가 불가합니다.
-          </>
+          isApply ? (
+            <>
+              해당 협력병원 체결 신청을 반려하시겠습니까?
+              <br />
+              반려 사실은 협력병원에 안내되며,
+              <br />
+              반려 후에는 동일 신청 건으로 재처리가 불가합니다.
+            </>
+          ) : (
+            <>
+              해당 수정 요청을 반려하시겠습니까?
+              <br />
+              반려 후에는 되돌릴 수 없습니다.
+            </>
+          )
         }
         onConfirm={handleReject}
         destructive
+        loading={mutating}
       />
     </>
   );

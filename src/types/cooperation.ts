@@ -132,9 +132,52 @@ export interface AdminPartnerApplicationByIdResponse {
   adminPartnerApplicationById: PartnerApplicationDetail;
 }
 
+/* ─── 수정요청 타입 ─── */
+
+export type UpdateRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+/** 협력병의원 수정요청 모델 */
+export interface PartnerUpdateRequestModel {
+  id: string;
+  status: UpdateRequestStatus;
+  partnerApplicationId: string;
+  hospitalCode: string;
+  requestedHospitalData?: Record<string, unknown>;
+  requestedApplicationData?: Record<string, unknown>;
+  reviewedAt?: string;
+  reviewedById?: string;
+  directorName?: string;
+  createdAt: string;
+  hospital?: HospitalModel;
+}
+
+/** 수정요청 목록 응답 */
+export interface AdminPartnerUpdateRequestsResponse {
+  adminPartnerUpdateRequests: PartnerUpdateRequestModel[];
+}
+
+/** 수정요청 상세 응답 */
+export interface AdminPartnerUpdateRequestByIdResponse {
+  adminPartnerUpdateRequestById: PartnerUpdateRequestModel;
+}
+
 /* ─── Enum ─── */
 
 export type PartnerStatus = 'APPROVED' | 'DRAFT' | 'PENDING' | 'REJECTED' | 'TERMINATED';
+
+/** 수정요청 상태 옵션 */
+export const UPDATE_REQUEST_STATUS_OPTIONS = [
+  { value: '', label: '전체' },
+  { value: 'PENDING', label: '대기' },
+  { value: 'APPROVED', label: '승인' },
+  { value: 'REJECTED', label: '반려' },
+] as const;
+
+/** 수정요청 상태 라벨 변환 */
+export const updateRequestStatusLabel = (val?: string) => {
+  const found = UPDATE_REQUEST_STATUS_OPTIONS.find((o) => o.value === val);
+  return found?.label ?? val ?? '-';
+};
 
 /** 상태 옵션 */
 export const PARTNER_STATUS_OPTIONS = [

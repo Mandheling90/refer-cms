@@ -174,3 +174,60 @@ export const REJECT_PARTNER_APPLICATION = gql`
     }
   }
 `;
+
+/** 관리자 협력병의원 수정요청 목록 조회 */
+export const GET_ADMIN_PARTNER_UPDATE_REQUESTS = gql`
+  query AdminPartnerUpdateRequests($status: PartnerUpdateRequestStatus) {
+    adminPartnerUpdateRequests(status: $status) {
+      id
+      status
+      partnerApplicationId
+      hospitalCode
+      requestedHospitalData
+      requestedApplicationData
+      createdAt
+    }
+  }
+`;
+
+/** 관리자 협력병의원 수정요청 상세 조회 */
+export const GET_ADMIN_PARTNER_UPDATE_REQUEST_BY_ID = gql`
+  query AdminPartnerUpdateRequestById($id: String!) {
+    adminPartnerUpdateRequestById(id: $id) {
+      id
+      status
+      partnerApplicationId
+      hospitalCode
+      requestedHospitalData
+      requestedApplicationData
+      reviewedAt
+      reviewedById
+    }
+  }
+`;
+
+/** 수정요청 승인 */
+export const APPROVE_PARTNER_UPDATE_REQUEST = gql`
+  mutation ApprovePartnerUpdateRequest($id: String!) {
+    approvePartnerUpdateRequest(id: $id) {
+      id
+      status
+      reviewedAt
+      reviewedById
+      partnerApplicationId
+    }
+  }
+`;
+
+/** 수정요청 반려 */
+export const REJECT_PARTNER_UPDATE_REQUEST = gql`
+  mutation RejectPartnerUpdateRequest($id: String!) {
+    rejectPartnerUpdateRequest(id: $id) {
+      id
+      status
+      reviewedAt
+      reviewedById
+      partnerApplicationId
+    }
+  }
+`;

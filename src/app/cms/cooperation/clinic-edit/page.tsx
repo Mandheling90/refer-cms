@@ -1,16 +1,15 @@
 'use client';
 
 import { usePagePermission } from '@/components/molecules/PermissionGuard';
-import { CooperationListPage } from '../_components/CooperationListPage';
+import { UpdateRequestListPage } from '../_components/UpdateRequestListPage';
 
 export default function ClinicEditPage() {
   const { canEdit } = usePagePermission();
 
   return (
-    <CooperationListPage
-      title="협력의원 수정 관리"
+    <UpdateRequestListPage
+      title="협력의원 수정요청 확인"
       partnerType="M"
-      mode="edit"
       canEdit={canEdit}
     />
   );
