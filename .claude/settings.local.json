@@ -60,7 +60,8 @@
       "Bash(tr '{' '\\\\n')",
       "Bash(tr '}' '\\\\n')",
       "Bash(find /c/Users/LSY/Desktop/Propject/refer-cms -type f \\\\\\(-name introspection* -o -name schema* -o -name *.graphql \\\\\\))",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \":*)"
     ]
   },
   "enableAllProjectMcpServers": true,

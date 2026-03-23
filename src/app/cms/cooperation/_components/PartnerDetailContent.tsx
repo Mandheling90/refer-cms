@@ -434,7 +434,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
                 ['radiationOncology', '방사선종양학과'],
                 ['pathology', '병리과'],
                 ['urology', '비뇨의학과'],
-                ['obGyn', '산부인과'],
+                ['obstetricsGynecology', '산부인과'],
                 ['plasticSurgery', '성형외과'],
                 ['pediatrics', '소아청소년과'],
                 ['neurology', '신경과'],
@@ -444,14 +444,14 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
                 ['radiology', '영상의학과'],
                 ['surgery', '외과'],
                 ['emergencyMedicine', '응급의학과'],
-                ['entSurgery', '이비인후과'],
-                ['rehabilitation', '재활의학과'],
+                ['otorhinolaryngology', '이비인후과'],
+                ['rehabilitationMedicine', '재활의학과'],
                 ['psychiatry', '정신건강의학과'],
-                ['orthopedics', '정형외과'],
-                ['labMedicine', '진단검사의학과'],
+                ['orthopedicSurgery', '정형외과'],
+                ['laboratoryMedicine', '진단검사의학과'],
                 ['dentistry', '치과'],
                 ['dermatology', '피부과'],
-                ['thoracicSurgery', '심장혈관흉부외과'],
+                ['cardiothoracicSurgery', '심장혈관흉부외과'],
                 ['koreanMedicine', '한의학과'],
                 ['other', '기타'],
               ];
@@ -553,12 +553,12 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
               const otherEquip = parsed.otherEquipment || [];
               const EQUIPMENT_MAP: [string, string][] = [
                 ['xray', 'X-RAY'], ['mri', 'MRI'], ['ct', 'CT'], ['pet', 'PET'],
-                ['ultrasound', '초음파'], ['echocardiogram', '심장초음파'],
-                ['ekg', 'EKG'], ['endoscope', '내시경'], ['mammography', 'mammography'],
-                ['vfss', 'VFSS'], ['boneDensitometer', '골밀도 검사기'],
+                ['ultrasound', '초음파'], ['echocardiography', '심장초음파'],
+                ['ekg', 'EKG'], ['endoscopy', '내시경'], ['mammography', 'mammography'],
+                ['vfss', 'VFSS'], ['boneDensity', '골밀도 검사기'],
                 ['cpm', 'CPM'], ['ventilator', 'Ventilator'], ['homeVentilator', 'Home Ventilator'],
                 ['highFlowO2', 'High flow O2'], ['portableO2Suction', 'Pratable O2/Suction'],
-                ['pft', 'PFT'], ['hemodialysisMachine', '혈액투석기'], ['crrt', 'CRRT'],
+                ['pft', 'PFT'], ['hemodialysis', '혈액투석기'], ['crrt', 'CRRT'],
                 ['infusionPump', '정맥주입기 (Infusion pump)'],
               ];
               return (
@@ -593,22 +593,22 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
                   category: '관리', categoryKey: 'management',
                   items: [
                     ['tracheostomyCare', 'Tracheostomy care'], ['eTube', 'E-tube'], ['lTube', 'L-tube'], ['peg', 'PEG'],
-                    ['foleyCic', 'Foley/Nelaton(CIC)'], ['drainTube', '배액관(위루관, 장루, 요루 등)'],
-                    ['centralLine', '중심정맥관 삽입 및 관리'], ['chemoPort', 'Chemo-port 관리'],
+                    ['foleyNelaton', 'Foley/Nelaton(CIC)'], ['drainageTube', '배액관(위루관, 장루, 요루 등)'],
+                    ['centralVenousCatheter', '중심정맥관 삽입 및 관리'], ['chemoport', 'Chemo-port 관리'],
                   ],
                 },
                 {
                   category: '처방', categoryKey: 'prescription',
                   items: [
-                    ['transfusion', '수혈(전혈, 적혈구, 혈소판)'], ['tpnPpn', 'TPN/PPN'],
+                    ['bloodTransfusion', '수혈(전혈, 적혈구, 혈소판)'], ['tpnPpn', 'TPN/PPN'],
                     ['antibiotics', '항생제(1, 3세대, Vanco 등)'],
                   ],
                 },
                 {
                   category: '드레싱', categoryKey: 'dressing',
                   items: [
-                    ['pressureUlcer', '욕창 예방 및 치료'], ['vacuum', 'Vaccum 관리'],
-                    ['simpleDressing', '단순드레싱 및 복합드레싱'],
+                    ['pressureUlcerPrevention', '욕창 예방 및 치료'], ['vacuumManagement', 'Vaccum 관리'],
+                    ['simpleComplexDressing', '단순드레싱 및 복합드레싱'],
                   ],
                 },
                 {
@@ -616,7 +616,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
                   items: [
                     ['intubation', 'Intubation'], ['ventilatorCare', 'Ventilator care'], ['homeVentilator', 'Home Ventilator'],
                     ['highFlowO2', 'High flow O2'], ['o2Therapy', 'O2 Therapy'], ['suction', 'Suction'],
-                    ['ascitesTap', '복수천자'], ['thoracentesis', '흉수천자'], ['chestTube', '흉관 삽입 및 관리'],
+                    ['paracentesis', '복수천자'], ['thoracentesis', '흉수천자'], ['chestTube', '흉관 삽입 및 관리'],
                     ['hemodialysis', '혈액투석'], ['peritonealDialysis', '복막투석'], ['enema', 'Enema'],
                   ],
                 },
