@@ -5,7 +5,10 @@ import dynamic from 'next/dynamic';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/organisms/DataTable';
-import { RichEditor } from '@/components/organisms/RichEditor';
+const RichEditor = dynamic(
+  () => import('@/components/organisms/RichEditor').then((mod) => ({ default: mod.RichEditor })),
+  { ssr: false },
+);
 import type { PageEditorHandle } from '@/components/organisms/PageEditor';
 
 const PageEditor = dynamic(
