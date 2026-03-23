@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/graphql',
-        destination: 'http://158.247.215.161/graphql',
+        source: '/api/graphql',
+        destination: process.env.API_URL || 'http://api-service:8000/graphql',
       },
     ];
   },
