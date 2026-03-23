@@ -61,7 +61,12 @@
       "Bash(tr '}' '\\\\n')",
       "Bash(find /c/Users/LSY/Desktop/Propject/refer-cms -type f \\\\\\(-name introspection* -o -name schema* -o -name *.graphql \\\\\\))",
       "Bash(python3 -c \":*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(find /c/Users/LSY/Desktop/Propject/refer-cms/src -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js \\\\\\))",
+      "Bash(while read:*)",
+      "Bash(do if:*)",
+      "Bash(then if:*)",
+      "Bash(then echo:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
