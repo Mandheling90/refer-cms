@@ -156,8 +156,8 @@ pipeline {
 
                             cd gitops
 
-                            # Development 환경 CRM 이미지 태그 업데이트
-                            sed -i "s|newTag:.*|newTag: \"${IMAGE_TAG}\"|g" overlays/development/crm/kustomization.yaml
+                            # Production 환경 CRM 이미지 태그 업데이트
+                            sed -i "s|newTag:.*|newTag: \"${IMAGE_TAG}\"|g" overlays/production/crm/kustomization.yaml
 
                             # Git 설정
                             git config user.email "jenkins@kumc.example.com"
