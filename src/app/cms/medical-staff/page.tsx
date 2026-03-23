@@ -32,6 +32,7 @@ import {
   GET_ADMIN_ECONSULT_CONSULTANTS,
   DESIGNATE_ECONSULT_CONSULTANT,
   DEACTIVATE_ECONSULT_CONSULTANT,
+  UPDATE_ECONSULT_CONSULTANT_EMAIL,
 } from '@/lib/graphql/queries/medical-staff';
 import type { MedicalStaffItem, MedicalStaffListResponse } from '@/types/medical-staff';
 import { CONSULTANT_STATUS_OPTIONS, HOSPITAL_CODE_MAP } from '@/types/medical-staff';
@@ -196,6 +197,7 @@ export default function MedicalStaffPage() {
   /* ─── 자문의 관련 mutation ─── */
   const [designateConsultant] = useMutation(DESIGNATE_ECONSULT_CONSULTANT);
   const [deactivateConsultant] = useMutation(DEACTIVATE_ECONSULT_CONSULTANT);
+  const [updateConsultantEmail] = useMutation(UPDATE_ECONSULT_CONSULTANT_EMAIL);
 
   const allItems = data?.medicalStaffList?.items ?? [];
   const tableLoading = loading || consultantsLoading;
@@ -300,15 +302,26 @@ export default function MedicalStaffPage() {
           setSaving(false);
           return;
         }
-        await designateConsultant({
-          variables: {
-            input: {
-              hospitalCode: selectedItem.hospitalCode,
-              doctorId: selectedItem.doctorId,
-              email: fullEmail,
+        if (consultantRecordId) {
+          // 기존 자문의 → 이메일만 수정
+          await updateConsultantEmail({
+            variables: {
+              id: consultantRecordId,
+              input: { email: fullEmail },
             },
-          },
-        });
+          });
+        } else {
+          // 신규 자문의 지정
+          await designateConsultant({
+            variables: {
+              input: {
+                hospitalCode: selectedItem.hospitalCode,
+                doctorId: selectedItem.doctorId,
+                email: fullEmail,
+              },
+            },
+          });
+        }
       } else if (consultantRecordId) {
         // 자문의 해제 (Off)
         await deactivateConsultant({

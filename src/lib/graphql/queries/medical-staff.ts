@@ -84,6 +84,20 @@ export const DESIGNATE_ECONSULT_CONSULTANT = gql`
   }
 `;
 
+/** 자문의 이메일 수정 */
+export const UPDATE_ECONSULT_CONSULTANT_EMAIL = gql`
+  mutation UpdateEconsultConsultantEmail($id: String!, $input: UpdateEconsultConsultantEmailInput!) {
+    updateEconsultConsultantEmail(id: $id, input: $input) {
+      id
+      doctorId
+      name
+      email
+      isActive
+      hospitalCode
+    }
+  }
+`;
+
 /** 자문의 해제 (자문의 여부 Off) */
 export const DEACTIVATE_ECONSULT_CONSULTANT = gql`
   mutation DeactivateEconsultConsultant($id: String!) {
