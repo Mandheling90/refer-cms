@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
+import { FieldGroup, PartnerDetailContent } from './PartnerDetailContent';
 import {
   APPROVE_PARTNER_UPDATE_REQUEST,
   GET_ADMIN_PARTNER_UPDATE_REQUESTS,
@@ -54,113 +55,12 @@ interface UpdateRequestListPageProps {
   canEdit?: boolean;
 }
 
-/* ─── 검색 필드 공통 ─── */
-function FieldGroup({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-semibold text-foreground">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-/* ─── 변경사항 비교 표시 ─── */
-function ChangedField({
-  label,
-  oldValue,
-  newValue,
-}: {
-  label: string;
-  oldValue?: string;
-  newValue?: string;
-}) {
-  const old = oldValue ?? '-';
-  const next = newValue ?? '-';
-  const isChanged = old !== next;
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-semibold text-foreground">{label}</label>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-muted-foreground">기존</span>
-          <Input value={old} disabled />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-muted-foreground">변경 요청</span>
-          <Input
-            value={next}
-            disabled
-            className={isChanged ? 'border-orange-400 bg-orange-50' : ''}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── 필드 라벨 맵 ─── */
-const HOSPITAL_FIELD_LABELS: Record<string, string> = {
-  name: '병원명',
-  phone: '병원 전화번호',
-  faxNumber: '팩스번호',
-  address: '주소',
-  addressDetail: '상세주소',
-  zipCode: '우편번호',
-  website: '홈페이지',
-  representative: '대표자명',
-  specialties: '진료과목',
-};
-
-const APPLICATION_FIELD_LABELS: Record<string, string> = {
-  directorName: '병원장명',
-  directorPhone: '병원장 휴대전화',
-  directorLicenseNo: '의사면허번호',
-  directorBirthDate: '생년월일',
-  directorGender: '성별',
-  directorEmail: '이메일',
-  directorSchool: '출신학교',
-  directorGraduationYear: '졸업년도',
-  directorTrainingHospital: '수련병원',
-  directorDepartment: '진료과',
-  directorSubSpecialty: '세부전공',
-  directorCarNo: '차량번호',
-  directorEmailConsent: '이메일 수신 동의',
-  directorSmsConsent: 'SMS 수신 동의',
-  directorReplyConsent: '회신서 수신 동의',
-  staffName: '실무자명',
-  staffPhone: '실무자 연락처',
-  staffEmail: '실무자 이메일',
-  staffPosition: '실무자 직급',
-  staffTel: '실무자 휴대전화',
-  staffDeptType: '부서유형',
-  staffDeptValue: '부서',
-  institutionType: '의료기관 유형',
-  remarks: '비고',
-  totalBedCount: '총 병상수',
-  activeBedCount: '가동병상수',
-  premiumRoomCount: '상급병실',
-  multiRoomCount: '다인실',
-  icuCount: '중환자실 병상수',
-  erCount: '응급실 병상수',
-  nurseCount: '간호사 수',
-  specialistCount: '전문의 수',
-  totalStaffCount: '총 직원 수',
-  isolationRoomCount: '격리병실 수',
-  isolationSingleCount: '격리병상(1인실)',
-  isolationDoubleCount: '격리병상(2인실)',
-  isolationTripleCount: '격리병상(다인실)',
-};
-
 /* ═══════════════════════════════════════
    수정요청 확인 리스트 페이지
    ═══════════════════════════════════════ */
 export function UpdateRequestListPage({ title, partnerType, canEdit = true }: UpdateRequestListPageProps) {
+  const isHospital = partnerType === 'H';
+
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -343,17 +243,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
     return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
   };
 
-  /* ─── 값 포맷 헬퍼 ─── */
-  const formatValue = (val: unknown): string => {
-    if (val === null || val === undefined) return '-';
-    if (typeof val === 'boolean') return val ? '예' : '아니오';
-    if (typeof val === 'number') return val.toString();
-    if (typeof val === 'string') return val || '-';
-    if (typeof val === 'object') return JSON.stringify(val);
-    return String(val);
-  };
-
-  /* ─── 테이블 컬럼 (신청관리와 동일) ─── */
+  /* ─── 테이블 컬럼 ─── */
   const columns: ColumnDef<PartnerUpdateRequestModel, unknown>[] = [
     {
       id: 'phisCode',
@@ -410,59 +300,6 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
     },
   ];
 
-  /* ─── 변경사항 렌더링 ─── */
-  const renderChanges = () => {
-    if (!selectedRequest) return null;
-
-    const hospData = selectedRequest.requestedHospitalData || {};
-    const appData = selectedRequest.requestedApplicationData || {};
-    const hospKeys = Object.keys(hospData);
-    const appKeys = Object.keys(appData);
-
-    if (hospKeys.length === 0 && appKeys.length === 0) {
-      return <p className="text-sm text-muted-foreground py-4">변경된 항목이 없습니다.</p>;
-    }
-
-    return (
-      <div className="space-y-5">
-        {hospKeys.length > 0 && (
-          <>
-            <div className="-mx-6 border-y border-border px-6 py-3">
-              <h3 className="text-sm font-semibold">병원 정보 변경</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {hospKeys.map((key) => (
-                <ChangedField
-                  key={key}
-                  label={HOSPITAL_FIELD_LABELS[key] || key}
-                  oldValue={formatValue(originalData?.hospital?.[key as keyof typeof originalData.hospital])}
-                  newValue={formatValue(hospData[key])}
-                />
-              ))}
-            </div>
-          </>
-        )}
-        {appKeys.length > 0 && (
-          <>
-            <div className="-mx-6 border-y border-border px-6 py-3">
-              <h3 className="text-sm font-semibold">신청 정보 변경</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {appKeys.map((key) => (
-                <ChangedField
-                  key={key}
-                  label={APPLICATION_FIELD_LABELS[key] || key}
-                  oldValue={formatValue(originalData?.[key as keyof PartnerApplicationDetail])}
-                  newValue={formatValue(appData[key])}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
   return (
     <>
       <ListPageTemplate
@@ -516,7 +353,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         <DialogContent size="lg" className="max-h-[90vh] grid-rows-[auto_1fr_auto]">
           <DialogHeader>
             <DialogTitle>
-              수정요청 확인 : {selectedRequest?.hospitalCode || '-'}
+              수정요청 확인 : {originalData?.hospital?.name || selectedRequest?.hospitalCode || '-'}
             </DialogTitle>
             <DialogDescription>
               협력병의원이 요청한 수정 내역을 확인할 수 있습니다.
@@ -528,46 +365,9 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
               <div className="flex items-center justify-center py-10 text-muted-foreground">
                 로딩 중...
               </div>
-            ) : (
-              <>
-                {/* 기본 정보 */}
-                <div className="grid grid-cols-3 gap-4">
-                  <FieldGroup label="요청 ID">
-                    <Input value={selectedRequest?.id || ''} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="병원코드">
-                    <Input value={selectedRequest?.hospitalCode || ''} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="요청일시">
-                    <Input value={formatDateTime(selectedRequest?.createdAt)} disabled />
-                  </FieldGroup>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <FieldGroup label="상태">
-                    <Input value={updateRequestStatusLabel(selectedRequest?.status)} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="기존 병원명">
-                    <Input value={originalData?.hospital?.name || ''} disabled />
-                  </FieldGroup>
-                  <FieldGroup label="신청 ID">
-                    <Input value={selectedRequest?.partnerApplicationId || ''} disabled />
-                  </FieldGroup>
-                </div>
-                {(selectedRequest?.reviewedAt || selectedRequest?.reviewedById) && (
-                  <div className="grid grid-cols-3 gap-4">
-                    <FieldGroup label="처리담당자">
-                      <Input value={selectedRequest?.reviewedById || '-'} disabled />
-                    </FieldGroup>
-                    <FieldGroup label="처리일시">
-                      <Input value={formatDateTime(selectedRequest?.reviewedAt)} disabled />
-                    </FieldGroup>
-                  </div>
-                )}
-
-                {/* 변경사항 */}
-                {renderChanges()}
-              </>
-            )}
+            ) : originalData ? (
+              <PartnerDetailContent selectedItem={originalData} isHospital={isHospital} />
+            ) : null}
           </DialogBody>
 
           <DialogFooter className="justify-between">
