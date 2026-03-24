@@ -56,7 +56,7 @@ export interface AdminEConsultRequester {
 export interface AdminEConsultConsultant {
   id: string;
   name: string;
-  departmentId: string;
+  department: string;
   specialty: string;
 }
 

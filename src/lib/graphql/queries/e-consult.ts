@@ -70,7 +70,7 @@ export const GET_ADMIN_ECONSULTS = gql`
         consultant {
           id
           name
-          departmentId
+          department
           specialty
         }
         hospitalCode
