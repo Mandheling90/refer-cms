@@ -197,8 +197,7 @@ async function executeRequest<T>(
 // 파일 업로드 (REST: POST /upload → multipart/form-data)
 // ---------------------------------------------------------------------------
 
-const API_BASE_URL =
-  GRAPHQL_URL.replace(/\/graphql$/, '');
+const API_BASE_URL = '';
 
 export interface UploadResult {
   originalName: string;
