@@ -548,7 +548,7 @@ function BannerFormDialog({
     reader.readAsDataURL(file);
   };
 
-  const [errors, setErrors] = useState<{ START_DATE?: boolean; END_DATE?: boolean }>({});
+  const [errors, setErrors] = useState<{ START_DATE?: boolean; END_DATE?: boolean; DATE_RANGE?: boolean }>({});
 
   const handleSave = async () => {
     // 사용중 배너 수 제한 체크
@@ -560,12 +560,18 @@ function BannerFormDialog({
     }
 
     if (form.ALWAYS_YN !== 'Y') {
-      const newErrors = {
+      const newErrors: { START_DATE?: boolean; END_DATE?: boolean; DATE_RANGE?: boolean } = {
         START_DATE: !form.START_DATE,
         END_DATE: !form.END_DATE,
       };
-      if (newErrors.START_DATE || newErrors.END_DATE) {
+      if (form.START_DATE && form.END_DATE && form.START_DATE > form.END_DATE) {
+        newErrors.DATE_RANGE = true;
+      }
+      if (newErrors.START_DATE || newErrors.END_DATE || newErrors.DATE_RANGE) {
         setErrors(newErrors);
+        if (newErrors.DATE_RANGE) {
+          toast.error('시작일은 종료일보다 이후일 수 없습니다.');
+        }
         return;
       }
     }
@@ -672,10 +678,10 @@ function BannerFormDialog({
                     value={form.START_DATE}
                     onChange={(e) => {
                       setForm((p) => ({ ...p, START_DATE: e.target.value }));
-                      setErrors((p) => ({ ...p, START_DATE: false }));
+                      setErrors((p) => ({ ...p, START_DATE: false, DATE_RANGE: false }));
                     }}
                     placeholder="시작일을 선택해주세요."
-                    className={cn(errors.START_DATE && 'border-destructive')}
+                    className={cn((errors.START_DATE || errors.DATE_RANGE) && 'border-destructive')}
                   />
                   {errors.START_DATE && (
                     <p className="text-xs text-destructive">시작일시는 필수 입니다.</p>
@@ -687,13 +693,16 @@ function BannerFormDialog({
                     value={form.END_DATE}
                     onChange={(e) => {
                       setForm((p) => ({ ...p, END_DATE: e.target.value }));
-                      setErrors((p) => ({ ...p, END_DATE: false }));
+                      setErrors((p) => ({ ...p, END_DATE: false, DATE_RANGE: false }));
                     }}
                     placeholder="종료일을 선택해주세요."
-                    className={cn(errors.END_DATE && 'border-destructive')}
+                    className={cn((errors.END_DATE || errors.DATE_RANGE) && 'border-destructive')}
                   />
                   {errors.END_DATE && (
                     <p className="text-xs text-destructive">종료일시는 필수 입니다.</p>
+                  )}
+                  {errors.DATE_RANGE && !errors.END_DATE && (
+                    <p className="text-xs text-destructive">종료일은 시작일 이후여야 합니다.</p>
                   )}
                 </div>
               </div>
