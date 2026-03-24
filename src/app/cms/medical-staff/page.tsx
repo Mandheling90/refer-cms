@@ -185,11 +185,15 @@ export default function MedicalStaffPage() {
     return set;
   }, [consultantsData]);
 
-  /** doctorId → consultant record 매핑 (userId 기반) */
+  /** doctorId → consultant record 매핑 (활성/비활성 모두 포함) */
   const consultantByUserId = useMemo(() => {
-    const map = new Map<string, { id: string; doctorId: string; email: string }>();
+    const map = new Map<string, { id: string; doctorId: string; email: string; isActive: boolean }>();
     consultantsData?.adminEconsultConsultants?.forEach((c) => {
-      if (c.isActive) map.set(c.doctorId, c);
+      // 같은 doctorId에 active/inactive 둘 다 있으면 active 우선
+      const existing = map.get(c.doctorId);
+      if (!existing || (!existing.isActive && c.isActive)) {
+        map.set(c.doctorId, c);
+      }
     });
     return map;
   }, [consultantsData]);
@@ -265,15 +269,13 @@ export default function MedicalStaffPage() {
       setEditEmailDomain('');
       setConsultantRecordId(null);
 
-      // 자문의인 경우 consultant record 조회 (id, email)
-      if (isConsultant) {
-        const record = consultantByUserId.get(row.doctorId);
-        if (record) {
-          setConsultantRecordId(record.id);
-          const [local, domain] = (record.email ?? '').split('@');
-          setEditEmailLocal(local ?? '');
-          setEditEmailDomain(domain ?? '');
-        }
+      // consultant record 조회 (활성/비활성 모두 — 이메일 유지)
+      const record = consultantByUserId.get(row.doctorId);
+      if (record) {
+        setConsultantRecordId(record.id);
+        const [local, domain] = (record.email ?? '').split('@');
+        setEditEmailLocal(local ?? '');
+        setEditEmailDomain(domain ?? '');
       }
       setDetailOpen(true);
     },
@@ -439,15 +441,13 @@ export default function MedicalStaffPage() {
       size: 100,
     },
     {
-      id: 'isVisible',
-      header: '노출여부',
-      cell: ({ row }) =>
-        row.original.isVisible ? (
-          <Check className="mx-auto h-5 w-5 text-green-600" />
-        ) : (
-          <X className="mx-auto h-5 w-5 text-red-500" />
-        ),
-      size: 100,
+      id: 'consultantEmail',
+      header: '이메일',
+      cell: ({ row }) => {
+        const record = consultantByUserId.get(row.original.doctorId);
+        return <span className="text-sm">{record?.email || '-'}</span>;
+      },
+      size: 180,
     },
     {
       id: 'updatedAt',
@@ -467,7 +467,7 @@ export default function MedicalStaffPage() {
       ),
       size: 160,
     },
-  ], [handleRowClick, activeConsultantIds]);
+  ], [handleRowClick, activeConsultantIds, consultantByUserId]);
 
   return (
     <>
