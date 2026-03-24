@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://api-service:8000/graphql'
+function resolveGraphqlUrl(): string {
+  const rawUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.API_URL ||
+    'http://api-service:8000/graphql'
+
+  return rawUrl.endsWith('/graphql') ? rawUrl : `${rawUrl}/graphql`
+}
+
+const API_URL = resolveGraphqlUrl()
 
 export async function POST(request: NextRequest) {
   try {
