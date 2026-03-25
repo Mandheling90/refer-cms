@@ -65,9 +65,12 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
     const res = await fetch(GRAPHQL_URI, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         query: `mutation RefreshToken($refreshToken: String!) {
           refreshToken(refreshToken: $refreshToken) {
@@ -78,6 +81,7 @@ async function refreshAccessToken(): Promise<boolean> {
         variables: { refreshToken },
       }),
     });
+    clearTimeout(timeoutId);
 
     const json = await res.json();
     const tokens = json?.data?.refreshToken;
@@ -107,19 +111,32 @@ function getEffectiveHospitalCode(): string | null {
 const httpLink = createHttpLink({
   uri: GRAPHQL_URI,
   fetch: (uri, options) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+    const optionsWithSignal = { ...options, signal: controller.signal };
+
+    const cleanup = (res: Response) => {
+      clearTimeout(timeoutId);
+      return res;
+    };
+    const onError = (err: unknown) => {
+      clearTimeout(timeoutId);
+      throw err;
+    };
+
     if (options?.body && typeof options.body === 'string') {
       try {
         const body = JSON.parse(options.body);
         const effectiveCode = getEffectiveHospitalCode();
         if (effectiveCode && body.variables && !body.variables.hospitalCode) {
           body.variables.hospitalCode = effectiveCode;
-          return fetch(uri, { ...options, body: JSON.stringify(body) });
+          return fetch(uri, { ...optionsWithSignal, body: JSON.stringify(body) }).then(cleanup, onError);
         }
       } catch {
         // ignore
       }
     }
-    return fetch(uri, options);
+    return fetch(uri, optionsWithSignal).then(cleanup, onError);
   },
 });
 

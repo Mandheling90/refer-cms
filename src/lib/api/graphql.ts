@@ -91,9 +91,12 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!token) return false;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
     const res = await fetch(GRAPHQL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         query: `mutation RefreshToken($refreshToken: String!) {
           refreshToken(refreshToken: $refreshToken) {
@@ -104,6 +107,7 @@ async function refreshAccessToken(): Promise<boolean> {
         variables: { refreshToken: token },
       }),
     });
+    clearTimeout(timeoutId);
 
     const json = await res.json();
     const tokens = json?.data?.refreshToken;
@@ -164,16 +168,25 @@ async function executeRequest<T>(
     headers['x-hospital-code'] = hospitalCode;
   }
 
-  const response = await fetch(GRAPHQL_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      query,
-      variables: hospitalCode
-        ? { ...variables, hospitalCode }
-        : variables,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
+  let response: Response;
+  try {
+    response = await fetch(GRAPHQL_URL, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        query,
+        variables: hospitalCode
+          ? { ...variables, hospitalCode }
+          : variables,
+      }),
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new GraphQLError(
@@ -222,11 +235,20 @@ async function executeUpload(file: File): Promise<UploadResult> {
     headers['x-hospital-code'] = hospitalCode;
   }
 
-  const response = await fetch(`${API_BASE_URL}/upload`, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: formData,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new Error(`Upload failed: ${response.status} ${response.statusText}`);

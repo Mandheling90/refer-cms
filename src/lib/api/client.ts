@@ -61,6 +61,9 @@ class ApiClient {
       if (qs) url += `?${qs}`;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
     const fetchOptions: RequestInit = {
       method,
       headers: {
@@ -69,6 +72,7 @@ class ApiClient {
         ...(hospitalCode ? { 'x-hospital-code': hospitalCode } : {}),
       },
       credentials: 'include',
+      signal: controller.signal,
     };
 
     // POST/PUT 데이터에 HOSPITAL_CODE 자동 추가
@@ -80,7 +84,12 @@ class ApiClient {
       fetchOptions.body = formData;
     }
 
-    const response = await fetch(url, fetchOptions);
+    let response: Response;
+    try {
+      response = await fetch(url, fetchOptions);
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
