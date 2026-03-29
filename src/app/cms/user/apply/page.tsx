@@ -50,14 +50,30 @@ const formatDateTime = (val?: string | null) => {
 };
 
 /* ─── 상태 라벨 변환 ─── */
+const STATUS_LABEL_MAP: Record<string, string> = {
+  PENDING: '대기',
+  APPROVED: '승인',
+  REJECTED: '반려',
+  ACTIVE: '정상',
+  WITHDRAWN: '탈퇴',
+  DORMANT: '휴면',
+  SUSPENDED: '정지',
+};
+
+const MEMBER_TYPE_LABEL_MAP: Record<string, string> = {
+  DOCTOR: '의사',
+  DENTIST: '치과의사',
+  KMD: '한의사',
+};
+
 const applyStatusLabel = (val?: string) => {
   const found = APPLY_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? val ?? '-';
+  return found?.label ?? (val ? STATUS_LABEL_MAP[val] ?? val : '-');
 };
 
 const memberTypeLabel = (val?: string) => {
   const found = MEMBER_TYPE_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? val ?? '-';
+  return found?.label ?? (val ? MEMBER_TYPE_LABEL_MAP[val] ?? val : '-');
 };
 
 /* ─── 검색 필드 라벨+인풋 공통 ─── */

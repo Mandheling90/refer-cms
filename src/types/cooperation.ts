@@ -174,9 +174,14 @@ export const UPDATE_REQUEST_STATUS_OPTIONS = [
 ] as const;
 
 /** 수정요청 상태 라벨 변환 */
+const UPDATE_REQUEST_STATUS_MAP: Record<string, string> = {
+  PENDING: '대기',
+  APPROVED: '승인',
+  REJECTED: '반려',
+};
 export const updateRequestStatusLabel = (val?: string) => {
   const found = UPDATE_REQUEST_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? val ?? '-';
+  return found?.label ?? (val ? UPDATE_REQUEST_STATUS_MAP[val] ?? val : '-');
 };
 
 /** 상태 옵션 */
@@ -195,15 +200,26 @@ export const PARTNER_TYPE_OPTIONS = [
 ] as const;
 
 /** 상태 라벨 변환 */
+const PARTNER_STATUS_MAP: Record<string, string> = {
+  PENDING: '신청대기',
+  APPROVED: '승인',
+  REJECTED: '반려',
+  TERMINATED: '해지',
+  DRAFT: '임시저장',
+};
 export const partnerStatusLabel = (val?: string) => {
   const found = PARTNER_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? val ?? '-';
+  return found?.label ?? (val ? PARTNER_STATUS_MAP[val] ?? val : '-');
 };
 
 /** 기관구분 라벨 변환 */
+const PARTNER_TYPE_MAP: Record<string, string> = {
+  H: '협력병원',
+  M: '협력의원',
+};
 export const partnerTypeLabel = (val?: string) => {
   const found = PARTNER_TYPE_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? val ?? '-';
+  return found?.label ?? (val ? PARTNER_TYPE_MAP[val] ?? val : '-');
 };
 
 /** 진료과목 옵션 (의원용) */

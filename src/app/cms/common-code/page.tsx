@@ -21,7 +21,7 @@ const columns: ColumnDef<CommonCode, unknown>[] = [
   { accessorKey: 'CODE', header: '코드', size: 150 },
   { accessorKey: 'CODE_NAME', header: '코드 이름', size: 200 },
   { accessorKey: 'SORT_ORDER', header: '정렬', size: 60 },
-  { accessorKey: 'USE_YN', header: '사용여부', size: 80 },
+  { accessorKey: 'USE_YN', header: '사용여부', size: 80, cell: ({ getValue }) => (getValue() as string) === 'Y' ? '사용' : '미사용' },
   { accessorKey: 'INSERT_DTTM', header: '생성일시', size: 140 },
 ];
 

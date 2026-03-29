@@ -27,8 +27,12 @@ interface Template extends AuditFields {
 const columns: ColumnDef<Template, unknown>[] = [
   { accessorKey: 'TEMPLATE_ID', header: '템플릿 ID', size: 100 },
   { accessorKey: 'TEMPLATE_NAME', header: '템플릿 이름', size: 200 },
-  { accessorKey: 'TEMPLATE_TYPE', header: '유형', size: 120 },
-  { accessorKey: 'USE_YN', header: '사용여부', size: 80 },
+  { accessorKey: 'TEMPLATE_TYPE', header: '유형', size: 120, cell: ({ getValue }) => {
+    const v = getValue() as string;
+    const map: Record<string, string> = { EMAIL: '이메일', SMS: 'SMS', PUSH: '푸시', KAKAO: '카카오' };
+    return map[v] ?? v ?? '-';
+  }},
+  { accessorKey: 'USE_YN', header: '사용여부', size: 80, cell: ({ getValue }) => (getValue() as string) === 'Y' ? '사용' : '미사용' },
   { accessorKey: 'INSERT_USER', header: '생성자', size: 100 },
   { accessorKey: 'INSERT_DTTM', header: '생성일시', size: 140 },
   { accessorKey: 'UPDATE_DTTM', header: '수정일시', size: 140 },

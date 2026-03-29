@@ -18,7 +18,7 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 const columns: ColumnDef<CodeGroup, unknown>[] = [
   { accessorKey: 'CODE_GROUP', header: '코드 그룹', size: 200 },
   { accessorKey: 'CODE_GROUP_NAME', header: '그룹 이름', size: 250 },
-  { accessorKey: 'USE_YN', header: '사용여부', size: 80 },
+  { accessorKey: 'USE_YN', header: '사용여부', size: 80, cell: ({ getValue }) => (getValue() as string) === 'Y' ? '사용' : '미사용' },
   { accessorKey: 'INSERT_USER', header: '생성자', size: 100 },
   { accessorKey: 'INSERT_DTTM', header: '생성일시', size: 140 },
   { accessorKey: 'UPDATE_USER', header: '수정자', size: 100 },

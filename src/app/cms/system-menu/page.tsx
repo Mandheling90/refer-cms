@@ -32,7 +32,7 @@ const columns: ColumnDef<SystemMenu, unknown>[] = [
   { accessorKey: 'MENU_PID', header: '상위 메뉴', size: 80 },
   { accessorKey: 'PROG_PATH', header: '프로그램 경로', size: 250 },
   { accessorKey: 'SORT_ORDER', header: '정렬', size: 60 },
-  { accessorKey: 'USE_YN', header: '사용여부', size: 80 },
+  { accessorKey: 'USE_YN', header: '사용여부', size: 80, cell: ({ getValue }) => (getValue() as string) === 'Y' ? '사용' : '미사용' },
 ];
 
 export default function SystemMenuPage() {

@@ -17,7 +17,7 @@ const columns: ColumnDef<Banner, unknown>[] = [
   { accessorKey: 'BANNER_ID', header: '배너 ID', size: 100 },
   { accessorKey: 'BANNER_NAME', header: '배너 이름', size: 200 },
   { accessorKey: 'LINK_URL', header: '링크 URL', size: 250 },
-  { accessorKey: 'USE_YN', header: '사용여부', size: 80 },
+  { accessorKey: 'USE_YN', header: '사용여부', size: 80, cell: ({ getValue }) => (getValue() as string) === 'Y' ? '사용' : '미사용' },
   { accessorKey: 'SORT_ORDER', header: '정렬', size: 60 },
   { accessorKey: 'START_DATE', header: '시작일', size: 120 },
   { accessorKey: 'END_DATE', header: '종료일', size: 120 },

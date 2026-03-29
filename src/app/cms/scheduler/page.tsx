@@ -25,7 +25,7 @@ const columns: ColumnDef<Scheduler, unknown>[] = [
   { accessorKey: 'SCHEDULER_ID', header: 'ID', size: 80 },
   { accessorKey: 'SCHEDULER_NAME', header: '스케줄러 이름', size: 200 },
   { accessorKey: 'CRON_EXPRESSION', header: 'Cron 표현식', size: 150 },
-  { accessorKey: 'USE_YN', header: '사용여부', size: 80 },
+  { accessorKey: 'USE_YN', header: '사용여부', size: 80, cell: ({ getValue }) => (getValue() as string) === 'Y' ? '사용' : '미사용' },
   { accessorKey: 'LAST_EXECUTE_DTTM', header: '최종 실행일시', size: 160 },
   { accessorKey: 'DESCRIPTION', header: '설명', size: 200 },
 ];
