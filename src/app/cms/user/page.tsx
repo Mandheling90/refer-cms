@@ -36,7 +36,7 @@ import type {
   AdminUserDetail,
   AdminUsersResponse,
 } from '@/types/member';
-import { MEMBER_STATUS_OPTIONS, MEMBER_TYPE_OPTIONS } from '@/types/member';
+import { MEMBER_STATUS_OPTIONS, MEMBER_TYPE_OPTIONS, departmentLabel } from '@/types/member';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useCallback, useState } from 'react';
@@ -412,7 +412,7 @@ export default function MemberPage() {
                     <Input value={profile?.school || ''} disabled />
                   </FieldGroup>
                   <FieldGroup label="진료과">
-                    <Input value={profile?.department || ''} disabled />
+                    <Input value={departmentLabel(profile?.department)} disabled />
                   </FieldGroup>
                   <FieldGroup label="원장여부">
                     <div className="flex items-center h-10 gap-4">

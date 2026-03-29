@@ -139,6 +139,62 @@ export const MEMBER_TYPE_OPTIONS = [
   { value: 'KMD', label: '한의사' },
 ] as const;
 
+/** 진료과 약어코드 → 한글 매핑 */
+export const DEPARTMENT_CODE_MAP: Record<string, string> = {
+  ACS: '중환자외상외과',
+  AN: '마취통증의학과',
+  BES: '유방내분비외과',
+  CA: '순환기내과',
+  C1: '심혈관센터(순환기)',
+  CRS: '대장항문외과',
+  CS: '심장혈관흉부외과',
+  DM: '피부과',
+  DTC: '치과보존과',
+  DTO: '치과교정과',
+  DTP: '치과보철과',
+  EC: '내분비내과',
+  FM: '가정의학과',
+  GE: '소화기내과',
+  GES: '위장관외과(상부)',
+  GU: '비뇨의학과',
+  HO: '혈액종양내과',
+  HOE: '혈액내과',
+  HOO: '종양내과',
+  HPS: '간담췌외과',
+  ID: '감염내과',
+  L1: '간센터(내과)',
+  NE: '신장내과',
+  NS: '신경외과',
+  NU: '신경과',
+  OG: '산부인과',
+  OL: '이비인후과',
+  OMS: '구강악안면외과',
+  OP: '안과',
+  OS: '정형외과',
+  PD: '소아청소년과',
+  PDS: '소아외과',
+  PS: '성형외과',
+  PU: '호흡기·알레르기내과',
+  PY: '정신건강의학과',
+  RH: '류마티스내과',
+  RM: '재활의학과',
+  TB: '결핵내과',
+  TVS: '이식혈관외과',
+  EM: '응급의학과',
+  NM: '핵의학과',
+  DR: '영상의학과',
+  PA: '병리과',
+  LM: '진단검사의학과',
+  RO: '방사선종양학과',
+  OC: '직업환경의학과',
+};
+
+/** 진료과 코드를 한글로 변환 */
+export const departmentLabel = (val?: string | null): string => {
+  if (!val) return '-';
+  return DEPARTMENT_CODE_MAP[val] ?? val;
+};
+
 /** 가입유형 옵션 */
 export const JOIN_TYPE_OPTIONS = [
   { value: '', label: '전체' },

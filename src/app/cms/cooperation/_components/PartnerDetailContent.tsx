@@ -155,7 +155,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.directorPhone || ''} disabled />
           </FieldGroup>
           <FieldGroup label="성별">
-            <Input value={selectedItem.directorGender || ''} disabled />
+            <Input value={selectedItem.directorGender === 'M' ? '남성' : selectedItem.directorGender === 'F' ? '여성' : selectedItem.directorGender || ''} disabled />
           </FieldGroup>
           <FieldGroup label="차량번호">
             <Input value={selectedItem.directorCarNo || ''} disabled />

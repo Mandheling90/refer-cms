@@ -24,7 +24,11 @@ const columns: ColumnDef<SmsRecord, unknown>[] = [
   { accessorKey: 'SEND_PHONE', header: '발신번호', size: 140 },
   { accessorKey: 'RECV_PHONE', header: '수신번호', size: 140 },
   { accessorKey: 'MESSAGE', header: '메시지', size: 300 },
-  { accessorKey: 'SEND_STATUS', header: '발송상태', size: 100 },
+  { accessorKey: 'SEND_STATUS', header: '발송상태', size: 100, cell: ({ getValue }) => {
+    const v = getValue() as string;
+    const map: Record<string, string> = { SUCCESS: '성공', FAIL: '실패', PENDING: '대기', CANCEL: '취소' };
+    return map[v] ?? v ?? '-';
+  }},
   { accessorKey: 'SEND_DTTM', header: '발송일시', size: 160 },
 ];
 

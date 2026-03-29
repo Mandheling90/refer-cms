@@ -695,7 +695,7 @@ export default function MedicalStaffPage() {
                   <div className="flex items-center gap-2">
                     <Switch checked={editConsultant} onCheckedChange={setEditConsultant} />
                     <span className="text-sm text-muted-foreground">
-                      {editConsultant ? 'On' : 'Off'}
+                      {editConsultant ? '활성' : '비활성'}
                     </span>
                   </div>
                 </div>

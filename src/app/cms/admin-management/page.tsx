@@ -42,15 +42,15 @@ const formatDateTime = (val?: string | null) => {
 };
 
 /* ─── 상태 라벨 ─── */
-const statusLabel = (val?: string) => {
-  switch (val) {
-    case 'ACTIVE': return '사용';
-    case 'PENDING': return '승인대기';
-    case 'REJECTED': return '사용중지';
-    case 'WITHDRAWN': return '탈퇴';
-    default: return val ?? '-';
-  }
+const ADMIN_STATUS_MAP: Record<string, string> = {
+  ACTIVE: '사용',
+  PENDING: '승인대기',
+  REJECTED: '사용중지',
+  WITHDRAWN: '탈퇴',
+  DORMANT: '휴면',
+  SUSPENDED: '정지',
 };
+const statusLabel = (val?: string) => (val ? ADMIN_STATUS_MAP[val] ?? val : '-');
 
 /* ─── 검색 필드 ─── */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -665,7 +665,7 @@ function AdminManagementContent() {
                 {/* 소속 기관 (읽기전용) */}
                 <FormField label="소속 기관" required>
                   <div className="flex h-[38px] items-center justify-center rounded-md border border-border bg-muted px-5 text-sm text-muted-foreground">
-                    {selectedUser.hospitalCode || '-'}
+                    {{ ANAM: '안암병원', GURO: '구로병원', ANSAN: '안산병원', ALL: '전체' }[selectedUser.hospitalCode ?? ''] ?? selectedUser.hospitalCode ?? '-'}
                   </div>
                 </FormField>
 

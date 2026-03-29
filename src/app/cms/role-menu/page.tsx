@@ -16,7 +16,11 @@ import { Save } from 'lucide-react';
 const roleColumns: ColumnDef<Role, unknown>[] = [
   { accessorKey: 'ROLE_CODE', header: '역할 코드', size: 150 },
   { accessorKey: 'ROLE_NAME', header: '역할 이름', size: 200 },
-  { accessorKey: 'ROLE_TYPE', header: '역할 유형', size: 150 },
+  { accessorKey: 'ROLE_TYPE', header: '역할 유형', size: 150, cell: ({ getValue }) => {
+    const v = getValue() as string;
+    const map: Record<string, string> = { ADMIN: '관리자', USER: '사용자', SUPER: '슈퍼관리자', SYSTEM: '시스템' };
+    return map[v] ?? v ?? '-';
+  }},
 ];
 
 export default function RoleMenuPage() {

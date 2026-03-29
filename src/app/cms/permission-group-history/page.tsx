@@ -77,6 +77,10 @@ const ACTION_LABEL: Record<string, string> = {
   CREATE: '등록',
   UPDATE: '수정',
   DELETE: '삭제',
+  APPROVE: '승인',
+  REJECT: '거부',
+  LOGIN: '로그인',
+  LOGOUT: '로그아웃',
 };
 const toActionLabel = (action?: string) => (action ? ACTION_LABEL[action] ?? action : '-');
 

@@ -33,6 +33,7 @@ import type { AdminUser, AdminUserApprovalByIdResponse, AdminUserDetail, AdminUs
 import {
   MEMBER_TYPE_OPTIONS,
   APPLY_STATUS_OPTIONS,
+  departmentLabel,
 } from '@/types/member';
 
 /* ─── 날짜 포맷 ─── */
@@ -464,7 +465,7 @@ export default function MemberApplyPage() {
                           <Input value={profile?.school || ''} disabled />
                         </FieldGroup>
                         <FieldGroup label="진료과">
-                          <Input value={profile?.department || ''} disabled />
+                          <Input value={departmentLabel(profile?.department)} disabled />
                         </FieldGroup>
                         <FieldGroup label="원장여부">
                           <div className="flex items-center h-10 gap-4">

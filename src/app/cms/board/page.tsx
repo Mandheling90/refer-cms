@@ -109,11 +109,8 @@ function formatDateTime(iso: string) {
 
 // ── 템플릿 타입 라벨 ──
 function templateLabel(type: string) {
-  switch (type) {
-    case 'BASIC': return '기본형';
-    case 'THUMBNAIL': return '썸네일형';
-    default: return type;
-  }
+  const map: Record<string, string> = { BASIC: '기본형', THUMBNAIL: '썸네일형' };
+  return map[type] ?? type ?? '-';
 }
 
 export default function BoardPage() {
