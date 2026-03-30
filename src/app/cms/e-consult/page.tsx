@@ -34,6 +34,8 @@ import { ECONSULT_STATUS_MAP, ECONSULT_STATUS_OPTIONS } from '@/types/e-consult'
 import { useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useCallback, useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 /* ─── 검색 필드 공통 ─── */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -170,6 +172,33 @@ export default function EConsultPage() {
     setPageSize(size);
     setCurrentPage(1);
   };
+
+  /* ─── 엑셀 다운로드 ─── */
+  const handleExcelDownload = useCallback(() => {
+    if (items.length === 0) return;
+
+    const rows = items.map((item, idx) => ({
+      '번호': totalCount - ((currentPage - 1) * pageSize + idx),
+      '신청자명': item.requester?.userName ?? '-',
+      '병원코드': item.hospitalCode ?? '-',
+      'e-Consult 제목': item.title,
+      '자문의': item.consultant?.name ?? '-',
+      '자문의 진료과': item.consultant?.department ?? '-',
+      '답변여부': ECONSULT_STATUS_MAP[item.status] ?? item.status,
+      '신청일시': formatDateTime(item.createdAt),
+      '만료일시': formatDateTime(item.expiresAt),
+      '답변일시': formatDateTime(item.answeredAt),
+      '자문의 답변': item.reply?.content ?? '-',
+      '답변 등록일시': formatDateTime(item.reply?.createdAt),
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'e-Consult');
+
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    XLSX.writeFile(wb, `e-Consult_${today}.xlsx`);
+  }, [items, totalCount, currentPage, pageSize]);
 
   /* ─── 테이블 컬럼 ─── */
   const columns: ColumnDef<AdminEConsultItem, unknown>[] = useMemo(
@@ -353,6 +382,12 @@ export default function EConsultPage() {
             onPageSizeChange={handlePageSizeChange}
             onRowClick={handleRowClick}
             getRowId={(row) => row.id}
+            paginationExtra={
+              <Button variant="outline" size="md" onClick={handleExcelDownload} disabled={items.length === 0}>
+                <Download className="h-4 w-4" />
+                엑셀 다운로드
+              </Button>
+            }
           />
         }
       />

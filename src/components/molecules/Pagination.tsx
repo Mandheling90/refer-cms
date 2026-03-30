@@ -20,6 +20,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   hidePageSize?: boolean;
+  extraActions?: React.ReactNode;
 }
 
 export function Pagination({
@@ -30,6 +31,7 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   hidePageSize,
+  extraActions,
 }: PaginationProps) {
   const pageNumbers: number[] = [];
   const startPage = Math.max(1, currentPage - 4);
@@ -58,6 +60,7 @@ export function Pagination({
               ))}
             </SelectContent>
           </Select>
+          {extraActions}
         </div>
       )}
 

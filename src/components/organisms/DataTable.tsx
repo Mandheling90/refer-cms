@@ -36,6 +36,7 @@ interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
   onSelectionChange?: (rows: TData[]) => void;
   getRowId?: (row: TData) => string;
+  paginationExtra?: React.ReactNode;
 }
 
 export function DataTable<TData>({
@@ -53,6 +54,7 @@ export function DataTable<TData>({
   onRowClick,
   onSelectionChange,
   getRowId,
+  paginationExtra,
 }: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -173,6 +175,7 @@ export function DataTable<TData>({
           totalItems={totalItems}
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
+          extraActions={paginationExtra}
         />
       )}
     </div>
