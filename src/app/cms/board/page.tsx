@@ -450,8 +450,9 @@ export default function BoardPage() {
       toast.success('저장되었습니다.');
       setDialogOpen(false);
       refetchPosts();
-    } catch {
-      toast.error('저장에 실패했습니다.');
+    } catch (e: any) {
+      const gqlMessage = e?.graphQLErrors?.[0]?.message || e?.message;
+      toast.error(gqlMessage || '저장에 실패했습니다.');
     }
   };
 
