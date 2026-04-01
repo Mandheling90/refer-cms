@@ -7,18 +7,8 @@ export interface MedicalStaffItem {
   photoUrl?: string;
   departmentCode?: string;
   departmentName?: string;
-  bio?: string;
   specialty?: string;
   hospitalCode?: string;
-  mcdpAbrvCd?: string;
-  mcdpDvsnCd?: string;
-  mcdpSqncVl?: string;
-  apstYmd?: string;
-  apfnYmd?: string;
-  smcrYn?: string;
-  frvsMdcrPsblYn?: string;
-  revsMdcrPsblYn?: string;
-  fastMdcrDt?: string;
   drNo?: string;
   isVisible?: boolean;
   updatedAt?: string;

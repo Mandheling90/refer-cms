@@ -2,26 +2,16 @@ import { gql } from '@apollo/client';
 
 /** 의료진 목록 조회 (ADMAP 전체 의사 리스트) */
 export const GET_MEDICAL_STAFF_LIST = gql`
-  query MedicalStaffList($filter: AdmapMedicalStaffFilterInput) {
-    medicalStaffList(filter: $filter) {
+  query MedicalStaffList($filter: AdmapMedicalStaffFilterInput, $pagination: PaginationInput) {
+    medicalStaffList(filter: $filter, pagination: $pagination) {
       items {
         doctorId
         doctorName
         photoUrl
         departmentCode
         departmentName
-        bio
         specialty
         hospitalCode
-        mcdpAbrvCd
-        mcdpDvsnCd
-        mcdpSqncVl
-        apstYmd
-        apfnYmd
-        smcrYn
-        frvsMdcrPsblYn
-        revsMdcrPsblYn
-        fastMdcrDt
         drNo
       }
       totalCount
