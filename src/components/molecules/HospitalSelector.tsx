@@ -22,7 +22,9 @@ export function HospitalSelector({ showAll = false }: HospitalSelectorProps) {
 
   if (hospitalCode !== 'ALL') return null;
 
-  const options = optionsOf('HospitalCode', showAll);
+  const options = showAll
+    ? optionsOf('HospitalCode', false)
+    : optionsOf('HospitalCode', false).filter((opt) => opt.value !== 'ALL');
   const current = activeHospitalCode ?? 'ANAM';
 
   const handleChange = (code: string) => {
