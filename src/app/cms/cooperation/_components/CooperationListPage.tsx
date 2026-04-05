@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useEnums } from '@/hooks/use-enums';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { FieldGroup, PartnerDetailContent } from './PartnerDetailContent';
 import {
@@ -35,10 +36,6 @@ import type {
   PartnerApplicationDetail,
   PartnerApplicationModel,
   PartnerStatus,
-} from '@/types/cooperation';
-import {
-  PARTNER_STATUS_OPTIONS,
-  partnerStatusLabel
 } from '@/types/cooperation';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
@@ -60,6 +57,7 @@ interface CooperationListPageProps {
    협력병의원 공통 리스트 페이지
    ═══════════════════════════════════════ */
 export function CooperationListPage({ title, partnerType, mode, canEdit = true }: CooperationListPageProps) {
+  const { labelOf, optionsOf } = useEnums();
   const isHospital = partnerType === 'H';
   const isApply = mode === 'apply';
 
@@ -286,7 +284,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
         const val = getValue() as string;
         if (val === 'APPROVED') return <span className="text-src-point text-lg">✓</span>;
         if (val === 'REJECTED') return <span className="text-src-red text-lg">✗</span>;
-        return <span className="text-muted-foreground">{partnerStatusLabel(val)}</span>;
+        return <span className="text-muted-foreground">{labelOf('PartnerStatus', val)}</span>;
       },
     },
     {
@@ -329,7 +327,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PARTNER_STATUS_OPTIONS.map((opt) => (
+                  {optionsOf('PartnerStatus', true).map((opt) => (
                     <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
                       {opt.label}
                     </SelectItem>

@@ -6,18 +6,13 @@ import { LogOut, Menu, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useMenuStore } from '@/stores/menu-store';
 import { ThemeToggle } from '@/components/atoms/ThemeToggle';
-
-const HOSPITAL_LABEL: Record<string, string> = {
-  ALL: '통합',
-  ANAM: '안암병원',
-  GURO: '구로병원',
-  ANSAN: '안산병원',
-};
+import { useEnums } from '@/hooks/use-enums';
 
 export function TopBar() {
   const router = useRouter();
   const { user, hospitalCode, logout } = useAuthStore();
   const { toggleSidebar } = useMenuStore();
+  const { labelOf } = useEnums();
 
   const handleLogout = () => {
     logout();
@@ -39,7 +34,7 @@ export function TopBar() {
         <ThemeToggle />
         {hospitalCode && (
           <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
-            {HOSPITAL_LABEL[hospitalCode] || hospitalCode}
+            {labelOf('HospitalCode', hospitalCode)}
           </span>
         )}
         {user && (

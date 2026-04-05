@@ -30,7 +30,7 @@ import type {
   AdminEConsultListResponse,
   EConsultStatus,
 } from '@/types/e-consult';
-import { ECONSULT_STATUS_MAP, ECONSULT_STATUS_OPTIONS } from '@/types/e-consult';
+import { useEnums } from '@/hooks/use-enums';
 import { useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useCallback, useMemo, useState } from 'react';
@@ -48,7 +48,7 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 /* ─── 답변 상태 배지 ─── */
-function StatusBadge({ status }: { status: EConsultStatus }) {
+function StatusBadge({ status, label }: { status: EConsultStatus; label: string }) {
   const colorMap: Record<EConsultStatus, string> = {
     PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     ANSWERED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
@@ -58,7 +58,7 @@ function StatusBadge({ status }: { status: EConsultStatus }) {
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorMap[status]}`}
     >
-      {ECONSULT_STATUS_MAP[status] ?? status}
+      {label}
     </span>
   );
 }
@@ -83,6 +83,7 @@ function formatDateTime(val?: string | null) {
    e-Consult 관리 페이지 (Admin)
    ═══════════════════════════════════════ */
 export default function EConsultPage() {
+  const { labelOf, optionsOf } = useEnums();
   const { canEdit } = usePagePermission();
   const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
 
@@ -184,7 +185,7 @@ export default function EConsultPage() {
       'e-Consult 제목': item.title,
       '자문의': item.consultant?.name ?? '-',
       '자문의 진료과': item.consultant?.department ?? '-',
-      '답변여부': ECONSULT_STATUS_MAP[item.status] ?? item.status,
+      '답변여부': labelOf('EConsultStatus', item.status),
       '신청일시': formatDateTime(item.createdAt),
       '만료일시': formatDateTime(item.expiresAt),
       '답변일시': formatDateTime(item.answeredAt),
@@ -255,7 +256,7 @@ export default function EConsultPage() {
       {
         id: 'status',
         header: '답변여부',
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        cell: ({ row }) => <StatusBadge status={row.original.status} label={labelOf('EConsultStatus', row.original.status)} />,
         size: 80,
       },
       {
@@ -289,7 +290,7 @@ export default function EConsultPage() {
         size: 120,
       },
     ],
-    [handleRowClick, totalCount, currentPage, pageSize]
+    [handleRowClick, totalCount, currentPage, pageSize, labelOf]
   );
 
   return (
@@ -359,7 +360,7 @@ export default function EConsultPage() {
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ECONSULT_STATUS_OPTIONS.map((opt) => (
+                  {optionsOf('EConsultStatus', true).map((opt) => (
                     <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
                       {opt.label}
                     </SelectItem>
@@ -429,7 +430,7 @@ export default function EConsultPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <FieldGroup label="답변여부">
                     <Input
-                      value={ECONSULT_STATUS_MAP[selectedItem.status] ?? selectedItem.status}
+                      value={labelOf('EConsultStatus', selectedItem.status)}
                       disabled
                     />
                   </FieldGroup>

@@ -39,6 +39,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { uploadFile } from '@/lib/api/graphql';
 import { Switch } from '@/components/ui/switch';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
+import { useEnums } from '@/hooks/use-enums';
 import { ChevronLeft, ChevronRight, Code, Eye, FileText, FolderOpen, Link as LinkIcon, Pencil, Plus, RotateCcw, Search, Trash2, Upload } from 'lucide-react';
 
 // ── 타입 ──
@@ -107,13 +108,9 @@ function formatDateTime(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-// ── 템플릿 타입 라벨 ──
-function templateLabel(type: string) {
-  const map: Record<string, string> = { BASIC: '기본형', THUMBNAIL: '썸네일형' };
-  return map[type] ?? type ?? '-';
-}
-
 export default function BoardPage() {
+  const { labelOf } = useEnums();
+
   // ── 그룹 상태 ──
   const [selectedBoard, setSelectedBoard] = useState<BoardSetting | null>(null);
   const [groupSearchName, setGroupSearchName] = useState('');
@@ -577,7 +574,7 @@ export default function BoardPage() {
                           : 'bg-muted text-foreground',
                       )}
                     >
-                      {templateLabel(board.templateType)}
+                      {labelOf('BoardTemplateType', board.templateType)}
                     </span>
                   </button>
                 );

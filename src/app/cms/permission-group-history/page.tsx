@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 
 import { GET_PERMISSION_AUDIT_LOGS } from '@/lib/graphql/queries/permission-group';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
+import { useEnums } from '@/hooks/use-enums';
 import { useAuthStore } from '@/stores/auth-store';
 
 /* ─── 타입 정의 ─── */
@@ -71,18 +72,6 @@ interface PermissionAuditLogsResponse {
     hasNextPage: boolean;
   };
 }
-
-/* ─── 이력 구분 라벨 ─── */
-const ACTION_LABEL: Record<string, string> = {
-  CREATE: '등록',
-  UPDATE: '수정',
-  DELETE: '삭제',
-  APPROVE: '승인',
-  REJECT: '거부',
-  LOGIN: '로그인',
-  LOGOUT: '로그아웃',
-};
-const toActionLabel = (action?: string) => (action ? ACTION_LABEL[action] ?? action : '-');
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -150,6 +139,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
    권한 그룹 수정 이력 페이지
    ═══════════════════════════════════════ */
 export default function PermissionGroupHistoryPage() {
+  const { labelOf } = useEnums();
   const { getEffectiveHospitalCode } = useAuthStore();
 
   /* ─── 페이징 상태 ─── */
@@ -265,7 +255,7 @@ export default function PermissionGroupHistoryPage() {
       accessorKey: 'action',
       header: '이력 구분',
       size: 100,
-      cell: ({ getValue }) => toActionLabel(getValue() as string),
+      cell: ({ getValue }) => labelOf('AuditAction',getValue() as string),
     },
     {
       accessorKey: 'target',
@@ -375,7 +365,7 @@ export default function PermissionGroupHistoryPage() {
                   <ReadOnlyField label="권한그룹명" value={selectedParsed?.groupName || '-'} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <ReadOnlyField label="이력 구분" value={toActionLabel(selectedLog.action)} />
+                  <ReadOnlyField label="이력 구분" value={labelOf('AuditAction',selectedLog.action)} />
                   <ReadOnlyField label="IP주소" value={selectedLog.ipAddress || '-'} />
                 </div>
 

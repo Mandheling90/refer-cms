@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useEnums } from '@/hooks/use-enums';
 import type { PartnerApplicationDetail } from '@/types/cooperation';
 
 /* ─── 검색 필드 공통 ─── */
@@ -80,6 +81,7 @@ interface PartnerDetailContentProps {
    협력병의원 상세 뷰 (공용)
    ═══════════════════════════════════════ */
 export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetailContentProps) {
+  const { labelOf } = useEnums();
   const hospital = selectedItem.hospital;
 
   return (
@@ -155,7 +157,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.directorPhone || ''} disabled />
           </FieldGroup>
           <FieldGroup label="성별">
-            <Input value={selectedItem.directorGender === 'M' ? '남성' : selectedItem.directorGender === 'F' ? '여성' : selectedItem.directorGender || ''} disabled />
+            <Input value={labelOf('Gender', selectedItem.directorGender, '')} disabled />
           </FieldGroup>
           <FieldGroup label="차량번호">
             <Input value={selectedItem.directorCarNo || ''} disabled />

@@ -35,6 +35,7 @@ import {
   DELETE_BOARD_SETTING,
 } from '@/lib/graphql/queries/board';
 import { usePagePermission } from '@/components/molecules/PermissionGuard';
+import { useEnums } from '@/hooks/use-enums';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth-store';
@@ -65,51 +66,6 @@ function formatDateTime(iso: string) {
   });
 }
 
-// ── 게시판 타입 옵션 ──
-const BOARD_TYPE_OPTIONS = [
-  { value: 'BASIC', label: '기본형' },
-  { value: 'THUMBNAIL', label: '썸네일형' },
-] as const;
-
-// ── 컬럼 정의 ──
-const columns: ColumnDef<BoardSetting, unknown>[] = [
-  {
-    accessorKey: 'ROW_NUM',
-    header: '번호',
-    size: 70,
-    cell: ({ row }) => row.index + 1,
-  },
-  { accessorKey: 'boardId', header: '아이디', size: 140 },
-  {
-    accessorKey: 'templateType',
-    header: '타입',
-    size: 100,
-    cell: ({ getValue }) => {
-      const val = getValue() as string;
-      return BOARD_TYPE_OPTIONS.find((o) => o.value === val)?.label || val || '-';
-    },
-  },
-  { accessorKey: 'name', header: '게시판명', size: 200 },
-  {
-    accessorKey: 'allowAttachments',
-    header: '첨부파일',
-    size: 90,
-    cell: ({ getValue }) => (
-      <StatusBadge
-        status={(getValue() as boolean) ? 'Y' : 'N'}
-        activeLabel="허용"
-        inactiveLabel="미허용"
-      />
-    ),
-  },
-  {
-    accessorKey: 'createdAt',
-    header: '등록일시',
-    size: 160,
-    cell: ({ getValue }) => formatDateTime(getValue() as string),
-  },
-];
-
 // ── 폼 타입 ──
 interface FormData {
   name: string;
@@ -126,6 +82,47 @@ const INITIAL_FORM: FormData = {
 };
 
 export default function BoardConfigPage() {
+  const { optionsOf, labelOf } = useEnums();
+
+  // ── 컬럼 정의 ──
+  const columns: ColumnDef<BoardSetting, unknown>[] = useMemo(() => [
+    {
+      accessorKey: 'ROW_NUM',
+      header: '번호',
+      size: 70,
+      cell: ({ row }) => row.index + 1,
+    },
+    { accessorKey: 'boardId', header: '아이디', size: 140 },
+    {
+      accessorKey: 'templateType',
+      header: '타입',
+      size: 100,
+      cell: ({ getValue }) => {
+        const val = getValue() as string;
+        return labelOf('BoardTemplateType', val);
+      },
+    },
+    { accessorKey: 'name', header: '게시판명', size: 200 },
+    {
+      accessorKey: 'allowAttachments',
+      header: '첨부파일',
+      size: 90,
+      cell: ({ getValue }) => (
+        <StatusBadge
+          status={(getValue() as boolean) ? 'Y' : 'N'}
+          activeLabel="허용"
+          inactiveLabel="미허용"
+        />
+      ),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '등록일시',
+      size: 160,
+      cell: ({ getValue }) => formatDateTime(getValue() as string),
+    },
+  ], [labelOf]);
+
   // ── 리스트 상태 ──
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -367,7 +364,7 @@ export default function BoardConfigPage() {
                   <SelectValue placeholder="선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {BOARD_TYPE_OPTIONS.map((opt) => (
+                  {optionsOf('BoardTemplateType').map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>

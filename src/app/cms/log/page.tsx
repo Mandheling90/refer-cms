@@ -28,15 +28,8 @@ import { Button } from '@/components/ui/button';
 
 import { GET_ADMIN_AUDIT_LOGS, GET_ADMIN_AUDIT_LOG_BY_ID } from '@/lib/graphql/queries/log';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
+import { useEnums } from '@/hooks/use-enums';
 import type { LogItem, LogListResponse, LogDetail, LogDetailResponse } from '@/types/log';
-
-/* ─── hospitalCode → 기관명 변환 ─── */
-const HOSPITAL_LABEL: Record<string, string> = {
-  ANAM: '안암병원',
-  GURO: '구로병원',
-  ANSAN: '안산병원',
-};
-const toHospitalName = (code?: string) => (code ? HOSPITAL_LABEL[code] ?? code : '-');
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -78,18 +71,12 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-/* ─── 병원 옵션 (검색용) ─── */
-const HOSPITAL_OPTIONS = [
-  { value: '__all', label: '전체' },
-  { value: 'ANAM', label: '안암병원' },
-  { value: 'GURO', label: '구로병원' },
-  { value: 'ANSAN', label: '안산병원' },
-];
-
 /* ═══════════════════════════════════════
    로그내역 페이지
    ═══════════════════════════════════════ */
 export default function LogPage() {
+  const { labelOf, optionsOf } = useEnums();
+
   /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -97,7 +84,7 @@ export default function LogPage() {
   /* ─── 검색 조건 (입력 중) ─── */
   const [searchAdminNumber, setSearchAdminNumber] = useState('');
   const [searchAdminName, setSearchAdminName] = useState('');
-  const [searchHospital, setSearchHospital] = useState('__all');
+  const [searchHospital, setSearchHospital] = useState('');
   const [searchTarget, setSearchTarget] = useState('');
 
   /* ─── 실제 적용된 필터 ─── */
@@ -155,7 +142,7 @@ export default function LogPage() {
   const handleReset = () => {
     setSearchAdminNumber('');
     setSearchAdminName('');
-    setSearchHospital('__all');
+    setSearchHospital('');
     setSearchTarget('');
     setAppliedFilter({});
     setCurrentPage(1);
@@ -200,7 +187,7 @@ export default function LogPage() {
       accessorKey: 'hospitalCode',
       header: '기관',
       size: 100,
-      cell: ({ getValue }) => toHospitalName(getValue() as string),
+      cell: ({ getValue }) => labelOf('HospitalCode', getValue() as string),
     },
     { accessorKey: 'adminNumber', header: '관리자번호', size: 120 },
     { accessorKey: 'adminName', header: '관리자명', size: 100 },
@@ -281,12 +268,12 @@ export default function LogPage() {
               />
             </FieldGroup>
             <FieldGroup label="소속병원">
-              <Select value={searchHospital} onValueChange={setSearchHospital}>
+              <Select value={searchHospital || '__all'} onValueChange={(v) => setSearchHospital(v === '__all' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {HOSPITAL_OPTIONS.map((opt) => (
+                  {optionsOf('HospitalCode', true).map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -339,7 +326,7 @@ export default function LogPage() {
             ) : selectedLog ? (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  <ReadOnlyField label="기관" value={toHospitalName(selectedLog.hospitalCode)} />
+                  <ReadOnlyField label="기관" value={labelOf('HospitalCode', selectedLog.hospitalCode)} />
                   <ReadOnlyField label="관리자명" value={selectedLog.adminName || '-'} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">

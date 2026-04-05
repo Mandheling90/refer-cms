@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useEnums } from '@/hooks/use-enums';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { FieldGroup, PartnerDetailContent } from './PartnerDetailContent';
 import {
@@ -37,10 +38,6 @@ import type {
   PartnerApplicationDetail,
   PartnerUpdateRequestModel,
   UpdateRequestStatus,
-} from '@/types/cooperation';
-import {
-  UPDATE_REQUEST_STATUS_OPTIONS,
-  updateRequestStatusLabel,
 } from '@/types/cooperation';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
@@ -59,6 +56,7 @@ interface UpdateRequestListPageProps {
    수정요청 확인 리스트 페이지
    ═══════════════════════════════════════ */
 export function UpdateRequestListPage({ title, partnerType, canEdit = true }: UpdateRequestListPageProps) {
+  const { labelOf, optionsOf } = useEnums();
   const isHospital = partnerType === 'H';
 
   /* ─── 페이징 ─── */
@@ -289,7 +287,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         const val = getValue() as string;
         if (val === 'APPROVED') return <span className="text-src-point text-lg">✓</span>;
         if (val === 'REJECTED') return <span className="text-src-red text-lg">✗</span>;
-        return <span className="text-muted-foreground">{updateRequestStatusLabel(val)}</span>;
+        return <span className="text-muted-foreground">{labelOf('PartnerStatus', val)}</span>;
       },
     },
     {
@@ -322,7 +320,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {UPDATE_REQUEST_STATUS_OPTIONS.map((opt) => (
+                  {optionsOf('PartnerStatus', true).map((opt) => (
                     <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
                       {opt.label}
                     </SelectItem>

@@ -57,9 +57,3 @@ export const CONSULTANT_STATUS_OPTIONS = [
   { value: 'N', label: '아니오' },
 ] as const;
 
-/** 병원코드 → 병원명 매핑 */
-export const HOSPITAL_CODE_MAP: Record<string, string> = {
-  ANAM: '고려대학교 안암병원',
-  GURO: '고려대학교 구로병원',
-  ANSAN: '고려대학교 안산병원',
-};

@@ -36,7 +36,7 @@ import type {
   AdminUserDetail,
   AdminUsersResponse,
 } from '@/types/member';
-import { MEMBER_STATUS_OPTIONS, MEMBER_TYPE_OPTIONS, departmentLabel } from '@/types/member';
+import { useEnums } from '@/hooks/use-enums';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useCallback, useState } from 'react';
@@ -56,32 +56,6 @@ const formatDateTime = (val?: string | null) => {
   return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
 };
 
-/* ─── 상태/가입유형 라벨 변환 ─── */
-const STATUS_LABEL_MAP: Record<string, string> = {
-  ACTIVE: '정상',
-  WITHDRAWN: '탈퇴',
-  PENDING: '대기',
-  APPROVED: '승인',
-  REJECTED: '반려',
-  DORMANT: '휴면',
-  SUSPENDED: '정지',
-};
-
-const MEMBER_TYPE_LABEL_MAP: Record<string, string> = {
-  DOCTOR: '의사',
-  DENTIST: '치과의사',
-  KMD: '한의사',
-};
-
-const statusLabel = (val?: string) => {
-  const found = MEMBER_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? STATUS_LABEL_MAP[val] ?? val : '-');
-};
-
-const memberTypeLabel = (val?: string) => {
-  const found = MEMBER_TYPE_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? MEMBER_TYPE_LABEL_MAP[val] ?? val : '-');
-};
 
 /* ─── 검색 필드 라벨+인풋 공통 ─── */
 function FieldGroup({
@@ -104,6 +78,7 @@ function FieldGroup({
    ═══════════════════════════════════════ */
 export default function MemberPage() {
   const { canEdit } = usePagePermission();
+  const { labelOf, optionsOf } = useEnums();
 
   /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -269,7 +244,7 @@ export default function MemberPage() {
       accessorKey: 'userType',
       header: '회원구분',
       size: 100,
-      cell: ({ getValue }) => memberTypeLabel(getValue() as string),
+      cell: ({ getValue }) => labelOf('UserType', getValue() as string),
     },
     {
       id: 'licenseNo',
@@ -337,7 +312,7 @@ export default function MemberPage() {
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MEMBER_TYPE_OPTIONS.map((opt) => (
+                  {optionsOf('UserType', true).map((opt) => (
                     <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
                       {opt.label}
                     </SelectItem>
@@ -396,7 +371,7 @@ export default function MemberPage() {
                 {/* ─── Row 2: 회원구분, 생년월일, 의사면허번호 ─── */}
                 <div className="grid grid-cols-3 gap-4">
                   <FieldGroup label="회원구분">
-                    <Input value={memberTypeLabel(selectedUser.userType)} disabled />
+                    <Input value={labelOf('UserType', selectedUser.userType)} disabled />
                   </FieldGroup>
                   <FieldGroup label="생년월일">
                     <Input value={profile?.birthDate?.split('T')[0] || ''} disabled />
@@ -409,10 +384,10 @@ export default function MemberPage() {
                 {/* ─── Row 3: 출신학교, 진료과, 원장여부 ─── */}
                 <div className="grid grid-cols-3 gap-4">
                   <FieldGroup label="출신학교">
-                    <Input value={profile?.school || ''} disabled />
+                    <Input value={labelOf('School', profile?.school, '')} disabled />
                   </FieldGroup>
                   <FieldGroup label="진료과">
-                    <Input value={departmentLabel(profile?.department)} disabled />
+                    <Input value={labelOf('MedicalDepartment', profile?.department)} disabled />
                   </FieldGroup>
                   <FieldGroup label="원장여부">
                     <div className="flex items-center h-10 gap-4">
@@ -530,7 +505,7 @@ export default function MemberPage() {
                 {/* ─── 상태 정보 ─── */}
                 <div className="grid grid-cols-3 gap-4">
                   <FieldGroup label="회원상태">
-                    <Input value={statusLabel(selectedUser.status)} disabled />
+                    <Input value={labelOf('UserStatus', selectedUser.status)} disabled />
                   </FieldGroup>
                   <FieldGroup label="회원정보 수정일시">
                     <Input value={formatDateTime(selectedUser.updatedAt)} disabled />

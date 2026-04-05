@@ -40,6 +40,7 @@ import {
 } from '@/lib/graphql/queries/permission-group';
 import { GET_ADMIN_USERS } from '@/lib/graphql/queries/admin';
 import { ADMIN_MENUS } from '@/lib/graphql/queries/menu';
+import { useEnums } from '@/hooks/use-enums';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { ChevronDown, ChevronRight, ShieldAlert, Plus, Trash2, X } from 'lucide-react';
@@ -92,12 +93,6 @@ const PERMISSION_OPTIONS: { value: PermissionLevel; label: string; color: string
   { value: 'NONE', label: '접근불가', color: 'bg-destructive text-white border-border' },
 ];
 
-const HOSPITAL_OPTIONS = [
-  { code: 'ALL', label: '통합관리자' },
-  { code: 'ANAM', label: '고려대학교 안암병원' },
-  { code: 'GURO', label: '고려대학교 구로병원' },
-  { code: 'ANSAN', label: '고려대학교 안산병원' },
-];
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -207,6 +202,7 @@ export default function PermissionGroupPage() {
 }
 
 function PermissionGroupContent() {
+  const { labelOf, optionsOf } = useEnums();
   const { canEdit } = usePagePermission();
   const hospitalCode = useAuthStore((s) => s.hospitalCode);
   const activeHospitalCode = useAuthStore((s) => s.activeHospitalCode);
@@ -682,7 +678,7 @@ function PermissionGroupContent() {
       size: 140,
       cell: ({ row }) => {
         const code = row.original.hospitalCode;
-        return HOSPITAL_OPTIONS.find((h) => h.code === code)?.label || code || '-';
+        return labelOf('HospitalCode', code);
       },
     },
     {
@@ -719,7 +715,7 @@ function PermissionGroupContent() {
     <>
       <ListPageTemplate
         title="권한 그룹 관리"
-        hospitalSelector={<HospitalSelector showAll />}
+        hospitalSelector={<HospitalSelector />}
         totalItems={totalItems}
         onSearch={handleSearch}
         onReset={handleReset}
@@ -788,17 +784,17 @@ function PermissionGroupContent() {
             {/* 기관 선택 */}
             <FormField label="기관 선택" required>
               <div className="flex gap-2 flex-wrap">
-                {HOSPITAL_OPTIONS.map((h) => (
+                {optionsOf('HospitalCode').map((h) => (
                   <button
-                    key={h.code}
+                    key={h.value}
                     type="button"
                     onClick={() => {
-                      setFormHospitalCode(h.code);
+                      setFormHospitalCode(h.value);
                       setFormMenuPermissions([]);
                     }}
                     className={cn(
                       'h-[38px] rounded-md border px-5 text-sm transition-colors cursor-pointer',
-                      formHospitalCode === h.code
+                      formHospitalCode === h.value
                         ? 'bg-primary text-white border-primary'
                         : 'border-border bg-card text-foreground hover:bg-accent'
                     )}

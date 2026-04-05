@@ -30,10 +30,6 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { GET_ADMIN_USERS, GET_ADMIN_USER_APPROVAL_BY_ID, APPROVE_USER, REJECT_USER } from '@/lib/graphql/queries/member-apply';
 import type { AdminUser, AdminUserApprovalByIdResponse, AdminUserDetail, AdminUsersResponse } from '@/types/member';
-import {
-  MEMBER_TYPE_OPTIONS,
-  APPLY_STATUS_OPTIONS,
-} from '@/types/member';
 import { useEnums } from '@/hooks/use-enums';
 
 /* ─── 날짜 포맷 ─── */
@@ -48,22 +44,6 @@ const formatDateTime = (val?: string | null) => {
   const mm = String(d.getMinutes()).padStart(2, '0');
   const ss = String(d.getSeconds()).padStart(2, '0');
   return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
-};
-
-/* ─── 상태 라벨 변환 ─── */
-const STATUS_LABEL_MAP: Record<string, string> = {
-  PENDING: '대기',
-  APPROVED: '승인',
-  REJECTED: '반려',
-  ACTIVE: '정상',
-  WITHDRAWN: '탈퇴',
-  DORMANT: '휴면',
-  SUSPENDED: '정지',
-};
-
-const applyStatusLabel = (val?: string) => {
-  const found = APPLY_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? STATUS_LABEL_MAP[val] ?? val : '-');
 };
 
 /* ─── 검색 필드 라벨+인풋 공통 ─── */
@@ -87,7 +67,7 @@ function FieldGroup({
    ═══════════════════════════════════════ */
 export default function MemberApplyPage() {
   const { canEdit } = usePagePermission();
-  const { labelOf } = useEnums();
+  const { labelOf, optionsOf } = useEnums();
 
   /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -295,7 +275,7 @@ export default function MemberApplyPage() {
                     : ''
             }
           >
-            {applyStatusLabel(val)}
+            {labelOf('UserStatus',val)}
           </span>
         );
       },
@@ -364,7 +344,7 @@ export default function MemberApplyPage() {
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MEMBER_TYPE_OPTIONS.map((opt) => (
+                  {optionsOf('UserType', true).map((opt) => (
                     <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
                       {opt.label}
                     </SelectItem>
@@ -378,7 +358,7 @@ export default function MemberApplyPage() {
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {APPLY_STATUS_OPTIONS.map((opt) => (
+                  {optionsOf('UserStatus', true).map((opt) => (
                     <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
                       {opt.label}
                     </SelectItem>
@@ -564,7 +544,7 @@ export default function MemberApplyPage() {
                           <Input value={formatDateTime(selectedUser.createdAt)} disabled />
                         </FieldGroup>
                         <FieldGroup label="승인여부">
-                          <Input value={applyStatusLabel(selectedUser.status)} disabled />
+                          <Input value={labelOf('UserStatus',selectedUser.status)} disabled />
                         </FieldGroup>
                         <FieldGroup label="승인일시">
                           <Input

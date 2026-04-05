@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import { ShieldAlert } from 'lucide-react';
 import { usePagePermission } from '@/components/molecules/PermissionGuard';
+import { useEnums } from '@/hooks/use-enums';
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -40,17 +41,6 @@ const formatDateTime = (val?: string | null) => {
   const ss = String(d.getSeconds()).padStart(2, '0');
   return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
 };
-
-/* ─── 상태 라벨 ─── */
-const ADMIN_STATUS_MAP: Record<string, string> = {
-  ACTIVE: '사용',
-  PENDING: '승인대기',
-  REJECTED: '사용중지',
-  WITHDRAWN: '탈퇴',
-  DORMANT: '휴면',
-  SUSPENDED: '정지',
-};
-const statusLabel = (val?: string) => (val ? ADMIN_STATUS_MAP[val] ?? val : '-');
 
 /* ─── 검색 필드 ─── */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -150,6 +140,7 @@ export default function AdminManagementPage() {
 function AdminManagementContent() {
   const hospitalCode = useAuthStore((s) => s.hospitalCode);
   const { canEdit } = usePagePermission();
+  const { labelOf } = useEnums();
 
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -480,7 +471,7 @@ function AdminManagementContent() {
       accessorKey: 'status',
       header: '사용여부',
       size: 100,
-      cell: ({ getValue }) => statusLabel(getValue() as string),
+      cell: ({ getValue }) => labelOf('UserStatus', getValue() as string),
     },
     {
       accessorKey: 'createdAt',
@@ -665,7 +656,7 @@ function AdminManagementContent() {
                 {/* 소속 기관 (읽기전용) */}
                 <FormField label="소속 기관" required>
                   <div className="flex h-[38px] items-center justify-center rounded-md border border-border bg-muted px-5 text-sm text-muted-foreground">
-                    {{ ANAM: '안암병원', GURO: '구로병원', ANSAN: '안산병원', ALL: '전체' }[selectedUser.hospitalCode ?? ''] ?? selectedUser.hospitalCode ?? '-'}
+                    {labelOf('HospitalCode', selectedUser.hospitalCode)}
                   </div>
                 </FormField>
 
@@ -850,7 +841,7 @@ function AdminManagementContent() {
                         : 'border-border bg-card text-muted-foreground hover:bg-accent'
                     )}
                   >
-                    {code === 'ALL' ? '통합관리자' : code === 'ANAM' ? '안암' : code === 'GURO' ? '구로' : '안산'}
+                    {labelOf('HospitalCode', code)}
                   </button>
                 ))}
               </div>

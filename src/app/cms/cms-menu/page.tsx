@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { usePagePermission } from '@/components/molecules/PermissionGuard';
+import { useEnums } from '@/hooks/use-enums';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
@@ -97,11 +98,6 @@ const MENU_TARGET_OPTIONS = [
   { value: 'LINK' as const, label: '링크' },
 ];
 
-const HOSPITAL_OPTIONS = [
-  { value: 'ANAM', label: '안암' },
-  { value: 'GURO', label: '구로' },
-  { value: 'ANSAN', label: '안산' },
-];
 
 // ---------------------------------------------------------------------------
 // SortableMenuRow
@@ -392,6 +388,7 @@ function CmsMenuDialog({
   onSaved: () => void;
   canEdit?: boolean;
 }) {
+  const { optionsOf } = useEnums();
   const isEditMode = !!editItem;
   const isTopLevel = !parentId && !editItem?.parentId;
   const isChildMenu = !!parentId || !!editItem?.parentId;
@@ -502,7 +499,7 @@ function CmsMenuDialog({
               사용하는 기관 <span className="text-destructive">*</span>
             </Label>
             <div className={cn('flex gap-4', isChildMenu && 'opacity-50 pointer-events-none')}>
-              {HOSPITAL_OPTIONS.map((opt) => (
+              {optionsOf('HospitalCode').filter((o) => o.value !== 'ALL').map((opt) => (
                 <label
                   key={opt.value}
                   className="flex items-center gap-1.5 cursor-pointer text-sm"

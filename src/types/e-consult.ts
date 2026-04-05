@@ -3,21 +3,6 @@
 /** e-Consult 답변 상태 */
 export type EConsultStatus = 'PENDING' | 'ANSWERED' | 'EXPIRED';
 
-/** e-Consult 답변 상태 라벨 */
-export const ECONSULT_STATUS_MAP: Record<EConsultStatus, string> = {
-  PENDING: '답변대기',
-  ANSWERED: '답변완료',
-  EXPIRED: '답변만료',
-};
-
-/** e-Consult 답변 상태 검색 옵션 */
-export const ECONSULT_STATUS_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: 'PENDING', label: '답변대기' },
-  { value: 'ANSWERED', label: '답변완료' },
-  { value: 'EXPIRED', label: '답변만료' },
-] as const;
-
 /** e-Consult 목록 아이템 (기존) */
 export interface EConsultItem {
   id: string;

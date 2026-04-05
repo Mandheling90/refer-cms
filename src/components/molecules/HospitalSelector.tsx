@@ -3,17 +3,7 @@
 import { useApolloClient } from '@apollo/client/react';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
-
-const HOSPITAL_OPTIONS = [
-  { value: 'ANAM', label: '안암' },
-  { value: 'GURO', label: '구로' },
-  { value: 'ANSAN', label: '안산' },
-] as const;
-
-const HOSPITAL_OPTIONS_WITH_ALL = [
-  { value: 'ALL', label: '전체' },
-  ...HOSPITAL_OPTIONS,
-] as const;
+import { useEnums } from '@/hooks/use-enums';
 
 interface HospitalSelectorProps {
   /** true이면 '전체(ALL)' 옵션을 포함합니다 */
@@ -28,10 +18,11 @@ interface HospitalSelectorProps {
 export function HospitalSelector({ showAll = false }: HospitalSelectorProps) {
   const client = useApolloClient();
   const { hospitalCode, activeHospitalCode, setActiveHospitalCode } = useAuthStore();
+  const { optionsOf } = useEnums();
 
   if (hospitalCode !== 'ALL') return null;
 
-  const options = showAll ? HOSPITAL_OPTIONS_WITH_ALL : HOSPITAL_OPTIONS;
+  const options = optionsOf('HospitalCode', showAll);
   const current = activeHospitalCode ?? 'ANAM';
 
   const handleChange = (code: string) => {

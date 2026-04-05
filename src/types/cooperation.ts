@@ -165,63 +165,6 @@ export interface AdminPartnerUpdateRequestByIdResponse {
 
 export type PartnerStatus = 'APPROVED' | 'DRAFT' | 'PENDING' | 'REJECTED' | 'TERMINATED';
 
-/** 수정요청 상태 옵션 */
-export const UPDATE_REQUEST_STATUS_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: 'PENDING', label: '대기' },
-  { value: 'APPROVED', label: '승인' },
-  { value: 'REJECTED', label: '반려' },
-] as const;
-
-/** 수정요청 상태 라벨 변환 */
-const UPDATE_REQUEST_STATUS_MAP: Record<string, string> = {
-  PENDING: '대기',
-  APPROVED: '승인',
-  REJECTED: '반려',
-};
-export const updateRequestStatusLabel = (val?: string) => {
-  const found = UPDATE_REQUEST_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? UPDATE_REQUEST_STATUS_MAP[val] ?? val : '-');
-};
-
-/** 상태 옵션 */
-export const PARTNER_STATUS_OPTIONS = [
-  { value: '', label: '전체' },
-  { value: 'PENDING', label: '신청대기' },
-  { value: 'APPROVED', label: '승인' },
-  { value: 'REJECTED', label: '반려' },
-  { value: 'TERMINATED', label: '해지' },
-] as const;
-
-/** PartnerType: H=협력병원, M=협력의원 */
-export const PARTNER_TYPE_OPTIONS = [
-  { value: 'H', label: '협력병원' },
-  { value: 'M', label: '협력의원' },
-] as const;
-
-/** 상태 라벨 변환 */
-const PARTNER_STATUS_MAP: Record<string, string> = {
-  PENDING: '신청대기',
-  APPROVED: '승인',
-  REJECTED: '반려',
-  TERMINATED: '해지',
-  DRAFT: '임시저장',
-};
-export const partnerStatusLabel = (val?: string) => {
-  const found = PARTNER_STATUS_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? PARTNER_STATUS_MAP[val] ?? val : '-');
-};
-
-/** 기관구분 라벨 변환 */
-const PARTNER_TYPE_MAP: Record<string, string> = {
-  H: '협력병원',
-  M: '협력의원',
-};
-export const partnerTypeLabel = (val?: string) => {
-  const found = PARTNER_TYPE_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? PARTNER_TYPE_MAP[val] ?? val : '-');
-};
-
 /** 진료과목 옵션 (의원용) */
 export const SPECIALTY_OPTIONS = [
   { group: '내과', items: ['내과', '소화기내과', '순환기내과', '호흡기내과', '내분비내과', '신장내과', '혈액종양내과', '감염내과', '류마티스내과', '알레르기내과'] },

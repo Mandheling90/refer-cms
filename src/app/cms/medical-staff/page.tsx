@@ -35,7 +35,8 @@ import {
   UPDATE_ECONSULT_CONSULTANT_EMAIL,
 } from '@/lib/graphql/queries/medical-staff';
 import type { MedicalStaffItem, MedicalStaffListResponse } from '@/types/medical-staff';
-import { CONSULTANT_STATUS_OPTIONS, HOSPITAL_CODE_MAP } from '@/types/medical-staff';
+import { CONSULTANT_STATUS_OPTIONS } from '@/types/medical-staff';
+import { useEnums } from '@/hooks/use-enums';
 import { usePagePermission } from '@/components/molecules/PermissionGuard';
 import { toast } from 'sonner';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
@@ -60,8 +61,8 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 /* ─── 프로필 이미지 파일명 생성 ─── */
-function buildProfileFilename(item: MedicalStaffItem) {
-  const hospital = HOSPITAL_CODE_MAP[item.hospitalCode ?? ''] ?? item.hospitalCode ?? '';
+function buildProfileFilename(item: MedicalStaffItem, hospitalLabel?: string) {
+  const hospital = hospitalLabel || item.hospitalCode || '';
   const dept = item.departmentName ?? '';
   const name = item.doctorName ?? '';
   return `${hospital} ${dept} ${name}.png`.trim();
@@ -98,6 +99,7 @@ async function downloadImage(url: string, filename: string) {
    의료진 관리 페이지
    ═══════════════════════════════════════ */
 export default function MedicalStaffPage() {
+  const { labelOf } = useEnums();
   const hospitalCode = useAuthStore((s) => s.getEffectiveHospitalCode());
   const { canEdit } = usePagePermission();
 
@@ -458,7 +460,7 @@ export default function MedicalStaffPage() {
       header: '소속병원',
       cell: ({ row }) => (
         <span className="text-sm">
-          {HOSPITAL_CODE_MAP[row.original.hospitalCode ?? ''] ?? row.original.hospitalCode ?? '-'}
+          {labelOf('HospitalCode', row.original.hospitalCode) || row.original.hospitalCode || '-'}
         </span>
       ),
       size: 150,
@@ -652,8 +654,8 @@ export default function MedicalStaffPage() {
                 <FieldGroup label="소속병원">
                   <Input
                     value={
-                      HOSPITAL_CODE_MAP[selectedItem.hospitalCode ?? ''] ??
-                      selectedItem.hospitalCode ??
+                      labelOf('HospitalCode', selectedItem.hospitalCode) ||
+                      selectedItem.hospitalCode ||
                       ''
                     }
                     disabled
@@ -700,11 +702,11 @@ export default function MedicalStaffPage() {
                             onClick={() =>
                               downloadImage(
                                 selectedItem.photoUrl!,
-                                buildProfileFilename(selectedItem)
+                                buildProfileFilename(selectedItem, labelOf('HospitalCode', selectedItem.hospitalCode))
                               )
                             }
                           >
-                            {buildProfileFilename(selectedItem)}
+                            {buildProfileFilename(selectedItem, labelOf('HospitalCode', selectedItem.hospitalCode))}
                           </button>
                           {imageFileSize > 0 && (
                             <span className="text-muted-foreground">
