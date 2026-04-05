@@ -89,16 +89,15 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
     },
   );
 
-  /* 클라이언트측 필터링 (partnerType + 검색 조건) */
+  /* 클라이언트측 필터링 (검색 조건) */
   const allItems = data?.adminPartnerApplications?.items ?? [];
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
-      if (item.hospital?.partnerType !== partnerType) return false;
-      if (appliedFilter.hospName && !item.hospital?.name?.includes(appliedFilter.hospName)) return false;
+      if (appliedFilter.hospName && !item.hospitalName?.includes(appliedFilter.hospName)) return false;
       if (appliedFilter.directorName && !item.directorName?.includes(appliedFilter.directorName)) return false;
       return true;
     });
-  }, [allItems, partnerType, appliedFilter]);
+  }, [allItems, appliedFilter]);
   const totalCount = filteredItems.length;
 
   /* ─── 클라이언트 페이징 ─── */
@@ -244,19 +243,19 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       id: 'phisCode',
       header: '요양기관번호',
       size: 110,
-      cell: ({ row }) => row.original.hospital?.phisCode || '-',
+      cell: ({ row }) => row.original.careInstitutionNo || '-',
     },
     {
       id: 'hospName',
       header: '병원명',
       size: 120,
-      cell: ({ row }) => row.original.hospital?.name || '-',
+      cell: ({ row }) => row.original.hospitalName || '-',
     },
     {
       id: 'hospPhone',
       header: '병원전화번호',
       size: 120,
-      cell: ({ row }) => row.original.hospital?.phone || '-',
+      cell: ({ row }) => row.original.hospitalPhone || '-',
     },
     {
       id: 'directorName',
@@ -296,7 +295,6 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
   ];
 
   /* ─── 상세 팝업 데이터 ─── */
-  const hospital = selectedItem?.hospital;
 
   return (
     <>
@@ -359,7 +357,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
           <DialogHeader>
             <DialogTitle>
               {isHospital ? '협력병원' : '협력의원'}{' '}
-              {isApply ? '신청' : '수정'} : {hospital?.name || '-'}
+              {isApply ? '신청' : '수정'} : {selectedItem?.hospitalName || '-'}
             </DialogTitle>
             <DialogDescription>
               {isHospital ? '협력병원' : '협력의원'} 정보를 조회할 수 있습니다.

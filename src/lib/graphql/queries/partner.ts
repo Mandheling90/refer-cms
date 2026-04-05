@@ -6,7 +6,6 @@ export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
     adminPartnerApplications(status: $status, hospitalCode: $hospitalCode, partnerType: $partnerType, pagination: $pagination) {
       items {
         id
-        hospitalId
         hospitalCode
         status
         applicantId
@@ -22,20 +21,17 @@ export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
         terminatedAt
         createdAt
         updatedAt
-        hospital {
-          id
-          name
-          phisCode
-          classificationCode
-          address
-          addressDetail
-          phone
-          zipCode
-          faxNumber
-          website
-          representative
-          partnerType
-        }
+        partnerType
+        hospitalName
+        careInstitutionNo
+        hospitalPhone
+        hospitalAddress
+        hospitalAddressDetail
+        hospitalZipCode
+        hospitalFaxNumber
+        hospitalWebsite
+        hospitalRepresentative
+        clbrDvsnCd1
       }
       totalCount
       hasNextPage
@@ -48,7 +44,6 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
   query AdminPartnerApplicationById($id: String!) {
     adminPartnerApplicationById(id: $id) {
       id
-      hospitalId
       hospitalCode
       status
       applicantId
@@ -72,6 +67,7 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       directorReplyConsent
       isDirector
       institutionType
+      institutionCode
       staffName
       staffPhone
       staffEmail
@@ -93,6 +89,19 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       terminatedAt
       createdAt
       updatedAt
+      partnerType
+      hospitalName
+      careInstitutionNo
+      hospitalPhone
+      hospitalAddress
+      hospitalAddressDetail
+      hospitalZipCode
+      hospitalFaxNumber
+      hospitalWebsite
+      hospitalRepresentative
+      hospitalSpecialties
+      clbrDvsnCd1
+      medicalDepartment
       # 체크리스트 항목
       activeBedCount
       totalBedCount
@@ -126,6 +135,7 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       isolationTypes
       isolationCareType
       isolationRehabType
+      isolationWardOperation
       majorEquipment
       availableTreatments
       departmentSpecialists
@@ -135,22 +145,6 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       clinicHasPeritoneal
       clinicHasPhototherapy
       clinicMedicationType
-      hospital {
-        id
-        name
-        phisCode
-        classificationCode
-        address
-        addressDetail
-        phone
-        zipCode
-        faxNumber
-        website
-        representative
-        partnerType
-        specialties
-        hospitalCode
-      }
     }
   }
 `;

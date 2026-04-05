@@ -351,7 +351,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         <DialogContent size="lg" className="max-h-[90vh] grid-rows-[auto_1fr_auto]">
           <DialogHeader>
             <DialogTitle>
-              수정요청 확인 : {originalData?.hospital?.name || selectedRequest?.hospitalCode || '-'}
+              수정요청 확인 : {originalData?.hospitalName || selectedRequest?.hospitalCode || '-'}
             </DialogTitle>
             <DialogDescription>
               협력병의원이 요청한 수정 내역을 확인할 수 있습니다.

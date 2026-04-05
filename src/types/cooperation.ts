@@ -1,30 +1,10 @@
 /* ─── GraphQL 응답 타입 (실제 API 스키마 기반) ─── */
 
-/** 병원 모델 */
-export interface HospitalModel {
-  id: string;
-  name: string;
-  representative?: string;
-  phone?: string;
-  faxNumber?: string;
-  address?: string;
-  addressDetail?: string;
-  zipCode?: string;
-  website?: string;
-  specialties?: string;
-  /** H: 협력병원, M: 협력의원 */
-  partnerType?: 'H' | 'M';
-  classificationCode?: string;
-  phisCode?: string;
-  hospitalCode?: string;
-}
-
 /** 협력병의원 신청 모델 (목록용 기본 필드) */
 export interface PartnerApplicationModel {
   id: string;
   status: PartnerStatus;
   hospitalCode: string;
-  hospitalId: string;
   applicantId?: string;
   staffName?: string;
   staffPhone?: string;
@@ -38,11 +18,26 @@ export interface PartnerApplicationModel {
   rejectReason?: string;
   createdAt: string;
   updatedAt: string;
-  hospital: HospitalModel;
+  /** H: 협력병원, M: 협력의원 */
+  partnerType?: 'H' | 'M';
+  hospitalName?: string;
+  careInstitutionNo?: string;
+  hospitalPhone?: string;
+  hospitalAddress?: string;
+  hospitalAddressDetail?: string;
+  hospitalZipCode?: string;
+  hospitalFaxNumber?: string;
+  hospitalWebsite?: string;
+  hospitalRepresentative?: string;
+  clbrDvsnCd1?: string;
 }
 
 /** 협력병의원 신청 상세 모델 (PartnerHospitalModel) */
 export interface PartnerApplicationDetail extends PartnerApplicationModel {
+  /* 병원 추가 정보 */
+  hospitalSpecialties?: string;
+  institutionCode?: string;
+  medicalDepartment?: string;
   /* 병원장 추가 정보 */
   directorLicenseNo?: string;
   directorBirthDate?: string;
@@ -104,6 +99,7 @@ export interface PartnerApplicationDetail extends PartnerApplicationModel {
   isolationTypes?: unknown;
   isolationCareType?: string;
   isolationRehabType?: string;
+  isolationWardOperation?: string;
   /* 장비 & 처치 */
   majorEquipment?: string;
   availableTreatments?: unknown;
@@ -148,7 +144,7 @@ export interface PartnerUpdateRequestModel {
   reviewedById?: string;
   directorName?: string;
   createdAt: string;
-  hospital?: HospitalModel;
+  updatedAt?: string;
 }
 
 /** 수정요청 목록 응답 */

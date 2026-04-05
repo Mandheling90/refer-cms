@@ -82,7 +82,6 @@ interface PartnerDetailContentProps {
    ═══════════════════════════════════════ */
 export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetailContentProps) {
   const { labelOf } = useEnums();
-  const hospital = selectedItem.hospital;
 
   return (
     <Tabs defaultValue="phis" className="gap-0">
@@ -96,46 +95,46 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
         {/* 기본 병원 정보 */}
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원명">
-            <Input value={hospital?.name || ''} disabled />
+            <Input value={selectedItem.hospitalName || ''} disabled />
           </FieldGroup>
           <FieldGroup label="요양기관번호">
-            <Input value={hospital?.phisCode || hospital?.classificationCode || ''} disabled />
+            <Input value={selectedItem.careInstitutionNo || selectedItem.institutionCode || ''} disabled />
           </FieldGroup>
           <FieldGroup label="병원종별코드">
-            <Input value={hospital?.classificationCode || ''} disabled />
+            <Input value={selectedItem.institutionCode || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원코드">
-            <Input value={hospital?.hospitalCode || ''} disabled />
+            <Input value={selectedItem.hospitalCode || ''} disabled />
           </FieldGroup>
           <FieldGroup label="대표자명">
-            <Input value={hospital?.representative || ''} disabled />
+            <Input value={selectedItem.hospitalRepresentative || ''} disabled />
           </FieldGroup>
           <FieldGroup label="홈페이지">
-            <Input value={hospital?.website || ''} disabled />
+            <Input value={selectedItem.hospitalWebsite || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원 전화번호">
-            <Input value={hospital?.phone || ''} disabled />
+            <Input value={selectedItem.hospitalPhone || ''} disabled />
           </FieldGroup>
           <FieldGroup label="팩스번호">
-            <Input value={hospital?.faxNumber || ''} disabled />
+            <Input value={selectedItem.hospitalFaxNumber || ''} disabled />
           </FieldGroup>
           <FieldGroup label="진료과목">
-            <Input value={hospital?.specialties || ''} disabled />
+            <Input value={selectedItem.hospitalSpecialties || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="우편번호">
-            <Input value={hospital?.zipCode || ''} disabled />
+            <Input value={selectedItem.hospitalZipCode || ''} disabled />
           </FieldGroup>
           <FieldGroup label="주소">
-            <Input value={hospital?.address || ''} disabled />
+            <Input value={selectedItem.hospitalAddress || ''} disabled />
           </FieldGroup>
           <FieldGroup label="상세주소">
-            <Input value={hospital?.addressDetail || ''} disabled />
+            <Input value={selectedItem.hospitalAddressDetail || ''} disabled />
           </FieldGroup>
         </div>
 
@@ -326,33 +325,33 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
         {/* 기본 병원 정보 */}
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원명">
-            <Input value={hospital?.name || ''} disabled />
+            <Input value={selectedItem.hospitalName || ''} disabled />
           </FieldGroup>
           <FieldGroup label="요양기관번호">
-            <Input value={hospital?.phisCode || hospital?.classificationCode || ''} disabled />
+            <Input value={selectedItem.careInstitutionNo || selectedItem.institutionCode || ''} disabled />
           </FieldGroup>
           <FieldGroup label={isHospital ? '병원종별코드 주소' : '병원홈페이지 주소'}>
-            <Input value={hospital?.website || ''} disabled />
+            <Input value={selectedItem.hospitalWebsite || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원 전화번호">
-            <Input value={hospital?.phone || ''} disabled />
+            <Input value={selectedItem.hospitalPhone || ''} disabled />
           </FieldGroup>
           <FieldGroup label={isHospital ? '팩스번호' : '병원FAX'}>
-            <Input value={hospital?.faxNumber || ''} disabled />
+            <Input value={selectedItem.hospitalFaxNumber || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원 주소">
-            <Input value={hospital?.address || ''} disabled />
+            <Input value={selectedItem.hospitalAddress || ''} disabled />
           </FieldGroup>
           <FieldGroup label={isHospital ? '상세주소' : '우편번호'}>
-            <Input value={isHospital ? (hospital?.addressDetail || '') : (hospital?.zipCode || '')} disabled />
+            <Input value={isHospital ? (selectedItem.hospitalAddressDetail || '') : (selectedItem.hospitalZipCode || '')} disabled />
           </FieldGroup>
           {isHospital && (
             <FieldGroup label="우편번호">
-              <Input value={hospital?.zipCode || ''} disabled />
+              <Input value={selectedItem.hospitalZipCode || ''} disabled />
             </FieldGroup>
           )}
         </div>
