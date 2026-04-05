@@ -37,8 +37,8 @@ export interface PartnerApplicationModel {
   rejectReason?: string;
   createdAt: string;
   updatedAt: string;
-  /** H: 협력병원, M: 협력의원 */
-  partnerType?: 'H' | 'M';
+  /** A: 협력병원, B: 협력의원 */
+  partnerType?: 'A' | 'B';
   hospitalName?: string;
   careInstitutionNo?: string;
   hospitalPhone?: string;
