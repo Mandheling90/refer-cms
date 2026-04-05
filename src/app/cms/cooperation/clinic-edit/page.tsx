@@ -9,7 +9,7 @@ export default function ClinicEditPage() {
   return (
     <UpdateRequestListPage
       title="협력의원 수정요청 확인"
-      partnerType="M"
+      partnerType="B"
       canEdit={canEdit}
     />
   );

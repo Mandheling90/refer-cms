@@ -12,8 +12,8 @@ export interface HospitalModel {
   zipCode?: string;
   website?: string;
   specialties?: string;
-  /** H: 협력병원, M: 협력의원 */
-  partnerType?: 'H' | 'M';
+  /** A: 협력병원, B: 협력의원 */
+  partnerType?: 'A' | 'B';
   classificationCode?: string;
   phisCode?: string;
   hospitalCode?: string;

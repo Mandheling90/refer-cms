@@ -45,8 +45,8 @@ import { toast } from 'sonner';
 /* ─── Props ─── */
 interface CooperationListPageProps {
   title: string;
-  /** H: 협력병원, M: 협력의원 */
-  partnerType: 'H' | 'M';
+  /** A: 협력병원, B: 협력의원 */
+  partnerType: 'A' | 'B';
   /** apply: 신청관리(승인/반려), edit: 수정관리 */
   mode: 'apply' | 'edit';
   /** 편집 권한 여부 */
@@ -58,7 +58,7 @@ interface CooperationListPageProps {
    ═══════════════════════════════════════ */
 export function CooperationListPage({ title, partnerType, mode, canEdit = true }: CooperationListPageProps) {
   const { labelOf, optionsOf } = useEnums();
-  const isHospital = partnerType === 'H';
+  const isHospital = partnerType === 'A';
   const isApply = mode === 'apply';
 
   /* ─── 페이징 ─── */
