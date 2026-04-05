@@ -1,5 +1,24 @@
 /* ─── GraphQL 응답 타입 (실제 API 스키마 기반) ─── */
 
+/** 병원 모델 */
+export interface HospitalModel {
+  id: string;
+  name: string;
+  representative?: string;
+  phone?: string;
+  faxNumber?: string;
+  address?: string;
+  addressDetail?: string;
+  zipCode?: string;
+  website?: string;
+  specialties?: string;
+  /** A: 협력병원, B: 협력의원 */
+  partnerType?: 'A' | 'B';
+  classificationCode?: string;
+  phisCode?: string;
+  hospitalCode?: string;
+}
+
 /** 협력병의원 신청 모델 (목록용 기본 필드) */
 export interface PartnerApplicationModel {
   id: string;
@@ -61,7 +80,9 @@ export interface PartnerApplicationDetail extends PartnerApplicationModel {
   institutionType?: string;
   /* 기타 */
   remarks?: string;
-  attachments?: Array<{ url?: string; filename?: string; name?: string; originalName?: string }> | unknown;
+  attachments?:
+    | Array<{ url?: string; filename?: string; name?: string; originalName?: string }>
+    | unknown;
   /* 체크리스트: 병상 운영 현황 */
   activeBedCount?: number;
   totalBedCount?: number;
@@ -163,7 +184,42 @@ export type PartnerStatus = 'APPROVED' | 'DRAFT' | 'PENDING' | 'REJECTED' | 'TER
 
 /** 진료과목 옵션 (의원용) */
 export const SPECIALTY_OPTIONS = [
-  { group: '내과', items: ['내과', '소화기내과', '순환기내과', '호흡기내과', '내분비내과', '신장내과', '혈액종양내과', '감염내과', '류마티스내과', '알레르기내과'] },
+  {
+    group: '내과',
+    items: [
+      '내과',
+      '소화기내과',
+      '순환기내과',
+      '호흡기내과',
+      '내분비내과',
+      '신장내과',
+      '혈액종양내과',
+      '감염내과',
+      '류마티스내과',
+      '알레르기내과',
+    ],
+  },
   { group: '외과', items: ['외과', '흉부외과', '신경외과', '정형외과', '성형외과', '소아외과'] },
-  { group: '기타 진료과', items: ['산부인과', '소아청소년과', '안과', '이비인후과', '피부과', '비뇨의학과', '정신건강의학과', '재활의학과', '마취통증의학과', '영상의학과', '방사선종양학과', '병리과', '진단검사의학과', '가정의학과', '응급의학과', '핵의학과', '직업환경의학과'] },
+  {
+    group: '기타 진료과',
+    items: [
+      '산부인과',
+      '소아청소년과',
+      '안과',
+      '이비인후과',
+      '피부과',
+      '비뇨의학과',
+      '정신건강의학과',
+      '재활의학과',
+      '마취통증의학과',
+      '영상의학과',
+      '방사선종양학과',
+      '병리과',
+      '진단검사의학과',
+      '가정의학과',
+      '응급의학과',
+      '핵의학과',
+      '직업환경의학과',
+    ],
+  },
 ] as const;

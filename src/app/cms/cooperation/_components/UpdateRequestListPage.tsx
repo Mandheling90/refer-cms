@@ -47,8 +47,8 @@ import { toast } from 'sonner';
 /* ─── Props ─── */
 interface UpdateRequestListPageProps {
   title: string;
-  /** H: 협력병원, M: 협력의원 (미지정 시 전체) */
-  partnerType?: 'H' | 'M';
+  /** A: 협력병원, B: 협력의원 (미지정 시 전체) */
+  partnerType?: 'A' | 'B';
   canEdit?: boolean;
 }
 
@@ -57,7 +57,7 @@ interface UpdateRequestListPageProps {
    ═══════════════════════════════════════ */
 export function UpdateRequestListPage({ title, partnerType, canEdit = true }: UpdateRequestListPageProps) {
   const { labelOf, optionsOf } = useEnums();
-  const isHospital = partnerType === 'H';
+  const isHospital = partnerType === 'A';
 
   /* ─── 페이징 ─── */
   const [currentPage, setCurrentPage] = useState(1);

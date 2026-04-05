@@ -9,7 +9,7 @@ export default function HospitalEditPage() {
   return (
     <UpdateRequestListPage
       title="협력병원 수정요청 확인"
-      partnerType="H"
+      partnerType="A"
       canEdit={canEdit}
     />
   );

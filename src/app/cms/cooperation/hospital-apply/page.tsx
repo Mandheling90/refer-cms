@@ -9,7 +9,7 @@ export default function HospitalApplyPage() {
   return (
     <CooperationListPage
       title="협력병원 신청 관리"
-      partnerType="H"
+      partnerType="A"
       mode="apply"
       canEdit={canEdit}
     />
