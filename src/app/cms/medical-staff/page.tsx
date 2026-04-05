@@ -165,16 +165,19 @@ export default function MedicalStaffPage() {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const hasLocalOnlyFilters = Boolean(
+    appliedFilters.hospital || appliedFilters.department || appliedFilters.consultant,
+  );
+
   const medicalStaffQueryVariables = useMemo(() => ({
     filter: {
       ...(appliedFilters.doctorId.trim() ? { doctorId: appliedFilters.doctorId.trim() } : {}),
       ...(appliedFilters.doctorName.trim() ? { doctorName: appliedFilters.doctorName.trim() } : {}),
     },
-    pagination: {
-      page: currentPage,
-      limit: pageSize,
-    },
-  }), [appliedFilters.doctorId, appliedFilters.doctorName, currentPage, pageSize]);
+    pagination: hasLocalOnlyFilters
+      ? { page: 1, limit: 10000 }
+      : { page: currentPage, limit: pageSize },
+  }), [appliedFilters.doctorId, appliedFilters.doctorName, currentPage, pageSize, hasLocalOnlyFilters]);
 
   /* ─── GraphQL 의료진 목록 조회 ─── */
   const { data, loading, refetch } = useQuery<MedicalStaffListResponse>(
@@ -244,16 +247,19 @@ export default function MedicalStaffPage() {
     });
   }, [allItems, appliedFilters.hospital, appliedFilters.department, appliedFilters.consultant, activeConsultantIds]);
 
-  const hasLocalOnlyFilters = Boolean(
-    appliedFilters.hospital || appliedFilters.department || appliedFilters.consultant,
-  );
   const totalCount = hasLocalOnlyFilters
     ? displayedItems.length
     : (data?.medicalStaffList?.totalCount ?? 0);
-  const totalPages = hasLocalOnlyFilters
-    ? 1
-    : Math.max(1, Math.ceil(totalCount / pageSize));
-  const tableCurrentPage = hasLocalOnlyFilters ? 1 : currentPage;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  /* 로컬 필터 시 클라이언트 페이징 */
+  const pagedItems = useMemo(() => {
+    if (!hasLocalOnlyFilters) return displayedItems;
+    const start = (currentPage - 1) * pageSize;
+    return displayedItems.slice(start, start + pageSize);
+  }, [hasLocalOnlyFilters, displayedItems, currentPage, pageSize]);
+
+  const tableCurrentPage = currentPage;
 
   /* ─── 재검색 (API 재조회) ─── */
   const handleSearch = useCallback(() => {
@@ -593,7 +599,7 @@ export default function MedicalStaffPage() {
         listContent={
           <DataTable
             columns={columns}
-            data={displayedItems}
+            data={pagedItems}
             loading={tableLoading}
             totalItems={totalCount}
             currentPage={tableCurrentPage}

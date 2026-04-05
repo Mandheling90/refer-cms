@@ -33,8 +33,8 @@ import type { AdminUser, AdminUserApprovalByIdResponse, AdminUserDetail, AdminUs
 import {
   MEMBER_TYPE_OPTIONS,
   APPLY_STATUS_OPTIONS,
-  departmentLabel,
 } from '@/types/member';
+import { useEnums } from '@/hooks/use-enums';
 
 /* ─── 날짜 포맷 ─── */
 const formatDateTime = (val?: string | null) => {
@@ -61,20 +61,9 @@ const STATUS_LABEL_MAP: Record<string, string> = {
   SUSPENDED: '정지',
 };
 
-const MEMBER_TYPE_LABEL_MAP: Record<string, string> = {
-  DOCTOR: '의사',
-  DENTIST: '치과의사',
-  KMD: '한의사',
-};
-
 const applyStatusLabel = (val?: string) => {
   const found = APPLY_STATUS_OPTIONS.find((o) => o.value === val);
   return found?.label ?? (val ? STATUS_LABEL_MAP[val] ?? val : '-');
-};
-
-const memberTypeLabel = (val?: string) => {
-  const found = MEMBER_TYPE_OPTIONS.find((o) => o.value === val);
-  return found?.label ?? (val ? MEMBER_TYPE_LABEL_MAP[val] ?? val : '-');
 };
 
 /* ─── 검색 필드 라벨+인풋 공통 ─── */
@@ -98,6 +87,7 @@ function FieldGroup({
    ═══════════════════════════════════════ */
 export default function MemberApplyPage() {
   const { canEdit } = usePagePermission();
+  const { labelOf } = useEnums();
 
   /* ─── 페이징 상태 ─── */
   const [currentPage, setCurrentPage] = useState(1);
@@ -273,7 +263,7 @@ export default function MemberApplyPage() {
       accessorKey: 'userType',
       header: '회원구분',
       size: 90,
-      cell: ({ getValue }) => memberTypeLabel(getValue() as string),
+      cell: ({ getValue }) => labelOf('UserType', getValue() as string),
     },
     {
       id: 'licenseNo',
@@ -449,7 +439,7 @@ export default function MemberApplyPage() {
                       {/* ─── 회원구분, 생년월일, 의사면허번호 ─── */}
                       <div className="grid grid-cols-3 gap-4">
                         <FieldGroup label="회원구분">
-                          <Input value={memberTypeLabel(selectedUser.userType)} disabled />
+                          <Input value={labelOf('UserType', selectedUser.userType)} disabled />
                         </FieldGroup>
                         <FieldGroup label="생년월일">
                           <Input value={profile?.birthDate?.split('T')[0] || ''} disabled />
@@ -462,10 +452,10 @@ export default function MemberApplyPage() {
                       {/* ─── 출신학교, 진료과, 원장여부 ─── */}
                       <div className="grid grid-cols-3 gap-4">
                         <FieldGroup label="출신학교">
-                          <Input value={profile?.school || ''} disabled />
+                          <Input value={labelOf('School', profile?.school, '')} disabled />
                         </FieldGroup>
                         <FieldGroup label="진료과">
-                          <Input value={departmentLabel(profile?.department)} disabled />
+                          <Input value={labelOf('MedicalDepartment', profile?.department)} disabled />
                         </FieldGroup>
                         <FieldGroup label="원장여부">
                           <div className="flex items-center h-10 gap-4">
