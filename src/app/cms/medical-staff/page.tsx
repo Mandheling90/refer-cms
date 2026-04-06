@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useMutation, useQuery } from '@apollo/client/react';
+import { apolloClient } from '@/lib/graphql/client';
 import { DataTable } from '@/components/organisms/DataTable';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { HospitalSelector } from '@/components/molecules/HospitalSelector';
@@ -176,20 +177,70 @@ export default function MedicalStaffPage() {
       ...(appliedFilters.doctorId.trim() ? { doctorId: appliedFilters.doctorId.trim() } : {}),
       ...(appliedFilters.doctorName.trim() ? { doctorName: appliedFilters.doctorName.trim() } : {}),
     },
-    pagination: hasLocalOnlyFilters
-      ? { page: 1, limit: 10000 }
-      : { page: currentPage, limit: pageSize },
-  }), [appliedFilters.doctorId, appliedFilters.doctorName, currentPage, pageSize, hasLocalOnlyFilters]);
+    pagination: { page: currentPage, limit: pageSize },
+  }), [appliedFilters.doctorId, appliedFilters.doctorName, currentPage, pageSize]);
 
-  /* ─── GraphQL 의료진 목록 조회 ─── */
+  /* ─── GraphQL 의료진 목록 조회 (로컬 필터 OFF 시) ─── */
   const { data, loading, refetch } = useQuery<MedicalStaffListResponse>(
     GET_MEDICAL_STAFF_LIST,
     {
       variables: medicalStaffQueryVariables,
       fetchPolicy: 'network-only',
       notifyOnNetworkStatusChange: true,
+      skip: hasLocalOnlyFilters,
     },
   );
+
+  /* ─── 로컬 필터 ON 시: 100건씩 전체 fetch ─── */
+  const [allFetchedItems, setAllFetchedItems] = useState<MedicalStaffItem[]>([]);
+  const [allFetchLoading, setAllFetchLoading] = useState(false);
+  const fetchGenRef = useRef(0);
+
+  useEffect(() => {
+    if (!hasLocalOnlyFilters) {
+      setAllFetchedItems([]);
+      return;
+    }
+
+    const gen = ++fetchGenRef.current;
+    let cancelled = false;
+
+    const filter = {
+      ...(appliedFilters.doctorId.trim() ? { doctorId: appliedFilters.doctorId.trim() } : {}),
+      ...(appliedFilters.doctorName.trim() ? { doctorName: appliedFilters.doctorName.trim() } : {}),
+    };
+
+    (async () => {
+      setAllFetchLoading(true);
+      const PAGE_LIMIT = 100;
+      let page = 1;
+      let items: MedicalStaffItem[] = [];
+      let hasMore = true;
+
+      while (hasMore && !cancelled) {
+        const { data: pageData } = await apolloClient.query<MedicalStaffListResponse>({
+          query: GET_MEDICAL_STAFF_LIST,
+          variables: { filter, pagination: { page, limit: PAGE_LIMIT } },
+          fetchPolicy: 'network-only',
+        });
+
+        if (cancelled || gen !== fetchGenRef.current) return;
+
+        const fetched = pageData?.medicalStaffList?.items ?? [];
+        items = [...items, ...fetched];
+        const total = pageData?.medicalStaffList?.totalCount ?? 0;
+        hasMore = items.length < total;
+        page++;
+      }
+
+      if (!cancelled && gen === fetchGenRef.current) {
+        setAllFetchedItems(items);
+        setAllFetchLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [hasLocalOnlyFilters, appliedFilters.doctorId, appliedFilters.doctorName]);
 
   /* ─── 자문의 목록 조회 ─── */
   const {
@@ -228,8 +279,8 @@ export default function MedicalStaffPage() {
   const [deactivateConsultant] = useMutation(DEACTIVATE_ECONSULT_CONSULTANT);
   const [updateConsultantEmail] = useMutation(UPDATE_ECONSULT_CONSULTANT_EMAIL);
 
-  const allItems = data?.medicalStaffList?.items ?? [];
-  const tableLoading = loading || consultantsLoading;
+  const allItems = hasLocalOnlyFilters ? allFetchedItems : (data?.medicalStaffList?.items ?? []);
+  const tableLoading = loading || consultantsLoading || allFetchLoading;
 
   /* ─── 로컬 보조 필터링 (서버 미지원 필드만) ─── */
   const displayedItems = useMemo(() => {

@@ -420,15 +420,19 @@ function AdminManagementContent() {
       return;
     }
     try {
+      const input: Record<string, string> = {
+        userName: formUserName,
+        email: formEmail,
+        ipAddress: formIpAddress.trim() || '',
+        status: formIsActive ? 'ACTIVE' : 'REJECTED',
+      };
+      if (formPassword) {
+        input.password = formPassword;
+      }
       await updateUser({
         variables: {
           id: selectedUser.id,
-          input: {
-            userName: formUserName,
-            email: formEmail,
-            ipAddress: formIpAddress.trim() || '',
-            status: formIsActive ? 'ACTIVE' : 'REJECTED',
-          },
+          input,
         },
       });
       toast.success('저장되었습니다.');
