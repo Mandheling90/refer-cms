@@ -266,7 +266,7 @@ export default function MemberApplyPage() {
         return (
           <span
             className={
-              val === 'APPROVED'
+              val === 'ACTIVE'
                 ? 'text-src-point font-medium'
                 : val === 'REJECTED'
                   ? 'text-src-red font-medium'
@@ -286,7 +286,7 @@ export default function MemberApplyPage() {
       size: 120,
       cell: ({ row }) => {
         const status = row.original.status;
-        if (status === 'APPROVED' || status === 'REJECTED') {
+        if (status === 'ACTIVE' || status === 'REJECTED') {
           return formatDateTime(row.original.updatedAt);
         }
         return '-';
@@ -549,7 +549,7 @@ export default function MemberApplyPage() {
                         <FieldGroup label="승인일시">
                           <Input
                             value={
-                              selectedUser.status === 'APPROVED' || selectedUser.status === 'REJECTED'
+                              selectedUser.status === 'ACTIVE' || selectedUser.status === 'REJECTED'
                                 ? formatDateTime(selectedUser.updatedAt)
                                 : '-'
                             }
