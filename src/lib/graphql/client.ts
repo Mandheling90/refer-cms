@@ -127,8 +127,9 @@ const httpLink = createHttpLink({
     if (options?.body && typeof options.body === 'string') {
       try {
         const body = JSON.parse(options.body);
+        const isLoginOp = body.operationName === 'AdminLogin' || body.operationName === 'Login';
         const effectiveCode = getEffectiveHospitalCode();
-        if (effectiveCode && body.variables && !body.variables.hospitalCode) {
+        if (!isLoginOp && effectiveCode && body.variables && !body.variables.hospitalCode) {
           body.variables.hospitalCode = effectiveCode;
           return fetch(uri, { ...optionsWithSignal, body: JSON.stringify(body) }).then(cleanup, onError);
         }
@@ -163,7 +164,7 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
   if (!unauthError) return;
 
   // Login mutation은 페이지에서 자체 에러 처리 — errorLink에서 개입하지 않음
-  if (operation.operationName === 'Login') return;
+  if (operation.operationName === 'Login' || operation.operationName === 'AdminLogin') return;
 
   // refreshToken mutation 자체가 실패한 경우 무한 루프 방지
   if (operation.operationName === 'RefreshToken') {

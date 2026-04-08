@@ -10,6 +10,27 @@ export const LOGIN = gql`
   }
 `;
 
+/** 관리자 로그인 */
+export const ADMIN_LOGIN = gql`
+  mutation AdminLogin($input: AdminLoginInput!) {
+    adminLogin(input: $input) {
+      accessToken
+      refreshToken
+      mustChangePw
+      user {
+        id
+        userId
+        userName
+        email
+        phone
+        hospitalCode
+        userType
+        status
+      }
+    }
+  }
+`;
+
 /** 토큰 갱신 */
 export const REFRESH_TOKEN = gql`
   mutation RefreshToken($refreshToken: String!) {

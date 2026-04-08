@@ -12,6 +12,25 @@ export interface LoginResponse {
   };
 }
 
+/** 관리자 로그인 응답 */
+export interface AdminLoginResponse {
+  adminLogin: {
+    accessToken: string;
+    refreshToken: string;
+    mustChangePw: boolean;
+    user: {
+      id: string;
+      userId: string;
+      userName: string;
+      email: string;
+      phone?: string;
+      hospitalCode?: string;
+      userType: string;
+      status: string;
+    };
+  };
+}
+
 /** 페이징 목록 응답 */
 export interface PaginatedList<T> {
   list: T[];

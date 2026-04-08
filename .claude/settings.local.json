@@ -68,7 +68,9 @@
       "Bash(then if:*)",
       "Bash(then echo:*)",
       "Bash(git fetch:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git pull:*)",
+      "Bash(git clone:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

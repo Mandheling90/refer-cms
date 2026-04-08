@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useMutation } from '@apollo/client/react';
 import { useAuthStore } from '@/stores/auth-store';
-import { LOGIN } from '@/lib/graphql/queries/auth';
-import type { LoginResponse } from '@/lib/graphql/types';
+import { ADMIN_LOGIN } from '@/lib/graphql/queries/auth';
+import type { AdminLoginResponse } from '@/lib/graphql/types';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ institution?: string; userId?: string; password?: string }>({});
 
-  const [loginMutation, { loading }] = useMutation<LoginResponse>(LOGIN);
+  const [adminLoginMutation, { loading }] = useMutation<AdminLoginResponse>(ADMIN_LOGIN);
 
   useEffect(() => {
     // persist rehydration 완료 후에만 redirect
@@ -45,22 +45,36 @@ export default function LoginPage() {
     if (!validate()) return;
 
     try {
-      const { data } = await loginMutation({
+      const { data } = await adminLoginMutation({
         variables: {
-          input: { userId, password },
+          input: {
+            userId,
+            password,
+            hospitalCode: institution.toUpperCase(),
+          },
         },
       });
 
-      if (data?.login) {
+      if (data?.adminLogin) {
+        const { accessToken, refreshToken, mustChangePw, user } = data.adminLogin;
         login(
-          {
-            accessToken: data.login.accessToken,
-            refreshToken: data.login.refreshToken,
-          },
+          { accessToken, refreshToken },
           institution.toUpperCase(),
+          {
+            USER_ID: user.userId,
+            USER_NM: user.userName,
+            IS_SUPER_ADMIN: user.hospitalCode === 'ALL',
+            IS_HCM_ADMIN: false,
+            ROLE_TYPE_LIST: [user.userType],
+          },
         );
         toast.success('로그인 성공');
-        router.push('/cms/home');
+
+        if (mustChangePw) {
+          router.push('/cms/change-password');
+        } else {
+          router.push('/cms/home');
+        }
       } else {
         toast.error('아이디 또는 비밀번호가 올바르지 않습니다.');
       }
