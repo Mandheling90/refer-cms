@@ -37,7 +37,10 @@ interface NavItem {
   linkTarget?: '_self' | '_blank';
 }
 
-function mapMenuToNav(menus: ApiMenuItem[]): NavItem[] {
+/** 통합관리자(ALL)만 접근 가능한 경로 */
+const SUPER_ADMIN_ONLY_PATHS = ['/cms/admin-management'];
+
+function mapMenuToNav(menus: ApiMenuItem[], isSuperAdmin: boolean): NavItem[] {
   const result: NavItem[] = [];
 
   for (const menu of menus) {
@@ -47,9 +50,10 @@ function mapMenuToNav(menus: ApiMenuItem[]): NavItem[] {
     const linkTarget: '_self' | '_blank' = menu.gnbExposure ? '_blank' : '_self';
 
     if (menu.menuTargetType === 'PARENT' && menu.children?.length) {
-      // 하위 메뉴 중 NONE이 아닌 것만 표시
+      // 하위 메뉴 중 NONE이 아닌 것만 표시 + 통합관리자 전용 메뉴 필터링
       const visibleChildren: NavChild[] = menu.children
         .filter((child) => child.accessLevel !== 'NONE')
+        .filter((child) => isSuperAdmin || !SUPER_ADMIN_ONLY_PATHS.includes(child.externalUrl || ''))
         .map((child) => ({
           title: child.name,
           href: child.externalUrl || '',
@@ -61,6 +65,9 @@ function mapMenuToNav(menus: ApiMenuItem[]): NavItem[] {
 
       result.push({ title: menu.name, children: visibleChildren });
     } else {
+      // 통합관리자 전용 단일 메뉴 필터링
+      if (!isSuperAdmin && SUPER_ADMIN_ONLY_PATHS.includes(menu.externalUrl || '')) continue;
+
       result.push({
         title: menu.name,
         href: menu.externalUrl || undefined,
@@ -75,14 +82,15 @@ function mapMenuToNav(menus: ApiMenuItem[]): NavItem[] {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { hospitalCode } = useAuthStore();
+  const { hospitalCode, user } = useAuthStore();
+  const isSuperAdmin = user?.IS_SUPER_ADMIN === true || hospitalCode === 'ALL';
   const { expandedGroups, toggleGroup, sidebarOpen } = useMenuStore();
 
   const { data } = useQuery<{ adminMenus: ApiMenuItem[] }>(ADMIN_MENUS, {
     variables: { menuType: 'ADMIN' },
   });
 
-  const navItems: NavItem[] = data?.adminMenus ? mapMenuToNav(data.adminMenus) : [];
+  const navItems: NavItem[] = data?.adminMenus ? mapMenuToNav(data.adminMenus, isSuperAdmin) : [];
 
   const isItemActive = (item: NavItem) => {
     if (item.href) return pathname === item.href;
