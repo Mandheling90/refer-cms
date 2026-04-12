@@ -55,8 +55,6 @@ export interface PartnerApplicationModel {
 export interface PartnerApplicationDetail extends PartnerApplicationModel {
   /* 병원 추가 정보 */
   hospitalSpecialties?: string;
-  institutionCode?: string;
-  medicalDepartment?: string;
   /* 병원장 추가 정보 */
   directorLicenseNo?: string;
   directorBirthDate?: string;

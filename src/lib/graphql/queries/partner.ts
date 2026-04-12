@@ -67,7 +67,6 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       directorReplyConsent
       isDirector
       institutionType
-      institutionCode
       staffName
       staffPhone
       staffEmail
@@ -101,7 +100,6 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       hospitalRepresentative
       hospitalSpecialties
       clbrDvsnCd1
-      medicalDepartment
       # 체크리스트 항목
       activeBedCount
       totalBedCount

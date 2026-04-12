@@ -98,10 +98,10 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.hospitalName || ''} disabled />
           </FieldGroup>
           <FieldGroup label="요양기관번호">
-            <Input value={selectedItem.careInstitutionNo || selectedItem.institutionCode || ''} disabled />
+            <Input value={selectedItem.careInstitutionNo || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="병원종별코드">
-            <Input value={selectedItem.institutionCode || ''} disabled />
+          <FieldGroup label="기관유형">
+            <Input value={selectedItem.institutionType || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -328,7 +328,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.hospitalName || ''} disabled />
           </FieldGroup>
           <FieldGroup label="요양기관번호">
-            <Input value={selectedItem.careInstitutionNo || selectedItem.institutionCode || ''} disabled />
+            <Input value={selectedItem.careInstitutionNo || ''} disabled />
           </FieldGroup>
           <FieldGroup label={isHospital ? '병원종별코드 주소' : '병원홈페이지 주소'}>
             <Input value={selectedItem.hospitalWebsite || ''} disabled />
