@@ -31,8 +31,6 @@ import {
   SourceEditing,
   HorizontalLine,
   RemoveFormat,
-  GeneralHtmlSupport,
-  HtmlEmbed,
 } from 'ckeditor5';
 import { uploadFile } from '@/lib/api/graphql';
 
@@ -127,8 +125,6 @@ export function RichEditor({
             SourceEditing,
             HorizontalLine,
             RemoveFormat,
-            GeneralHtmlSupport,
-            HtmlEmbed,
           ],
           toolbar: {
             items: [
@@ -159,7 +155,6 @@ export function RichEditor({
               'mediaEmbed',
               '|',
               'sourceEditing',
-              'htmlEmbed',
               '|',
               'undo',
               'redo',
@@ -179,19 +174,6 @@ export function RichEditor({
               '|',
               'imageTextAlternative',
             ],
-          },
-          htmlSupport: {
-            allow: [
-              {
-                name: /.*/,
-                attributes: true,
-                classes: true,
-                styles: true,
-              },
-            ],
-          },
-          htmlEmbed: {
-            showPreviews: true,
           },
         }}
         data={value}
