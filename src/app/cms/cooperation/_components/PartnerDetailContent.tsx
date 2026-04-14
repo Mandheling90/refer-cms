@@ -71,6 +71,14 @@ function CheckItem({ label, checked }: { label: string; checked?: boolean | null
   );
 }
 
+/* ─── GraphQL InstitutionType ENUM → DB 코드 역매핑 (enum API에 없는 키) ─── */
+const INSTITUTION_TYPE_ENUM_TO_CODE: Record<string, string> = {
+  TERTIARY_HOSPITAL: '10', GENERAL_HOSPITAL: '20', HOSPITAL: '30',
+  DENTAL_HOSPITAL: '31', MENTAL_HOSPITAL: '32', NURSING_HOSPITAL: '40',
+  CLINIC: '50', DENTAL_CLINIC: '51', PUBLIC_HEALTH: '60',
+  INSTITUTION: '70', UNCLASSIFIED: '80', ORIENTAL: '90', ORIENTAL_HOSPITAL: '99',
+};
+
 /* ─── Props ─── */
 interface PartnerDetailContentProps {
   selectedItem: PartnerApplicationDetail;
@@ -81,7 +89,23 @@ interface PartnerDetailContentProps {
    협력병의원 상세 뷰 (공용)
    ═══════════════════════════════════════ */
 export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetailContentProps) {
-  const { labelOf } = useEnums();
+  const { labelOf, enumMap } = useEnums();
+
+  /** enum label 또는 GraphQL ENUM 이름으로 들어온 값을 key로 역변환 후 labelOf 적용 */
+  const resolveEnum = (enumName: string, value?: string | null, fallback = ''): string => {
+    if (!value) return fallback;
+    const map = enumMap[enumName];
+    if (!map) return value;
+    // 이미 key인 경우
+    if (map[value]) return map[value];
+    // label로 key 역탐색
+    const foundKey = Object.entries(map).find(([, label]) => label === value || label.includes(value))?.[0];
+    if (foundKey) return map[foundKey];
+    // GraphQL ENUM 이름 → DB 코드 (InstitutionType 전용)
+    const code = INSTITUTION_TYPE_ENUM_TO_CODE[value];
+    if (code && map[code]) return map[code];
+    return value;
+  };
 
   return (
     <Tabs defaultValue="phis" className="gap-0">
@@ -101,12 +125,12 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.careInstitutionNo || ''} disabled />
           </FieldGroup>
           <FieldGroup label="기관유형">
-            <Input value={selectedItem.institutionType || ''} disabled />
+            <Input value={resolveEnum('InstitutionType', selectedItem.institutionType)} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="병원코드">
-            <Input value={selectedItem.hospitalCode || ''} disabled />
+            <Input value={resolveEnum('HospitalCode', selectedItem.hospitalCode)} disabled />
           </FieldGroup>
           <FieldGroup label="대표자명">
             <Input value={selectedItem.hospitalRepresentative || ''} disabled />
@@ -123,7 +147,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.hospitalFaxNumber || ''} disabled />
           </FieldGroup>
           <FieldGroup label="진료과목">
-            <Input value={selectedItem.hospitalSpecialties || ''} disabled />
+            <Input value={selectedItem.hospitalSpecialties?.split(',').map(s => resolveEnum('MedicalDepartment', s.trim(), s.trim())).join(', ') || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -148,7 +172,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.directorLicenseNo || ''} disabled />
           </FieldGroup>
           <FieldGroup label="생년월일">
-            <Input value={selectedItem.directorBirthDate || ''} disabled />
+            <Input value={selectedItem.directorBirthDate?.split('T')[0] || ''} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -156,7 +180,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.directorPhone || ''} disabled />
           </FieldGroup>
           <FieldGroup label="성별">
-            <Input value={labelOf('Gender', selectedItem.directorGender, '')} disabled />
+            <Input value={resolveEnum('Gender', selectedItem.directorGender)} disabled />
           </FieldGroup>
           <FieldGroup label="차량번호">
             <Input value={selectedItem.directorCarNo || ''} disabled />
@@ -170,7 +194,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.directorGraduationYear || ''} disabled />
           </FieldGroup>
           <FieldGroup label="출신학교">
-            <Input value={selectedItem.directorSchool || ''} disabled />
+            <Input value={resolveEnum('School', selectedItem.directorSchool)} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -178,7 +202,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.directorTrainingHospital || ''} disabled />
           </FieldGroup>
           <FieldGroup label="진료과">
-            <Input value={selectedItem.directorDepartment || ''} disabled />
+            <Input value={resolveEnum('MedicalDepartment', selectedItem.directorDepartment)} disabled />
           </FieldGroup>
           <FieldGroup label="세부전공">
             <Input value={selectedItem.directorSubSpecialty || ''} disabled />
@@ -211,10 +235,10 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             <Input value={selectedItem.staffName || ''} disabled />
           </FieldGroup>
           <FieldGroup label="부서유형">
-            <Input value={selectedItem.staffDeptType || ''} disabled />
+            <Input value={selectedItem.staffDeptType === 'A' ? '병원' : selectedItem.staffDeptType === 'B' ? '의원' : selectedItem.staffDeptType || ''} disabled />
           </FieldGroup>
           <FieldGroup label="부서">
-            <Input value={selectedItem.staffDeptValue || ''} disabled />
+            <Input value={(() => { const v = selectedItem.staffDeptValue; if (!v) return ''; return enumMap['Division']?.[v] ?? enumMap['MedicalDepartment']?.[v] ?? (resolveEnum('Division', v, '') || resolveEnum('MedicalDepartment', v, '') || v); })()} disabled />
           </FieldGroup>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -238,7 +262,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
         <SectionHeader>의료기관 유형</SectionHeader>
         <div className="grid grid-cols-3 gap-4">
           <FieldGroup label="의료기관 유형">
-            <Input value={selectedItem.institutionType || ''} disabled />
+            <Input value={resolveEnum('InstitutionType', selectedItem.institutionType)} disabled />
           </FieldGroup>
         </div>
 
@@ -428,37 +452,10 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
               const depts: Record<string, { count?: string; checked?: boolean }> =
                 typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return {}; } })()
                 : (raw as Record<string, { count?: string; checked?: boolean }>) || {};
-              const DEPT_MAP: [string, string][] = [
-                ['familyMedicine', '가정의학과'],
-                ['internalMedicine', '내과'],
-                ['anesthesiology', '마취통증의학과'],
-                ['radiationOncology', '방사선종양학과'],
-                ['pathology', '병리과'],
-                ['urology', '비뇨의학과'],
-                ['obstetricsGynecology', '산부인과'],
-                ['plasticSurgery', '성형외과'],
-                ['pediatrics', '소아청소년과'],
-                ['neurology', '신경과'],
-                ['neurosurgery', '신경외과'],
-                ['nephrology', '신장내과'],
-                ['ophthalmology', '안과'],
-                ['radiology', '영상의학과'],
-                ['surgery', '외과'],
-                ['emergencyMedicine', '응급의학과'],
-                ['otorhinolaryngology', '이비인후과'],
-                ['rehabilitationMedicine', '재활의학과'],
-                ['psychiatry', '정신건강의학과'],
-                ['orthopedicSurgery', '정형외과'],
-                ['laboratoryMedicine', '진단검사의학과'],
-                ['dentistry', '치과'],
-                ['dermatology', '피부과'],
-                ['cardiothoracicSurgery', '심장혈관흉부외과'],
-                ['koreanMedicine', '한의학과'],
-                ['other', '기타'],
-              ];
+              const deptEntries = Object.entries(enumMap['MedicalDepartment'] || {});
               return (
                 <div className="grid grid-cols-3 gap-4">
-                  {DEPT_MAP.map(([key, label]) => {
+                  {deptEntries.map(([key, label]) => {
                     const entry = depts[key];
                     const count = entry?.count || '';
                     return (
@@ -532,7 +529,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             {(() => {
               const rehabType = selectedItem.isolationRehabType || '';
               const REHAB_TYPES: [string, string][] = [
-                ['No', 'No'], ['침상', '침상재활'], ['격리병동', '격리병동 재활실 운영'],
+                ['불가', '불가'], ['침상', '침상재활'], ['격리병동', '격리병동 재활실 운영'],
               ];
               return (
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
