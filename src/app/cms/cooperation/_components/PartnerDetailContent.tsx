@@ -1,10 +1,13 @@
 'use client';
 
+import { useCallback } from 'react';
+import { useLazyQuery } from '@apollo/client/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useEnums } from '@/hooks/use-enums';
+import { PRESIGNED_DOWNLOAD_URL } from '@/lib/graphql/queries/board';
 import type { PartnerApplicationDetail } from '@/types/cooperation';
 
 /* ─── 검색 필드 공통 ─── */
@@ -90,6 +93,24 @@ interface PartnerDetailContentProps {
    ═══════════════════════════════════════ */
 export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetailContentProps) {
   const { labelOf, enumMap } = useEnums();
+  const [fetchDownloadUrl] = useLazyQuery<{ presignedDownloadUrl: string }>(
+    PRESIGNED_DOWNLOAD_URL,
+    { fetchPolicy: 'network-only' },
+  );
+
+  const handleDownload = useCallback(async (attachmentId: string, fileName: string) => {
+    try {
+      const { data } = await fetchDownloadUrl({ variables: { attachmentId } });
+      if (data?.presignedDownloadUrl) {
+        const link = document.createElement('a');
+        link.href = data.presignedDownloadUrl;
+        link.download = fileName;
+        link.click();
+      }
+    } catch {
+      // presigned URL 실패 시 무시
+    }
+  }, [fetchDownloadUrl]);
 
   /** enum label 또는 GraphQL ENUM 이름으로 들어온 값을 key로 역변환 후 labelOf 적용 */
   const resolveEnum = (enumName: string, value?: string | null, fallback = ''): string => {
@@ -298,15 +319,12 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             if (rows.length > 0) {
               return (rows as { id?: string; originalName?: string; storedPath?: string; mimeType?: string; fileSize?: number; createdAt?: string }[]).map((row, idx) => {
                 const fileName = row.originalName || `첨부파일 ${idx + 1}`;
-                const fileUrl = row.storedPath || '';
                 return (
-                  <a
+                  <button
+                    type="button"
                     key={row.id || idx}
-                    href={fileUrl}
-                    download={fileName}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded border px-3 py-2 text-sm hover:bg-accent transition-colors"
+                    onClick={() => row.id && handleDownload(row.id, fileName)}
+                    className="flex items-center gap-2 rounded border px-3 py-2 text-sm hover:bg-accent transition-colors w-full text-left cursor-pointer"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -317,7 +335,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
                         {row.fileSize < 1024 ? `${row.fileSize}B` : row.fileSize < 1048576 ? `${(row.fileSize / 1024).toFixed(1)}KB` : `${(row.fileSize / 1048576).toFixed(1)}MB`}
                       </span>
                     )}
-                  </a>
+                  </button>
                 );
               });
             }
