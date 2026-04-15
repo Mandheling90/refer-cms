@@ -9,6 +9,13 @@ import { HospitalSelector } from '@/components/molecules/HospitalSelector';
 import { ListPageTemplate } from '@/components/templates/ListPageTemplate';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogBody,
   DialogContent,
@@ -149,9 +156,10 @@ function AdminManagementContent() {
   /* ─── 검색 (입력 중) ─── */
   const [searchUserId, setSearchUserId] = useState('');
   const [searchUserName, setSearchUserName] = useState('');
+  const [searchStatus, setSearchStatus] = useState('ACTIVE');
 
   /* ─── 실제 적용된 필터 ─── */
-  const [appliedFilter, setAppliedFilter] = useState<{ search?: string }>({});
+  const [appliedFilter, setAppliedFilter] = useState<{ search?: string; status?: string }>({ status: 'ACTIVE' });
 
   /* ─── 선택 행 ─── */
   const [selectedRows, setSelectedRows] = useState<AdminUser[]>([]);
@@ -193,6 +201,7 @@ function AdminManagementContent() {
     variables: {
       filter: {
         userType: 'ADMIN',
+        ...(appliedFilter.status ? { status: appliedFilter.status } : {}),
         ...(appliedFilter.search ? { search: appliedFilter.search } : {}),
       },
       pagination: {
@@ -203,9 +212,8 @@ function AdminManagementContent() {
     fetchPolicy: 'network-only',
   });
 
-  const allItems = data?.adminUsers?.items ?? [];
-  const items = useMemo(() => allItems.filter((item) => item.status !== 'WITHDRAWN'), [allItems]);
-  const totalItems = items.length;
+  const items = data?.adminUsers?.items ?? [];
+  const totalItems = data?.adminUsers?.totalCount ?? 0;
 
   /* ─── GraphQL 상세 조회 ─── */
   const [fetchDetail] = useLazyQuery<AdminUserByIdResponse>(GET_ADMIN_USER_DETAIL, {
@@ -228,26 +236,21 @@ function AdminManagementContent() {
   /* ─── 검색 ─── */
   const handleSearch = useCallback(() => {
     const searchTerms = [searchUserId.trim(), searchUserName.trim()].filter(Boolean);
+    const status = searchStatus === '__all' ? undefined : searchStatus || undefined;
     const newFilter = {
       search: searchTerms.length > 0 ? searchTerms.join(' ') : undefined,
+      status,
     };
     setAppliedFilter(newFilter);
     setCurrentPage(1);
-    refetch({
-      filter: { userType: 'ADMIN', ...(newFilter.search ? { search: newFilter.search } : {}) },
-      pagination: { page: 1, limit: pageSize },
-    });
-  }, [searchUserId, searchUserName, refetch, pageSize]);
+  }, [searchUserId, searchUserName, searchStatus]);
 
   const handleReset = () => {
     setSearchUserId('');
     setSearchUserName('');
-    setAppliedFilter({});
+    setSearchStatus('ACTIVE');
+    setAppliedFilter({ status: 'ACTIVE' });
     setCurrentPage(1);
-    refetch({
-      filter: { userType: 'ADMIN' },
-      pagination: { page: 1, limit: pageSize },
-    });
   };
 
   /* ─── 페이징 ─── */
@@ -514,6 +517,18 @@ function AdminManagementContent() {
                 onChange={(e) => setSearchUserName(e.target.value)}
                 placeholder="관리자명"
               />
+            </FieldGroup>
+            <FieldGroup label="상태">
+              <Select value={searchStatus} onValueChange={setSearchStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">전체</SelectItem>
+                  <SelectItem value="ACTIVE">정상</SelectItem>
+                  <SelectItem value="WITHDRAWN">탈퇴</SelectItem>
+                </SelectContent>
+              </Select>
             </FieldGroup>
           </div>
         }
