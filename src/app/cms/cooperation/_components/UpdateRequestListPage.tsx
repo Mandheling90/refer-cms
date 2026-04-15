@@ -44,6 +44,18 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+/* ─── PartnerUpdateRequestStatus 라벨 ─── */
+const UPDATE_REQUEST_STATUS_LABEL: Record<string, string> = {
+  PENDING: '대기',
+  APPROVED: '승인',
+  REJECTED: '반려',
+};
+
+const UPDATE_REQUEST_STATUS_OPTIONS = [
+  { value: '__all', label: '전체' },
+  ...Object.entries(UPDATE_REQUEST_STATUS_LABEL).map(([value, label]) => ({ value, label })),
+];
+
 /* ─── Props ─── */
 interface UpdateRequestListPageProps {
   title: string;
@@ -88,7 +100,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
   const allItems = data?.adminPartnerUpdateRequests ?? [];
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
-      if (partnerType && (item.requestedHospitalData?.partnerType as string) !== partnerType) return false;
+      if (partnerType && item.partnerType !== partnerType) return false;
       if (appliedFilter.hospCode && !item.hospitalCode?.includes(appliedFilter.hospCode)) return false;
       return true;
     });
@@ -244,28 +256,22 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
   /* ─── 테이블 컬럼 ─── */
   const columns: ColumnDef<PartnerUpdateRequestModel, unknown>[] = [
     {
-      id: 'phisCode',
-      header: '요양기관번호',
-      size: 110,
-      cell: ({ row }) => (row.original.requestedHospitalData?.phisCode as string) || '-',
-    },
-    {
       id: 'hospName',
       header: '병원명',
       size: 120,
-      cell: ({ row }) => (row.original.requestedHospitalData?.name as string) || '-',
+      cell: ({ row }) => row.original.hospitalName || '-',
     },
     {
       id: 'hospPhone',
       header: '병원전화번호',
       size: 120,
-      cell: ({ row }) => (row.original.requestedHospitalData?.phone as string) || '-',
+      cell: ({ row }) => row.original.hospitalPhone || '-',
     },
     {
       id: 'directorName',
       header: '대표원장명',
       size: 90,
-      cell: ({ row }) => (row.original.requestedApplicationData?.directorName as string) || '-',
+      cell: ({ row }) => row.original.directorName || '-',
     },
     {
       accessorKey: 'createdAt',
@@ -287,7 +293,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         const val = getValue() as string;
         if (val === 'APPROVED') return <span className="text-src-point text-lg">✓</span>;
         if (val === 'REJECTED') return <span className="text-src-red text-lg">✗</span>;
-        return <span className="text-muted-foreground">{labelOf('PartnerStatus', val)}</span>;
+        return <span className="text-muted-foreground">{UPDATE_REQUEST_STATUS_LABEL[val] ?? val}</span>;
       },
     },
     {
@@ -320,8 +326,8 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {optionsOf('PartnerStatus', true).map((opt) => (
-                    <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
+                  {UPDATE_REQUEST_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
                   ))}
@@ -351,7 +357,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         <DialogContent size="lg" className="max-h-[90vh] grid-rows-[auto_1fr_auto]">
           <DialogHeader>
             <DialogTitle>
-              수정요청 확인 : {originalData?.hospitalName || selectedRequest?.hospitalCode || '-'}
+              수정요청 확인 : {originalData?.hospitalName || labelOf('HospitalCode', selectedRequest?.hospitalCode, '-')}
             </DialogTitle>
             <DialogDescription>
               협력병의원이 요청한 수정 내역을 확인할 수 있습니다.
@@ -364,7 +370,21 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
                 로딩 중...
               </div>
             ) : originalData ? (
-              <PartnerDetailContent selectedItem={originalData} isHospital={isHospital} />
+              <PartnerDetailContent
+                selectedItem={(() => {
+                  const hospData = (selectedRequest?.requestedHospitalData ?? {}) as Record<string, unknown>;
+                  const appData = (selectedRequest?.requestedApplicationData ?? {}) as Record<string, unknown>;
+                  // snapshot 키 → PartnerApplicationDetail 키 변환
+                  const { phisCode, ...restHospData } = hospData;
+                  return {
+                    ...originalData,
+                    ...restHospData,
+                    ...appData,
+                    ...(phisCode !== undefined ? { careInstitutionNo: phisCode as string } : {}),
+                  } as PartnerApplicationDetail;
+                })()}
+                isHospital={isHospital}
+              />
             ) : null}
           </DialogBody>
 

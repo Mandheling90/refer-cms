@@ -42,6 +42,20 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+/* ─── PartnerStatus 라벨 ─── */
+const PARTNER_STATUS_LABEL: Record<string, string> = {
+  DRAFT: '임시저장',
+  PENDING: '신청대기',
+  APPROVED: '승인',
+  REJECTED: '반려',
+  TERMINATED: '해지',
+};
+
+const PARTNER_STATUS_OPTIONS = [
+  { value: '__all', label: '전체' },
+  ...Object.entries(PARTNER_STATUS_LABEL).map(([value, label]) => ({ value, label })),
+];
+
 /* ─── Props ─── */
 interface CooperationListPageProps {
   title: string;
@@ -283,7 +297,7 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
         const val = getValue() as string;
         if (val === 'APPROVED') return <span className="text-src-point text-lg">✓</span>;
         if (val === 'REJECTED') return <span className="text-src-red text-lg">✗</span>;
-        return <span className="text-muted-foreground">{labelOf('PartnerStatus', val)}</span>;
+        return <span className="text-muted-foreground">{PARTNER_STATUS_LABEL[val] ?? val}</span>;
       },
     },
     {
@@ -325,8 +339,8 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
                   <SelectValue placeholder="전체" />
                 </SelectTrigger>
                 <SelectContent>
-                  {optionsOf('PartnerStatus', true).map((opt) => (
-                    <SelectItem key={opt.value || '__all'} value={opt.value || '__all'}>
+                  {PARTNER_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
                   ))}
