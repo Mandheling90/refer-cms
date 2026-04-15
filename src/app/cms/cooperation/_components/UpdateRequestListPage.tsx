@@ -379,11 +379,14 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
                   const appData = (selectedRequest?.requestedApplicationData ?? {}) as Record<string, unknown>;
                   // snapshot 키 → PartnerApplicationDetail 키 변환
                   const { phisCode, ...restHospData } = hospData;
+                  const { attachments: reqAttachments, ...restAppData } = appData;
                   return {
                     ...originalData,
                     ...restHospData,
-                    ...appData,
+                    ...restAppData,
                     ...(phisCode !== undefined ? { careInstitutionNo: phisCode as string } : {}),
+                    // 수정 요청의 첨부파일이 있으면 원본 대신 표시
+                    ...(Array.isArray(reqAttachments) ? { attachmentRows: reqAttachments } : {}),
                   } as PartnerApplicationDetail;
                 })()}
                 isHospital={isHospital}

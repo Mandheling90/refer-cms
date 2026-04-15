@@ -124,3 +124,10 @@ export const PRESIGNED_DOWNLOAD_URL = gql`
     presignedDownloadUrl(attachmentId: $attachmentId)
   }
 `;
+
+/** storedPath 기반 다운로드 URL (DB 레코드 없는 첨부파일용) */
+export const PRESIGNED_DOWNLOAD_URL_BY_PATH = gql`
+  query PresignedDownloadUrlByPath($storedPath: String!, $originalName: String!) {
+    presignedDownloadUrlByPath(storedPath: $storedPath, originalName: $originalName)
+  }
+`;

@@ -1,13 +1,11 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useLazyQuery } from '@apollo/client/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useEnums } from '@/hooks/use-enums';
-import { PRESIGNED_DOWNLOAD_URL } from '@/lib/graphql/queries/board';
 import type { PartnerApplicationDetail } from '@/types/cooperation';
 
 /* ─── 검색 필드 공통 ─── */
@@ -93,24 +91,14 @@ interface PartnerDetailContentProps {
    ═══════════════════════════════════════ */
 export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetailContentProps) {
   const { labelOf, enumMap } = useEnums();
-  const [fetchDownloadUrl] = useLazyQuery<{ presignedDownloadUrl: string }>(
-    PRESIGNED_DOWNLOAD_URL,
-    { fetchPolicy: 'network-only' },
-  );
-
-  const handleDownload = useCallback(async (attachmentId: string, fileName: string) => {
-    try {
-      const { data } = await fetchDownloadUrl({ variables: { attachmentId } });
-      if (data?.presignedDownloadUrl) {
-        const link = document.createElement('a');
-        link.href = data.presignedDownloadUrl;
-        link.download = fileName;
-        link.click();
-      }
-    } catch {
-      // presigned URL 실패 시 무시
-    }
-  }, [fetchDownloadUrl]);
+  const handleDownload = useCallback((storedPath: string | undefined, fileName: string) => {
+    if (!storedPath) return;
+    const params = new URLSearchParams({ path: storedPath, name: fileName });
+    const link = document.createElement('a');
+    link.href = `/api/download?${params}`;
+    link.download = fileName;
+    link.click();
+  }, []);
 
   /** enum label 또는 GraphQL ENUM 이름으로 들어온 값을 key로 역변환 후 labelOf 적용 */
   const resolveEnum = (enumName: string, value?: string | null, fallback = ''): string => {
@@ -323,7 +311,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
                   <button
                     type="button"
                     key={row.id || idx}
-                    onClick={() => row.id && handleDownload(row.id, fileName)}
+                    onClick={() => handleDownload(row.storedPath, fileName)}
                     className="flex items-center gap-2 rounded border px-3 py-2 text-sm hover:bg-accent transition-colors w-full text-left cursor-pointer"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
