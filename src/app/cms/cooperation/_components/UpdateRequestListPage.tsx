@@ -100,7 +100,10 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
   const allItems = data?.adminPartnerUpdateRequests ?? [];
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
-      if (partnerType && item.partnerType !== partnerType) return false;
+      if (partnerType) {
+        const itemPartnerType = (item.requestedHospitalData as Record<string, unknown>)?.partnerType;
+        if (itemPartnerType && itemPartnerType !== partnerType) return false;
+      }
       if (appliedFilter.hospCode && !item.hospitalCode?.includes(appliedFilter.hospCode)) return false;
       return true;
     });

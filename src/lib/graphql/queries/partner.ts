@@ -175,12 +175,13 @@ export const GET_ADMIN_PARTNER_UPDATE_REQUESTS = gql`
       status
       partnerApplicationId
       hospitalCode
-      partnerType
       hospitalName
       hospitalPhone
       directorName
       requestedHospitalData
       requestedApplicationData
+      reviewedAt
+      reviewedById
       createdAt
     }
   }

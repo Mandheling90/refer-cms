@@ -157,8 +157,6 @@ export interface PartnerUpdateRequestModel {
   status: UpdateRequestStatus;
   partnerApplicationId: string;
   hospitalCode: string;
-  /** A: 협력병원, B: 협력의원 */
-  partnerType?: 'A' | 'B' | null;
   hospitalName?: string | null;
   hospitalPhone?: string | null;
   directorName?: string | null;
