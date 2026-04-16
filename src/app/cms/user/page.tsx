@@ -29,6 +29,7 @@ import {
   ADMIN_UPDATE_USER,
   GET_ADMIN_USERS_MEMBERS,
 } from '@/lib/graphql/queries/member';
+import { ADMIN_DELETE_USER } from '@/lib/graphql/queries/admin';
 import { GET_ADMIN_USER_APPROVAL_BY_ID } from '@/lib/graphql/queries/member-apply';
 import type {
   AdminUser,
@@ -126,6 +127,7 @@ export default function MemberPage() {
 
   /* ─── GraphQL 수정 ─── */
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
+  const [deleteUser] = useMutation(ADMIN_DELETE_USER);
   const [resetPassword] = useMutation<{ adminResetPassword: { success: boolean; message: string } }>(ADMIN_RESET_PASSWORD);
 
   /* ─── 상세 다이얼로그 ─── */
@@ -594,10 +596,9 @@ export default function MemberPage() {
         onConfirm={async () => {
           if (!selectedUser) return;
           try {
-            await updateUser({
+            await deleteUser({
               variables: {
                 id: selectedUser.id,
-                input: { status: 'WITHDRAWN' },
               },
             });
             toast.success('회원이 탈퇴 처리되었습니다.');

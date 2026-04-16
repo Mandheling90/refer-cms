@@ -188,9 +188,6 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           <FieldGroup label="휴대전화">
             <Input value={selectedItem.directorPhone || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="성별">
-            <Input value={resolveEnum('Gender', selectedItem.directorGender)} disabled />
-          </FieldGroup>
           <FieldGroup label="차량번호">
             <Input value={selectedItem.directorCarNo || ''} disabled />
           </FieldGroup>
@@ -259,11 +256,6 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           </FieldGroup>
           <FieldGroup label="휴대전화">
             <Input value={selectedItem.staffTel || ''} disabled />
-          </FieldGroup>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <FieldGroup label="이메일">
-            <Input value={selectedItem.staffEmail || ''} disabled />
           </FieldGroup>
         </div>
 
@@ -360,7 +352,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           <FieldGroup label="요양기관번호">
             <Input value={selectedItem.careInstitutionNo || ''} disabled />
           </FieldGroup>
-          <FieldGroup label={isHospital ? '병원종별코드 주소' : '병원홈페이지 주소'}>
+          <FieldGroup label="홈페이지 주소">
             <Input value={selectedItem.hospitalWebsite || ''} disabled />
           </FieldGroup>
         </div>
