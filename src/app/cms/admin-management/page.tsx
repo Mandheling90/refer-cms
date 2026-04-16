@@ -26,7 +26,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { GET_ADMIN_USERS, GET_ADMIN_USER_DETAIL, ADMIN_CREATE_USER, CHECK_USER_ID_AVAILABLE } from '@/lib/graphql/queries/admin';
+import {
+  GET_ADMIN_USERS,
+  GET_ADMIN_USER_DETAIL,
+  ADMIN_CREATE_USER,
+  ADMIN_DELETE_USER,
+  CHECK_USER_ID_AVAILABLE,
+} from '@/lib/graphql/queries/admin';
 import { ADMIN_UPDATE_USER } from '@/lib/graphql/queries/member';
 import type { AdminUser, AdminUsersResponse, AdminUserByIdResponse, AdminUserDetail } from '@/types/member';
 import { toast } from 'sonner';
@@ -223,6 +229,9 @@ function AdminManagementContent() {
   /* ─── GraphQL 수정 ─── */
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
 
+  /* ─── GraphQL 삭제 ─── */
+  const [deleteUser] = useMutation<{ adminDeleteUser: boolean }>(ADMIN_DELETE_USER);
+
   /* ─── GraphQL 등록 ─── */
   const [createUser] = useMutation(ADMIN_CREATE_USER);
 
@@ -265,10 +274,9 @@ function AdminManagementContent() {
     try {
       await Promise.all(
         selectedRows.map((row) =>
-          updateUser({
+          deleteUser({
             variables: {
               id: row.id,
-              input: { status: 'WITHDRAWN' },
             },
           })
         )
