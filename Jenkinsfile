@@ -24,7 +24,7 @@ pipeline {
                         cpu: "1000m"
                         memory: "2Gi"
                   - name: node
-                    image: node:20-alpine
+                    image: node:22.19.0-alpine
                     command: [cat]
                     tty: true
                     env:
