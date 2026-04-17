@@ -80,6 +80,13 @@ export const ADMIN_RESET_PASSWORD = gql`
   }
 `;
 
+/** 회원 탈퇴 처리 (관리자) */
+export const ADMIN_WITHDRAW_MEMBER = gql`
+  mutation AdminWithdrawMember($id: String!) {
+    adminWithdrawMember(id: $id)
+  }
+`;
+
 /** 회원 정보 수정 */
 export const ADMIN_UPDATE_USER = gql`
   mutation AdminUpdateUser($id: String!, $input: AdminUpdateUserInput!) {

@@ -27,9 +27,9 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import {
   ADMIN_RESET_PASSWORD,
   ADMIN_UPDATE_USER,
+  ADMIN_WITHDRAW_MEMBER,
   GET_ADMIN_USERS_MEMBERS,
 } from '@/lib/graphql/queries/member';
-import { ADMIN_DELETE_USER } from '@/lib/graphql/queries/admin';
 import { GET_ADMIN_USER_APPROVAL_BY_ID } from '@/lib/graphql/queries/member-apply';
 import type {
   AdminUser,
@@ -127,7 +127,7 @@ export default function MemberPage() {
 
   /* ─── GraphQL 수정 ─── */
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
-  const [deleteUser] = useMutation(ADMIN_DELETE_USER);
+  const [withdrawMember] = useMutation<{ adminWithdrawMember: boolean }>(ADMIN_WITHDRAW_MEMBER);
   const [resetPassword] = useMutation<{ adminResetPassword: { success: boolean; message: string } }>(ADMIN_RESET_PASSWORD);
 
   /* ─── 상세 다이얼로그 ─── */
@@ -596,7 +596,7 @@ export default function MemberPage() {
         onConfirm={async () => {
           if (!selectedUser) return;
           try {
-            await deleteUser({
+            await withdrawMember({
               variables: {
                 id: selectedUser.id,
               },
