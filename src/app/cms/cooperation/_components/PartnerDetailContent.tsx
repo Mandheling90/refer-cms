@@ -144,7 +144,7 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           <FieldGroup label="대표자명">
             <Input value={selectedItem.hospitalRepresentative || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="홈페이지">
+          <FieldGroup label="홈페이지 주소">
             <Input value={selectedItem.hospitalWebsite || ''} disabled />
           </FieldGroup>
         </div>
