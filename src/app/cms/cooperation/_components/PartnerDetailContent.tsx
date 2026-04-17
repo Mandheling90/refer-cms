@@ -267,19 +267,47 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           </FieldGroup>
         </div>
 
-        {/* 인력현황 */}
-        <SectionHeader>인력현황</SectionHeader>
-        <div className="grid grid-cols-3 gap-4">
-          <FieldGroup label="총 직원 수">
-            <Input value={selectedItem.totalStaffCount?.toString() || ''} disabled />
-          </FieldGroup>
-          <FieldGroup label="전문의 수">
-            <Input value={selectedItem.specialistCount?.toString() || ''} disabled />
-          </FieldGroup>
-          <FieldGroup label="간호사 수">
-            <Input value={selectedItem.nurseCount?.toString() || ''} disabled />
-          </FieldGroup>
-        </div>
+        {isHospital ? (
+          <>
+            {/* 인력현황 */}
+            <SectionHeader>인력현황</SectionHeader>
+            <div className="grid grid-cols-3 gap-4">
+              <FieldGroup label="총 직원 수">
+                <Input value={selectedItem.totalStaffCount?.toString() || ''} disabled />
+              </FieldGroup>
+              <FieldGroup label="전문의 수">
+                <Input value={selectedItem.specialistCount?.toString() || ''} disabled />
+              </FieldGroup>
+              <FieldGroup label="간호사 수">
+                <Input value={selectedItem.nurseCount?.toString() || ''} disabled />
+              </FieldGroup>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* 병상, 시설 및 장비 현황 */}
+            <SectionHeader>병상, 시설 및 장비 현황</SectionHeader>
+            <div className="grid grid-cols-3 gap-4">
+              <FieldGroup label="총 병상수">
+                <Input value={selectedItem.totalBedCount?.toString() || ''} disabled />
+              </FieldGroup>
+              <FieldGroup label="총 직원 수">
+                <Input value={selectedItem.totalStaffCount?.toString() || ''} disabled />
+              </FieldGroup>
+              <FieldGroup label="전문의 수">
+                <Input value={selectedItem.specialistCount?.toString() || ''} disabled />
+              </FieldGroup>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <FieldGroup label="간호사 수">
+                <Input value={selectedItem.nurseCount?.toString() || ''} disabled />
+              </FieldGroup>
+            </div>
+            <FieldGroup label="주요 보유 장비">
+              <Textarea value={selectedItem.majorEquipment || ''} disabled rows={3} />
+            </FieldGroup>
+          </>
+        )}
 
         {/* 병원 특성 및 기타사항 */}
         <SectionHeader>병원 특성 및 기타사항</SectionHeader>
