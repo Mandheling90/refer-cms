@@ -433,6 +433,10 @@ export function UpdateRequestListPage({
                       ...restHospData,
                       ...restAppData,
                       ...(phisCode !== undefined ? { careInstitutionNo: phisCode as string } : {}),
+                      // 차량번호는 수정요청 모델의 최신 값으로 덮어쓰기
+                      ...(selectedRequest?.directorCarNo !== undefined
+                        ? { directorCarNo: selectedRequest.directorCarNo ?? '' }
+                        : {}),
                       // 수정 요청의 첨부파일이 있으면 원본 대신 표시
                       ...(Array.isArray(reqAttachments) ? { attachmentRows: reqAttachments } : {}),
                     } as PartnerApplicationDetail;

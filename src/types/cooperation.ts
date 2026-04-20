@@ -160,6 +160,7 @@ export interface PartnerUpdateRequestModel {
   hospitalName?: string | null;
   hospitalPhone?: string | null;
   directorName?: string | null;
+  directorCarNo?: string | null;
   applicantName?: string | null;
   applicantEmail?: string | null;
   applicantPhone?: string | null;

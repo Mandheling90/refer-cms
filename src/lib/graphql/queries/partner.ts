@@ -188,6 +188,7 @@ export const GET_ADMIN_PARTNER_UPDATE_REQUESTS = gql`
       hospitalName
       hospitalPhone
       directorName
+      directorCarNo
       applicantName
       applicantEmail
       applicantPhone
@@ -208,6 +209,7 @@ export const GET_ADMIN_PARTNER_UPDATE_REQUEST_BY_ID = gql`
       status
       partnerApplicationId
       hospitalCode
+      directorCarNo
       applicantName
       applicantEmail
       applicantPhone
