@@ -67,7 +67,11 @@ interface UpdateRequestListPageProps {
 /* ═══════════════════════════════════════
    수정요청 확인 리스트 페이지
    ═══════════════════════════════════════ */
-export function UpdateRequestListPage({ title, partnerType, canEdit = true }: UpdateRequestListPageProps) {
+export function UpdateRequestListPage({
+  title,
+  partnerType,
+  canEdit = true,
+}: UpdateRequestListPageProps) {
   const { labelOf, optionsOf } = useEnums();
   const isHospital = partnerType === 'A';
 
@@ -93,7 +97,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         ...(appliedFilter.status ? { status: appliedFilter.status } : {}),
       },
       fetchPolicy: 'network-only',
-    },
+    }
   );
 
   /* 클라이언트측 필터링 */
@@ -101,10 +105,12 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
       if (partnerType) {
-        const itemPartnerType = (item.requestedHospitalData as Record<string, unknown>)?.partnerType;
+        const itemPartnerType = (item.requestedHospitalData as Record<string, unknown>)
+          ?.partnerType;
         if (itemPartnerType && itemPartnerType !== partnerType) return false;
       }
-      if (appliedFilter.hospCode && !item.hospitalCode?.includes(appliedFilter.hospCode)) return false;
+      if (appliedFilter.hospCode && !item.hospitalCode?.includes(appliedFilter.hospCode))
+        return false;
       return true;
     });
   }, [allItems, partnerType, appliedFilter]);
@@ -124,13 +130,13 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
   /* ─── GraphQL 수정요청 상세 조회 ─── */
   const [fetchUpdateDetail] = useLazyQuery<AdminPartnerUpdateRequestByIdResponse>(
     GET_ADMIN_PARTNER_UPDATE_REQUEST_BY_ID,
-    { fetchPolicy: 'network-only' },
+    { fetchPolicy: 'network-only' }
   );
 
   /* ─── GraphQL 기존 신청 상세 조회 ─── */
   const [fetchOriginal] = useLazyQuery<AdminPartnerApplicationByIdResponse>(
     GET_ADMIN_PARTNER_APPLICATION_BY_ID,
-    { fetchPolicy: 'network-only' },
+    { fetchPolicy: 'network-only' }
   );
 
   /* ─── Mutations ─── */
@@ -150,7 +156,9 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
 
   /* ─── 재검색 ─── */
   const handleSearch = useCallback(() => {
-    const status = (searchStatus === '__all' ? undefined : searchStatus || undefined) as UpdateRequestStatus | undefined;
+    const status = (searchStatus === '__all' ? undefined : searchStatus || undefined) as
+      | UpdateRequestStatus
+      | undefined;
     const newFilter = {
       hospCode: searchHospCode.trim() || undefined,
       status,
@@ -277,6 +285,24 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
       cell: ({ row }) => row.original.directorName || '-',
     },
     {
+      id: 'applicantName',
+      header: '신청자명',
+      size: 100,
+      cell: ({ row }) => row.original.applicantName || '-',
+    },
+    {
+      id: 'applicantEmail',
+      header: '신청자 이메일',
+      size: 180,
+      cell: ({ row }) => row.original.applicantEmail || '-',
+    },
+    {
+      id: 'applicantPhone',
+      header: '신청자 휴대폰',
+      size: 120,
+      cell: ({ row }) => row.original.applicantPhone || '-',
+    },
+    {
       accessorKey: 'createdAt',
       header: '요청일시',
       size: 130,
@@ -286,7 +312,7 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
       accessorKey: 'reviewedById',
       header: '승인담당자',
       size: 100,
-      cell: ({ getValue }) => getValue() as string || '-',
+      cell: ({ getValue }) => (getValue() as string) || '-',
     },
     {
       accessorKey: 'status',
@@ -296,7 +322,9 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         const val = getValue() as string;
         if (val === 'APPROVED') return <span className="text-src-point text-lg">✓</span>;
         if (val === 'REJECTED') return <span className="text-src-red text-lg">✗</span>;
-        return <span className="text-muted-foreground">{UPDATE_REQUEST_STATUS_LABEL[val] ?? val}</span>;
+        return (
+          <span className="text-muted-foreground">{UPDATE_REQUEST_STATUS_LABEL[val] ?? val}</span>
+        );
       },
     },
     {
@@ -360,7 +388,9 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
         <DialogContent size="lg" className="max-h-[90vh] grid-rows-[auto_1fr_auto]">
           <DialogHeader>
             <DialogTitle>
-              수정요청 확인 : {originalData?.hospitalName || labelOf('HospitalCode', selectedRequest?.hospitalCode, '-')}
+              수정요청 확인 :{' '}
+              {originalData?.hospitalName ||
+                labelOf('HospitalCode', selectedRequest?.hospitalCode, '-')}
             </DialogTitle>
             <DialogDescription>
               협력병의원이 요청한 수정 내역을 확인할 수 있습니다.
@@ -373,34 +403,61 @@ export function UpdateRequestListPage({ title, partnerType, canEdit = true }: Up
                 로딩 중...
               </div>
             ) : originalData ? (
-              <PartnerDetailContent
-                selectedItem={(() => {
-                  const hospData = (selectedRequest?.requestedHospitalData ?? {}) as Record<string, unknown>;
-                  const appData = (selectedRequest?.requestedApplicationData ?? {}) as Record<string, unknown>;
-                  // snapshot 키 → PartnerApplicationDetail 키 변환
-                  const { phisCode, ...restHospData } = hospData;
-                  const { attachments: reqAttachments, ...restAppData } = appData;
-                  return {
-                    ...originalData,
-                    ...restHospData,
-                    ...restAppData,
-                    ...(phisCode !== undefined ? { careInstitutionNo: phisCode as string } : {}),
-                    // 수정 요청의 첨부파일이 있으면 원본 대신 표시
-                    ...(Array.isArray(reqAttachments) ? { attachmentRows: reqAttachments } : {}),
-                  } as PartnerApplicationDetail;
-                })()}
-                isHospital={isHospital}
-              />
+              <>
+                <div className="grid grid-cols-3 gap-4">
+                  <FieldGroup label="신청자명">
+                    <Input value={selectedRequest?.applicantName || ''} disabled />
+                  </FieldGroup>
+                  <FieldGroup label="신청자 이메일">
+                    <Input value={selectedRequest?.applicantEmail || ''} disabled />
+                  </FieldGroup>
+                  <FieldGroup label="신청자 휴대폰">
+                    <Input value={selectedRequest?.applicantPhone || ''} disabled />
+                  </FieldGroup>
+                </div>
+                <PartnerDetailContent
+                  selectedItem={(() => {
+                    const hospData = (selectedRequest?.requestedHospitalData ?? {}) as Record<
+                      string,
+                      unknown
+                    >;
+                    const appData = (selectedRequest?.requestedApplicationData ?? {}) as Record<
+                      string,
+                      unknown
+                    >;
+                    // snapshot 키 → PartnerApplicationDetail 키 변환
+                    const { phisCode, ...restHospData } = hospData;
+                    const { attachments: reqAttachments, ...restAppData } = appData;
+                    return {
+                      ...originalData,
+                      ...restHospData,
+                      ...restAppData,
+                      ...(phisCode !== undefined ? { careInstitutionNo: phisCode as string } : {}),
+                      // 수정 요청의 첨부파일이 있으면 원본 대신 표시
+                      ...(Array.isArray(reqAttachments) ? { attachmentRows: reqAttachments } : {}),
+                    } as PartnerApplicationDetail;
+                  })()}
+                  isHospital={isHospital}
+                />
+              </>
             ) : null}
           </DialogBody>
 
           <DialogFooter className="justify-between">
             {selectedRequest?.status === 'PENDING' ? (
               <div className="flex gap-2">
-                <Button variant="blue" onClick={() => setApproveConfirmOpen(true)} disabled={!canEdit}>
+                <Button
+                  variant="blue"
+                  onClick={() => setApproveConfirmOpen(true)}
+                  disabled={!canEdit}
+                >
                   수정 승인
                 </Button>
-                <Button variant="destructive" onClick={() => setRejectOpen(true)} disabled={!canEdit}>
+                <Button
+                  variant="destructive"
+                  onClick={() => setRejectOpen(true)}
+                  disabled={!canEdit}
+                >
                   수정 반려
                 </Button>
               </div>
