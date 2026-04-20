@@ -27,8 +27,8 @@ import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 import {
   ADMIN_RESET_PASSWORD,
   ADMIN_UPDATE_USER,
-  ADMIN_WITHDRAW_MEMBER,
   GET_ADMIN_USERS_MEMBERS,
+  WITHDRAW_USER_ACCOUNT,
 } from '@/lib/graphql/queries/member';
 import { GET_ADMIN_USER_APPROVAL_BY_ID } from '@/lib/graphql/queries/member-apply';
 import type {
@@ -127,7 +127,7 @@ export default function MemberPage() {
 
   /* ─── GraphQL 수정 ─── */
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
-  const [withdrawMember] = useMutation<{ adminWithdrawMember: boolean }>(ADMIN_WITHDRAW_MEMBER);
+  const [withdrawMember] = useMutation<{ withdrawUserAccount: boolean }>(WITHDRAW_USER_ACCOUNT);
   const [resetPassword] = useMutation<{ adminResetPassword: { success: boolean; message: string } }>(ADMIN_RESET_PASSWORD);
 
   /* ─── 상세 다이얼로그 ─── */
