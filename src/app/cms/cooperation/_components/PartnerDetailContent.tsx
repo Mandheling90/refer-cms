@@ -251,10 +251,10 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           <FieldGroup label="직급">
             <Input value={selectedItem.staffPosition || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="연락처">
+          <FieldGroup label="휴대전화">
             <Input value={selectedItem.staffPhone || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="휴대전화">
+          <FieldGroup label="내선번호">
             <Input value={selectedItem.staffTel || ''} disabled />
           </FieldGroup>
         </div>
@@ -412,9 +412,6 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             {/* 병상 운영 현황 */}
             <SectionHeader>병상 운영 현황</SectionHeader>
             <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="총 병상수">
-                <Input value={selectedItem.totalBedCount?.toString() || ''} disabled />
-              </FieldGroup>
               <FieldGroup label="가동병상수">
                 <Input value={selectedItem.activeBedCount?.toString() || ''} disabled />
               </FieldGroup>

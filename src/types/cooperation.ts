@@ -83,7 +83,6 @@ export interface PartnerApplicationDetail extends PartnerApplicationModel {
     | unknown;
   /* 체크리스트: 병상 운영 현황 */
   activeBedCount?: number;
-  totalBedCount?: number;
   premiumRoomCount?: number;
   multiRoomCount?: number;
   icuCount?: number;

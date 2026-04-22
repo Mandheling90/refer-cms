@@ -112,7 +112,6 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       clbrDvsnCd1
       # 체크리스트 항목
       activeBedCount
-      totalBedCount
       premiumRoomCount
       multiRoomCount
       icuCount
