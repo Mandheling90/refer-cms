@@ -288,17 +288,12 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
             {/* 병상, 시설 및 장비 현황 */}
             <SectionHeader>병상, 시설 및 장비 현황</SectionHeader>
             <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="총 병상수">
-                <Input value={selectedItem.totalBedCount?.toString() || ''} disabled />
-              </FieldGroup>
               <FieldGroup label="총 직원 수">
                 <Input value={selectedItem.totalStaffCount?.toString() || ''} disabled />
               </FieldGroup>
               <FieldGroup label="전문의 수">
                 <Input value={selectedItem.specialistCount?.toString() || ''} disabled />
               </FieldGroup>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
               <FieldGroup label="간호사 수">
                 <Input value={selectedItem.nurseCount?.toString() || ''} disabled />
               </FieldGroup>
