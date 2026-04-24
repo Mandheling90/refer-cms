@@ -284,10 +284,10 @@ export function CooperationListPage({ title, partnerType, mode, canEdit = true }
       cell: ({ getValue }) => formatDateTime(getValue() as string),
     },
     {
-      accessorKey: 'reviewedById',
+      id: 'reviewedByName',
       header: '승인담당자',
       size: 100,
-      cell: ({ getValue }) => getValue() as string || '-',
+      cell: ({ row }) => row.original.reviewedByName || row.original.reviewedById || '-',
     },
     {
       accessorKey: 'status',

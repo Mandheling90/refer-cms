@@ -22,6 +22,7 @@ export const GET_ADMIN_PARTNER_APPLICATIONS = gql`
         rejectReason
         reviewedAt
         reviewedById
+        reviewedByName
         directorName
         directorPhone
         staffName
@@ -60,6 +61,7 @@ export const GET_ADMIN_PARTNER_APPLICATION_BY_ID = gql`
       rejectReason
       reviewedAt
       reviewedById
+      reviewedByName
       directorName
       directorPhone
       directorLicenseNo

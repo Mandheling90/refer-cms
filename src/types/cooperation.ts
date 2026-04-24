@@ -34,6 +34,7 @@ export interface PartnerApplicationModel {
   terminatedAt?: string;
   reviewedAt?: string;
   reviewedById?: string;
+  reviewedByName?: string;
   rejectReason?: string;
   createdAt: string;
   updatedAt: string;
