@@ -178,8 +178,8 @@ export const REJECT_PARTNER_APPLICATION = gql`
 
 /** 관리자 협력병의원 수정요청 목록 조회 */
 export const GET_ADMIN_PARTNER_UPDATE_REQUESTS = gql`
-  query AdminPartnerUpdateRequests($status: PartnerUpdateRequestStatus) {
-    adminPartnerUpdateRequests(status: $status) {
+  query AdminPartnerUpdateRequests($status: PartnerUpdateRequestStatus, $hospitalCode: HospitalCode) {
+    adminPartnerUpdateRequests(status: $status, hospitalCode: $hospitalCode) {
       id
       status
       partnerApplicationId
@@ -202,8 +202,8 @@ export const GET_ADMIN_PARTNER_UPDATE_REQUESTS = gql`
 
 /** 관리자 협력병의원 수정요청 상세 조회 */
 export const GET_ADMIN_PARTNER_UPDATE_REQUEST_BY_ID = gql`
-  query AdminPartnerUpdateRequestById($id: String!) {
-    adminPartnerUpdateRequestById(id: $id) {
+  query AdminPartnerUpdateRequestById($id: String!, $hospitalCode: HospitalCode) {
+    adminPartnerUpdateRequestById(id: $id, hospitalCode: $hospitalCode) {
       id
       status
       partnerApplicationId
@@ -222,8 +222,8 @@ export const GET_ADMIN_PARTNER_UPDATE_REQUEST_BY_ID = gql`
 
 /** 수정요청 승인 */
 export const APPROVE_PARTNER_UPDATE_REQUEST = gql`
-  mutation ApprovePartnerUpdateRequest($id: String!) {
-    approvePartnerUpdateRequest(id: $id) {
+  mutation ApprovePartnerUpdateRequest($id: String!, $hospitalCode: HospitalCode) {
+    approvePartnerUpdateRequest(id: $id, hospitalCode: $hospitalCode) {
       id
       status
       reviewedAt
@@ -235,8 +235,8 @@ export const APPROVE_PARTNER_UPDATE_REQUEST = gql`
 
 /** 수정요청 반려 */
 export const REJECT_PARTNER_UPDATE_REQUEST = gql`
-  mutation RejectPartnerUpdateRequest($id: String!) {
-    rejectPartnerUpdateRequest(id: $id) {
+  mutation RejectPartnerUpdateRequest($id: String!, $hospitalCode: HospitalCode) {
+    rejectPartnerUpdateRequest(id: $id, hospitalCode: $hospitalCode) {
       id
       status
       reviewedAt
