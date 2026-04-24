@@ -251,10 +251,10 @@ export function PartnerDetailContent({ selectedItem, isHospital }: PartnerDetail
           <FieldGroup label="직급">
             <Input value={selectedItem.staffPosition || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="휴대전화">
+          <FieldGroup label="내선번호">
             <Input value={selectedItem.staffPhone || ''} disabled />
           </FieldGroup>
-          <FieldGroup label="내선번호">
+          <FieldGroup label="휴대전화">
             <Input value={selectedItem.staffTel || ''} disabled />
           </FieldGroup>
         </div>
