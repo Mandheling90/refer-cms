@@ -379,6 +379,8 @@ export default function MedicalStaffPage() {
     if (!selectedItem) return;
     setSaving(true);
     try {
+      const wasActive = activeConsultantIds.has(selectedItem.doctorId);
+
       if (editConsultant) {
         // 자문의 지정 (On)
         const localPart = editEmailLocal.trim();
@@ -396,8 +398,8 @@ export default function MedicalStaffPage() {
           setSaving(false);
           return;
         }
-        if (consultantRecordId) {
-          // 기존 자문의 → 이메일만 수정
+        if (consultantRecordId && wasActive) {
+          // 기존 활성 자문의 → 이메일만 수정 (UpdateEconsultConsultantEmail은 isActive를 다루지 않음)
           await updateConsultantEmail({
             variables: {
               id: consultantRecordId,
@@ -405,7 +407,7 @@ export default function MedicalStaffPage() {
             },
           });
         } else {
-          // 신규 자문의 지정
+          // 신규 지정 또는 비활성 레코드 재활성화 → designate가 isActive: true로 살려줌
           await designateConsultant({
             variables: {
               input: {
@@ -417,11 +419,17 @@ export default function MedicalStaffPage() {
             },
           });
         }
-      } else if (consultantRecordId) {
-        // 자문의 해제 (Off)
+      } else if (consultantRecordId && wasActive) {
+        // 자문의 해제 (Off) — 이미 비활성이면 호출 불필요
         await deactivateConsultant({
           variables: { id: consultantRecordId },
         });
+      } else {
+        // 변경사항 없음
+        toast.info('변경된 내용이 없습니다.');
+        setSaveConfirmOpen(false);
+        setSaving(false);
+        return;
       }
       toast.success('저장되었습니다.');
       setSaveConfirmOpen(false);
